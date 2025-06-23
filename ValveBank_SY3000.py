@@ -21,7 +21,7 @@
 import time
 import threading
 
-from decorators import test_setup, test_command, device_class
+from decorators import setup_command, test_command, device_class
 
 @device_class
 class ValveBank:

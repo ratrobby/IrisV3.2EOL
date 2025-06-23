@@ -1,4 +1,4 @@
-from decorators import test_command, test_setup
+from decorators import test_command, setup_command
 
 class UI_Button:
     def __init__(self, al2205_instance, x1_index):

@@ -1,8 +1,8 @@
 # Decorators used by the GUI library to categorize device methods
 
-def test_setup(func):
+def setup_command(func):
     """Mark a method as part of a device's test setup procedure."""
-    func._is_test_setup = True
+    func._is_setup_command = True
     return func
 
 

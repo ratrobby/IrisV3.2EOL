@@ -21,7 +21,7 @@
     - Uses example calibration: 5V = 0 lbf, 0V = 50 lbf (10 lbf/V).
 """
 
-from decorators import test_command, test_setup, device_class
+from decorators import test_command, setup_command, device_class
 
 @device_class
 class ReadLoadCell:

@@ -1,4 +1,4 @@
-from decorators import test_command, test_setup
+from decorators import test_command, setup_command
 
 class AL2205:
 
