@@ -21,11 +21,6 @@
 import time
 import threading
 
-# Public API decorator
-def public_api(func):
-    func._is_public_api = True
-    return func
-
 from decorators import test_setup, test_command, device_class
 
 @device_class
@@ -73,7 +68,6 @@ Command: ~all_off()~
         self._lock = threading.Lock()
 
     @test_command
-    @public_api
     def valve_on(self, valve, duration=None):
         """
         Turn on a valve. If duration is specified, turn off automatically.
@@ -98,7 +92,6 @@ Command: ~all_off()~
             print(f"Valve {valve} ON indefinitely")
 
     @test_command
-    @public_api
     def valve_off(self, *valves):
         """
         Turn off one or more valves.
@@ -113,7 +106,6 @@ Command: ~all_off()~
             self._write_state()
 
     @test_command
-    @public_api
     def all_off(self):
         """
         Turn off all valves.

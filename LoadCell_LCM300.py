@@ -19,11 +19,7 @@
     ------
     - X1 index maps to AL2205 analog input ports (X1.0 to X1.7).
     - Uses example calibration: 5V = 0 lbf, 0V = 50 lbf (10 lbf/V).
-    """
-# Public API decorator
-def public_api(func):
-    func._is_public_api = True
-    return func
+"""
 
 from decorators import test_command, test_setup, device_class
 
@@ -71,7 +67,6 @@ class ReadLoadCell:
         return raw / 1000 if raw is not None else None
 
     @test_command
-    @public_api
     def read_force(self, unit="lbf"):
         """
         Convert voltage to force.

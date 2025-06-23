@@ -56,7 +56,6 @@ class PositionSensor:
         self.calibration_data = self._load_calibration()
 
     @test_setup
-    @public_api
     def calibrate_min(self):
         """
         Save current raw value as the 0mm calibration point.
@@ -66,7 +65,6 @@ class PositionSensor:
         print(f"✅ Calibrated MIN for X1.{self.x1_index}: {raw_value}")
 
     @test_setup
-    @public_api
     def calibrate_max(self):
         """
         Save current raw value as the max (stroke_mm) calibration point.
@@ -76,7 +74,6 @@ class PositionSensor:
         print(f"✅ Calibrated MAX for X1.{self.x1_index}: {raw_value}")
 
     @test_command
-    @public_api
     def read_position(self):
         """
         Return live position in millimeters, clamped between 0 and stroke.

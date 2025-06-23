@@ -1,11 +1,6 @@
 from scipy.interpolate import interp1d
 import time
 
-# Public API decorator
-def public_api(func):
-    func._is_public_api = True
-    return func
-
 from decorators import test_setup, test_command, device_class
 
 @device_class
@@ -61,7 +56,6 @@ Command: ~set_pressure(target_psi)~
     ...
 
     @test_command
-    @public_api
     def set_pressure(self, target_psi):
         """
         Set the regulator to the target pressure and wait until it's within default tolerance.
