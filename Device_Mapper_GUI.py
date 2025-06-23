@@ -173,8 +173,8 @@ class InstructionPanel(ttk.Frame):
 
         self.populate_instruction_panel()
 
-    def _get_device_class(self, module_name):
-        """Return the class marked with @device_class in a module."""
+    def _get_device_instructions(self, module_name):
+        """Return setup and test instruction strings for the device class."""
         try:
             module_path = os.path.join(DeviceUtils.DEVICE_FOLDER, f"{module_name}.py")
             spec = importlib.util.spec_from_file_location(module_name, module_path)
@@ -183,33 +183,22 @@ class InstructionPanel(ttk.Frame):
             for attr in dir(module):
                 obj = getattr(module, attr)
                 if isinstance(obj, type) and getattr(obj, "_is_device_class", False):
-                    return obj
+                    setup_fn = getattr(obj, "setup_instructions", None)
+                    test_fn = getattr(obj, "test_instructions", None) or getattr(obj, "Test_instructions", None)
+                    setup = setup_fn() if callable(setup_fn) else ""
+                    test = test_fn() if callable(test_fn) else ""
+                    return setup.strip(), test.strip()
         except Exception as e:
-            print(f"Error loading device class from {module_name}: {e}")
-        return None
-
-    def _get_command_info(self, cls):
-        """Return lists of (method_name, doc) for setup and test commands."""
-        setup_cmds = []
-        test_cmds = []
-        for name, meth in inspect.getmembers(cls, predicate=inspect.isfunction):
-            if getattr(meth, "_is_setup_command", False):
-                setup_cmds.append((name, inspect.getdoc(meth) or ""))
-            if getattr(meth, "_is_test_command", False):
-                test_cmds.append((name, inspect.getdoc(meth) or ""))
-        return setup_cmds, test_cmds
+            print(f"Error loading instructions from {module_name}: {e}")
+        return "", ""
 
     def populate_instruction_panel(self):
         for widget in self.inner_frame.winfo_children():
             widget.destroy()
 
         for title, module_name in self.device_classes_func():
-            cls = self._get_device_class(module_name)
-            if not cls:
-                continue
-
-            setup_cmds, test_cmds = self._get_command_info(cls)
-            if not setup_cmds and not test_cmds:
+            setup_text, test_text = self._get_device_instructions(module_name)
+            if not setup_text and not test_text:
                 continue
 
             container = ttk.Frame(self.inner_frame)
@@ -218,24 +207,19 @@ class InstructionPanel(ttk.Frame):
             summary = ttk.Label(container, text=module_name, font=("Arial", 10, "bold"))
             summary.pack(anchor="w")
 
-            if setup_cmds:
-                ttk.Label(container, text="Test Setup Commands", font=("Arial", 10, "bold italic")).pack(anchor="w", padx=10, pady=(4, 0))
-                for name, doc in setup_cmds:
-                    self._create_collapsible_text(container, name, doc, indent=20)
+            if setup_text:
+                self._create_collapsible_text(container, "Test Setup Commands", setup_text)
 
-            if test_cmds:
-                ttk.Label(container, text="Test Commands", font=("Arial", 10, "bold italic")).pack(anchor="w", padx=10, pady=(4, 0))
-                for name, doc in test_cmds:
-                    self._create_collapsible_text(container, name, doc, indent=20)
+            if test_text:
+                self._create_collapsible_text(container, "Test Commands", test_text)
 
     def _create_collapsible_text(self, parent, section_title, content, indent=10):
         header = ttk.Label(parent, text=section_title, font=("Arial", 10, "bold italic"))
-        header.pack(anchor="w", padx=indent, pady=(2, 0))
+        header.pack(anchor="w", padx=indent, pady=(4, 0))
 
         text_widget = tk.Text(parent, wrap="word", height=1, width=60, font=("Arial", 9), background="#f5f5f5")
         text_widget.insert("1.0", content)
 
-        # Syntax highlight
         keyword_styles = {
             "Command:": "command_style",
             "Inputs:": "bold",
@@ -257,13 +241,10 @@ class InstructionPanel(ttk.Frame):
         text_widget.tag_configure("command_style", font=("Arial", 11, "bold"), foreground="#003366")
         text_widget.configure(state="disabled", height=min(30, content.count("\n") + 2))
 
-        # Collapsible behavior
         text_widget.pack_forget()
         header.bind(
             "<Button-1>",
-            lambda e, t=text_widget: t.pack(fill="x", padx=indent)
-            if not t.winfo_viewable()
-            else t.pack_forget(),
+            lambda e, t=text_widget: t.pack(fill="x", padx=indent) if not t.winfo_viewable() else t.pack_forget(),
         )
 
 
