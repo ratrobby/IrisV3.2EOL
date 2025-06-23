@@ -5,16 +5,17 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import importlib.util
 import inspect
-from PositionSensor_SDAT_MHS_M160 import Calibrate_PosSensor
+from devices.PositionSensor_SDAT_MHS_M160 import Calibrate_PosSensor
 import datetime
 
 
 # === Centralized Path & Utility Class ===
 class DeviceUtils:
-    DEVICE_FOLDER = r"C:\Users\ratrobby\Desktop\MRLF Repo"
-    CONFIG_FILE = os.path.join(DEVICE_FOLDER, "GUI Files", "Device_Config.json")
+    REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DEVICE_FOLDER = os.path.join(REPO_ROOT, "devices")
+    CONFIG_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_Config.json")
     OUTPUT_FILES = {
-        "Test Cell 1": os.path.join(DEVICE_FOLDER, "MRLF_Devices", "Test_Cell_Device_Logs", "Test_Cell_1_Devices.py")
+        "Test Cell 1": os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
     }
     DEFAULT_CONFIG = {
         "al1342": {str(i): "Empty" for i in range(1, 9)},
@@ -550,8 +551,9 @@ class DeviceTab(ttk.Frame):
     def run_test_loop(self):
         test_name = self.test_name_var.get().strip() or "untitled"
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        os.makedirs("logs", exist_ok=True)
-        log_path = os.path.join("logs", f"{test_name}_{ts}.log")
+        log_dir = os.path.join(DeviceUtils.REPO_ROOT, "logs")
+        os.makedirs(log_dir, exist_ok=True)
+        log_path = os.path.join(log_dir, f"{test_name}_{ts}.log")
 
         setup_code = self.test_setup_box.get("1.0", "end-1c")
         devices = self._load_devices()

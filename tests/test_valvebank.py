@@ -5,7 +5,7 @@ import pytest
 # Allow importing modules from the repository root
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from ValveBank_SY3000 import ValveBank
+from devices.ValveBank_SY3000 import ValveBank
 
 class FakeIOMaster:
     def __init__(self):
