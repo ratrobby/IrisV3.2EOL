@@ -4,6 +4,7 @@ import json
 import tkinter as tk
 from tkinter import ttk, messagebox
 import importlib.util
+from PositionSensor_SDAT_MHS_M160 import Calibrate_PosSensor
 
 
 # === Centralized Path & Utility Class ===
@@ -133,7 +134,7 @@ class CalibrationPanel(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent, borderwidth=2, relief='solid')
         ttk.Label(self, text="Calibrate Position Sensors", font=("Arial", 11, "bold", "underline")).pack(padx=10, pady=(10, 5))
-        ttk.Button(self, text="Launch Calibration Window", command=launch_calibration_wizard, width=25).pack(padx=10, pady=10)
+        ttk.Button(self, text="Launch Calibration Window", command=Calibrate_PosSensor, width=25).pack(padx=10, pady=10)
 
 
 class IPAddressEntry(ttk.Frame):
