@@ -140,10 +140,9 @@ Test Setup Commands:
 
 # ==================== Calibration Wizard Integration ====================
 
-TEST_CELL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              "Test_Cell_1_Devices.py")
-LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "logs", "position_sensor_calibration.log")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TEST_CELL_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
+LOG_FILE = os.path.join(REPO_ROOT, "logs", "position_sensor_calibration.log")
 
 
 def _log(message):
