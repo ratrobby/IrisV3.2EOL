@@ -1,0 +1,93 @@
+{
+  "al1342": {
+    "1": "AL2205_Hub",
+    "2": "Valve_Bank",
+    "3": "ITV_1050",
+    "4": "ITV_1050",
+    "5": "Empty",
+    "6": "Empty",
+    "7": "Empty",
+    "8": "Empty"
+  },
+  "al2205": {
+    "X1.0": "read_UI_button",
+    "X1.1": "Position_Sensor",
+    "X1.2": "Position_Sensor",
+    "X1.3": "Empty",
+    "X1.4": "Empty",
+    "X1.5": "Empty",
+    "X1.6": "Empty",
+    "X1.7": "Empty"
+  },
+  "Test Cell 1": {
+    "al1342": {
+      "X01": "AL2205_Hub",
+      "X02": "Empty",
+      "X03": "Empty",
+      "X04": "Empty",
+      "X05": "Empty",
+      "X06": "Empty",
+      "X07": "Empty",
+      "X08": "Empty"
+    },
+    "al2205": {
+      "X1.0": "read_UI_button",
+      "X1.1": "Empty",
+      "X1.2": "PositionSensor_SDAT_MHS_M160",
+      "X1.3": "LoadCell_LCM300",
+      "X1.4": "Empty",
+      "X1.5": "Empty",
+      "X1.6": "Empty",
+      "X1.7": "Empty"
+    },
+    "ip_address": "192.168.1.250"
+  },
+  "Test Cell 2": {
+    "al1342": {
+      "1": "AL2205_Hub",
+      "2": "SMC_SY3000_EX260",
+      "3": "Festo_SDAT_MHS_M160",
+      "4": "Empty",
+      "5": "Empty",
+      "6": "Empty",
+      "7": "Empty",
+      "8": "Empty",
+      "X01": "AL2205_Hub"
+    },
+    "al2205": {
+      "X1.0": "read_UI_button",
+      "X1.1": "Empty",
+      "X1.2": "Empty",
+      "X1.3": "Empty",
+      "X1.4": "Empty",
+      "X1.5": "Empty",
+      "X1.6": "Empty",
+      "X1.7": "Empty"
+    },
+    "ip_address": "192.168.2.250"
+  },
+  "Test Cell 3": {
+    "al1342": {
+      "1": "AL2205_Hub",
+      "2": "Empty",
+      "3": "Empty",
+      "4": "Empty",
+      "5": "Empty",
+      "6": "Empty",
+      "7": "Empty",
+      "8": "Empty",
+      "X01": "AL2205_Hub"
+    },
+    "al2205": {
+      "X1.0": "read_UI_button",
+      "X1.1": "Empty",
+      "X1.2": "Empty",
+      "X1.3": "Empty",
+      "X1.4": "Empty",
+      "X1.5": "Empty",
+      "X1.6": "Empty",
+      "X1.7": "Empty"
+    },
+    "ip_address": "192.168.XXX.XXX"
+  }
+}
