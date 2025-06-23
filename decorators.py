@@ -6,6 +6,11 @@ def setup_command(func):
     return func
 
 
+def test_setup(func):
+    """Alias for :func:`setup_command` for backward compatibility."""
+    return setup_command(func)
+
+
 def test_command(func):
     """Mark a method as a command executed during a test."""
     func._is_test_command = True
