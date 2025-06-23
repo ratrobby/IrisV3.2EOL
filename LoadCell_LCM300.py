@@ -1,3 +1,4 @@
+from decorators import device_class
 """
     =====================================
     ReadLoadCell Class - Public Interface
@@ -21,8 +22,6 @@
     - Uses example calibration: 5V = 0 lbf, 0V = 50 lbf (10 lbf/V).
 """
 
-from decorators import test_command, setup_command, device_class
-
 @device_class
 class ReadLoadCell:
 
@@ -39,6 +38,10 @@ class ReadLoadCell:
         - read_force(N) - Reads force in newtons
         - read_force(lbf) - Reads force in pounds-force
                 """
+
+    @classmethod
+    def setup_instructions(cls):
+        return ""
 
     def __init__(self, al2205_instance, x1_index):
         """
@@ -67,7 +70,6 @@ class ReadLoadCell:
         raw = self.read_raw_data()
         return raw / 1000 if raw is not None else None
 
-    @test_command
     def read_force(self, unit="lbf"):
         """
         Convert voltage to force.

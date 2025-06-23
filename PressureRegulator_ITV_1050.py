@@ -39,6 +39,7 @@ Command: ~set_pressure(target_psi)~
         - set_pressure(25) - Sets ITV-1050 to 25psi
                 
             """
+    @classmethod
     def test_instructions(cls):
         return """
     Command: ~set_pressure(target_psi)~

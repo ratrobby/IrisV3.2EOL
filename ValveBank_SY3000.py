@@ -49,6 +49,11 @@ Command: ~all_off()~
         Use: Turns off all valves in SY3000 valve bank
             """
 
+    @classmethod
+    def setup_instructions(cls):
+        return ""
+
+
     VALVE_BITMASKS = {
         "1.A": 0x0100, "1.B": 0x0200,
         "2.A": 0x0400, "2.B": 0x0800,

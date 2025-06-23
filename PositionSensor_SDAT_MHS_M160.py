@@ -49,7 +49,8 @@ Test Setup Commands:
     Command: ~Calibrate_PosSensor()~
         Use: Launch wizard to calibrate all mapped position sensors
 """
-    def Test_instructions(cls):
+    @classmethod
+    def test_instructions(cls):
         return """
     Command: ~read_position()~
         Use: Reads current position of cylinder in mm
@@ -68,7 +69,6 @@ Test Setup Commands:
         if "stroke" in self.calibration_data:
             self.stroke_mm = self.calibration_data["stroke"]
 
-    @setup_command
     def calibrate_min(self):
         """
         Save current raw value as the 0mm calibration point.
@@ -78,7 +78,6 @@ Test Setup Commands:
         print(f"✅ Calibrated MIN for X1.{self.x1_index}: {raw_value}")
         return raw_value
 
-    @setup_command
     def calibrate_max(self):
         """
         Save current raw value as the max (stroke_mm) calibration point.
@@ -88,7 +87,6 @@ Test Setup Commands:
         print(f"✅ Calibrated MAX for X1.{self.x1_index}: {raw_value}")
         return raw_value
 
-    @test_command
     def read_position(self):
         """
         Return live position in millimeters, clamped between 0 and stroke.
@@ -107,7 +105,6 @@ Test Setup Commands:
         position = ((raw - min_val) / span) * self.stroke_mm
         return round(max(0.0, min(position, self.stroke_mm)), 2)
 
-    @setup_command
     def set_stroke_length(self, length_mm):
         """Persist and apply a new stroke length for this sensor."""
         self.stroke_mm = float(length_mm)
@@ -252,8 +249,6 @@ class CalibrationWizard:
             sensor.set_stroke_length(length)
             _log(f"{name} {port} STROKE: {length}")
 
-
-@setup_command
 def Calibrate_PosSensor():
     """Launch the calibration wizard for all mapped position sensors."""
     sensors = _load_position_sensors()

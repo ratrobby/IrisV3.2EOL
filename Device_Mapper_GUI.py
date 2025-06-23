@@ -6,23 +6,20 @@ from tkinter import ttk, messagebox
 import importlib.util
 import inspect
 from PositionSensor_SDAT_MHS_M160 import Calibrate_PosSensor
-import inspect
 import datetime
-
 
 
 # === Centralized Path & Utility Class ===
 class DeviceUtils:
-    DEVICE_FOLDER = r"C:\Users\ratrobby\Desktop\MRLF Repository\MRLF_Devices"
-    CONFIG_FILE = r"C:\Users\ratrobby\Desktop\MRLF Repository\GUI Files\Device_Config.json"
+    DEVICE_FOLDER = r"C:\Users\ratrobby\Desktop\MRLF Repo"
+    CONFIG_FILE = os.path.join(DEVICE_FOLDER, "GUI Files", "Device_Config.json")
     OUTPUT_FILES = {
-        "Test Cell 1": r"C:\Users\ratrobby\Desktop\MRLF Repository\MRLF_Devices\Test_Cell_Device_Logs\Test_Cell_1_Devices.py",
+        "Test Cell 1": os.path.join(DEVICE_FOLDER, "MRLF_Devices", "Test_Cell_Device_Logs", "Test_Cell_1_Devices.py")
     }
     DEFAULT_CONFIG = {
         "al1342": {str(i): "Empty" for i in range(1, 9)},
         "al2205": {f"X1.{i}": "Empty" for i in range(8)},
         "ip_address": "192.168.XXX.XXX"
-
     }
     DEFAULT_CONFIG["al1342"]["1"] = "AL2205_Hub"
     DEFAULT_CONFIG["al2205"]["X1.0"] = "read_UI_button"
@@ -64,17 +61,12 @@ class DeviceUtils:
 
     @staticmethod
     def write_output_script(config, output_file, ip_address):
-        """Generate a Python script defining device instances for this test cell."""
         al1342_config, al2205_config = config["al1342"], config["al2205"]
 
         lines = []
-
-        # Add path patching for cross-folder imports
         lines.append("import sys")
         lines.append("import os")
-        lines.append('sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))\n')
-
-        # Start with core IO master import
+        lines.append('sys.path.append(os.path.abspath(os.path.dirname(__file__)))\n')
         lines.append("from IO_master import IO_master")
 
         imports = {}
@@ -125,9 +117,9 @@ class DeviceUtils:
         for module, class_name in sorted(imports.items()):
             lines.append(f"from {module} import {class_name}")
 
-        lines.append("")  # spacer
+        lines.append("")
         lines.extend(instances)
-        lines.append("")  # spacer
+        lines.append("")
         lines.extend(assignments)
 
         with open(output_file, "w") as f:
@@ -174,17 +166,18 @@ class InstructionPanel(ttk.Frame):
         self.populate_instruction_panel()
 
     def _get_device_instructions(self, module_name):
-        """Return setup and test instruction strings for the device class."""
+        """Return setup and test instruction strings for @device_class classes."""
         try:
             module_path = os.path.join(DeviceUtils.DEVICE_FOLDER, f"{module_name}.py")
             spec = importlib.util.spec_from_file_location(module_name, module_path)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            for attr in dir(module):
-                obj = getattr(module, attr)
+
+            for attr_name in dir(module):
+                obj = getattr(module, attr_name)
                 if isinstance(obj, type) and getattr(obj, "_is_device_class", False):
                     setup_fn = getattr(obj, "setup_instructions", None)
-                    test_fn = getattr(obj, "test_instructions", None) or getattr(obj, "Test_instructions", None)
+                    test_fn = getattr(obj, "test_instructions", None)
                     setup = setup_fn() if callable(setup_fn) else ""
                     test = test_fn() if callable(test_fn) else ""
                     return setup.strip(), test.strip()
@@ -246,7 +239,6 @@ class InstructionPanel(ttk.Frame):
             "<Button-1>",
             lambda e, t=text_widget: t.pack(fill="x", padx=indent) if not t.winfo_viewable() else t.pack_forget(),
         )
-
 
 class DeviceSelectorFrame(ttk.Frame):
     def __init__(self, parent, label, count, device_classes):
