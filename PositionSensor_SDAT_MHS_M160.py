@@ -31,9 +31,10 @@ def class_api(func):
     func._is_class_api = True
     return func
 
-from decorators import test_setup, test_command
+from decorators import test_setup, test_command, device_class
 
 
+@device_class
 class PositionSensor:
 
     @classmethod

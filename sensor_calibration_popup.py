@@ -6,19 +6,35 @@ import os
 
 # -- Device Utilities --
 class DeviceUtils:
-    TEST_CELL_1_SCRIPT = r"C:\Users\ratrobby\Desktop\MRLF Repository\MRLF_Devices\Test_Cell_Device_Logs\Test_Cell_1_Devices.py"
     POSITION_SENSOR_CLASS = "PositionSensor"
-    DEVICE_FILE = r"C:\Users\ratrobby\Desktop\MRLF Repository\MRLF_Devices\PositionSensor_SDAT_MHS_M160.py"
+    TEST_CELL_1_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Test_Cell_1_Devices.py")
+
+    @staticmethod
+    def discover_device_classes():
+        """Scan the repository and return classes tagged as device classes."""
+        repo_dir = os.path.dirname(os.path.abspath(__file__))
+        devices = {}
+        for root, _, files in os.walk(repo_dir):
+            for fname in files:
+                if not fname.endswith(".py"):
+                    continue
+                path = os.path.join(root, fname)
+                module_name = os.path.splitext(os.path.relpath(path, repo_dir))[0].replace(os.sep, ".")
+                spec = importlib.util.spec_from_file_location(module_name, path)
+                module = importlib.util.module_from_spec(spec)
+                try:
+                    spec.loader.exec_module(module)
+                except Exception:
+                    continue
+                for name, obj in module.__dict__.items():
+                    if isinstance(obj, type) and getattr(obj, "_is_device_class", False):
+                        devices[name] = obj
+        return devices
 
     @staticmethod
     def import_sensor_class():
-        """Dynamically import and return the PositionSensor class."""
-        module_name = os.path.splitext(os.path.basename(DeviceUtils.DEVICE_FILE))[0]
-        spec = importlib.util.spec_from_file_location(module_name, DeviceUtils.DEVICE_FILE)
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
-        return getattr(module, DeviceUtils.POSITION_SENSOR_CLASS)
+        classes = DeviceUtils.discover_device_classes()
+        return classes.get(DeviceUtils.POSITION_SENSOR_CLASS)
 
     @staticmethod
     def load_sensors(sensor_class):

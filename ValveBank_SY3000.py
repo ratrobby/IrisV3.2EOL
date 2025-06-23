@@ -26,8 +26,9 @@ def public_api(func):
     func._is_public_api = True
     return func
 
-from decorators import test_setup, test_command
+from decorators import test_setup, test_command, device_class
 
+@device_class
 class ValveBank:
     @classmethod
     def instructions (cls):
