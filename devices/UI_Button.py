@@ -1,3 +1,9 @@
+import os
+import sys
+
+# Allow importing project modules when executed directly
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from decorators import test_command, setup_command
 
 class UI_Button:

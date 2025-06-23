@@ -116,7 +116,7 @@ class DeviceUtils:
                 assignments.append(f"# AL2205 {port}: {instance_name} ({title})")
 
         for module, class_name in sorted(imports.items()):
-            lines.append(f"from {module} import {class_name}")
+            lines.append(f"from devices.{module} import {class_name}")
 
         lines.append("")
         lines.extend(instances)

@@ -1,6 +1,12 @@
 from scipy.interpolate import interp1d
-from decorators import setup_command, test_command, device_class
+import os
+import sys
 import time
+
+# Allow importing project modules when executed directly
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from decorators import setup_command, test_command, device_class
 
  """
     =====================================
