@@ -1,3 +1,5 @@
+from decorators import test_command, test_setup
+
 class AL2205:
 
 
@@ -19,6 +21,7 @@ class AL2205:
         self.base_register = self.io_master.id_read_register(port_number)
 
 
+    @test_command
     def read_index(self, X1_index):
         """
         Read the raw 16-bit unsigned analog signal value from a specific X1.x port.

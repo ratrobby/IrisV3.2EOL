@@ -1,3 +1,5 @@
+from decorators import test_command, test_setup
+
 class UI_Button:
     def __init__(self, al2205_instance, x1_index):
         """
@@ -23,6 +25,7 @@ class UI_Button:
         """
         return self.device.read_index(self.x1_index)
 
+    @test_command
     def state(self):
         """
         Interpret the digital signal and return a corresponding button state.

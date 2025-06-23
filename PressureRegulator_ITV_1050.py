@@ -6,6 +6,8 @@ def public_api(func):
     func._is_public_api = True
     return func
 
+from decorators import test_setup, test_command
+
 class ITV1050Controller:
 
     """
@@ -57,6 +59,7 @@ Command: ~set_pressure(target_psi)~
 
     ...
 
+    @test_command
     @public_api
     def set_pressure(self, target_psi):
         """

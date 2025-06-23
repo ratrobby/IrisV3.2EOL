@@ -25,6 +25,8 @@ def public_api(func):
     func._is_public_api = True
     return func
 
+from decorators import test_command, test_setup
+
 class ReadLoadCell:
     @classmethod
     def instructions(cls):
@@ -67,6 +69,7 @@ class ReadLoadCell:
         raw = self.read_raw_data()
         return raw / 1000 if raw is not None else None
 
+    @test_command
     @public_api
     def read_force(self, unit="lbf"):
         """
