@@ -4,9 +4,11 @@ import json
 import tkinter as tk
 from tkinter import ttk, messagebox
 import importlib.util
+import inspect
 from PositionSensor_SDAT_MHS_M160 import Calibrate_PosSensor
 import inspect
 import datetime
+
 
 
 # === Centralized Path & Utility Class ===
@@ -171,7 +173,8 @@ class InstructionPanel(ttk.Frame):
 
         self.populate_instruction_panel()
 
-    def _get_device_instructions(self, module_name):
+    def _get_device_class(self, module_name):
+        """Return the class marked with @device_class in a module."""
         try:
             module_path = os.path.join(DeviceUtils.DEVICE_FOLDER, f"{module_name}.py")
             spec = importlib.util.spec_from_file_location(module_name, module_path)
@@ -179,44 +182,55 @@ class InstructionPanel(ttk.Frame):
             spec.loader.exec_module(module)
             for attr in dir(module):
                 obj = getattr(module, attr)
-                if isinstance(obj, type) and hasattr(obj, "instructions"):
-                    return obj.instructions()
+                if isinstance(obj, type) and getattr(obj, "_is_device_class", False):
+                    return obj
         except Exception as e:
-            print(f"Error loading instructions from {module_name}: {e}")
-        return ""
+            print(f"Error loading device class from {module_name}: {e}")
+        return None
+
+    def _get_command_info(self, cls):
+        """Return lists of (method_name, doc) for setup and test commands."""
+        setup_cmds = []
+        test_cmds = []
+        for name, meth in inspect.getmembers(cls, predicate=inspect.isfunction):
+            if getattr(meth, "_is_test_setup", False):
+                setup_cmds.append((name, inspect.getdoc(meth) or ""))
+            if getattr(meth, "_is_test_command", False):
+                test_cmds.append((name, inspect.getdoc(meth) or ""))
+        return setup_cmds, test_cmds
 
     def populate_instruction_panel(self):
         for widget in self.inner_frame.winfo_children():
             widget.destroy()
 
         for title, module_name in self.device_classes_func():
-            instructions = self._get_device_instructions(module_name)
-            if instructions:
-                setup_section = self._extract_section(instructions, "Test Setup Commands")
-                test_section = self._extract_section(instructions, "Test Commands")
+            cls = self._get_device_class(module_name)
+            if not cls:
+                continue
 
-                container = ttk.Frame(self.inner_frame)
-                container.pack(fill="x", padx=5, pady=5, anchor="w")
+            setup_cmds, test_cmds = self._get_command_info(cls)
+            if not setup_cmds and not test_cmds:
+                continue
 
-                # --- Section Header ---
-                summary = ttk.Label(container, text=module_name, font=("Arial", 10, "bold"))
-                summary.pack(anchor="w")
+            container = ttk.Frame(self.inner_frame)
+            container.pack(fill="x", padx=5, pady=5, anchor="w")
 
-                if setup_section:
-                    self._create_collapsible_text(container, "Test Setup Commands", setup_section)
+            summary = ttk.Label(container, text=module_name, font=("Arial", 10, "bold"))
+            summary.pack(anchor="w")
 
-                if test_section:
-                    self._create_collapsible_text(container, "Test Commands", test_section)
+            if setup_cmds:
+                ttk.Label(container, text="Test Setup Commands", font=("Arial", 10, "bold italic")).pack(anchor="w", padx=10, pady=(4, 0))
+                for name, doc in setup_cmds:
+                    self._create_collapsible_text(container, name, doc, indent=20)
 
-    def _extract_section(self, instructions, section_title):
-        import re
-        pattern = rf"{section_title}\s*:(.*?)(\n[A-Z].*?:|\Z)"
-        match = re.search(pattern, instructions, re.DOTALL)
-        return match.group(1).strip() if match else ""
+            if test_cmds:
+                ttk.Label(container, text="Test Commands", font=("Arial", 10, "bold italic")).pack(anchor="w", padx=10, pady=(4, 0))
+                for name, doc in test_cmds:
+                    self._create_collapsible_text(container, name, doc, indent=20)
 
-    def _create_collapsible_text(self, parent, section_title, content):
+    def _create_collapsible_text(self, parent, section_title, content, indent=10):
         header = ttk.Label(parent, text=section_title, font=("Arial", 10, "bold italic"))
-        header.pack(anchor="w", padx=10, pady=(4, 0))
+        header.pack(anchor="w", padx=indent, pady=(2, 0))
 
         text_widget = tk.Text(parent, wrap="word", height=1, width=60, font=("Arial", 9), background="#f5f5f5")
         text_widget.insert("1.0", content)
@@ -245,8 +259,12 @@ class InstructionPanel(ttk.Frame):
 
         # Collapsible behavior
         text_widget.pack_forget()
-        header.bind("<Button-1>", lambda e, t=text_widget: t.pack(fill="x", padx=10)
-                    if not t.winfo_viewable() else t.pack_forget())
+        header.bind(
+            "<Button-1>",
+            lambda e, t=text_widget: t.pack(fill="x", padx=indent)
+            if not t.winfo_viewable()
+            else t.pack_forget(),
+        )
 
 
 class DeviceSelectorFrame(ttk.Frame):
