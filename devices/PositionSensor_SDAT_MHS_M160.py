@@ -31,6 +31,8 @@ import importlib.util
 import sys
 import datetime
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 # Public API decorator
 def class_api(func):
     func._is_class_api = True
