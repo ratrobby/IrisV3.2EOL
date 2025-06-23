@@ -25,8 +25,9 @@ def public_api(func):
     func._is_public_api = True
     return func
 
-from decorators import test_command, test_setup
+from decorators import test_command, test_setup, device_class
 
+@device_class
 class ReadLoadCell:
     @classmethod
     def instructions(cls):
