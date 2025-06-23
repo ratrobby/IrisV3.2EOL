@@ -25,8 +25,9 @@ from decorators import test_command, setup_command, device_class
 
 @device_class
 class ReadLoadCell:
+
     @classmethod
-    def instructions(cls):
+    def test_instructions(cls):
         return """
     Command: ~read_force(unit)~
       Use: Returns force of load cell in pounds-force or newtons

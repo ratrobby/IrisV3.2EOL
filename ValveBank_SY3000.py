@@ -1,3 +1,7 @@
+import time
+import threading
+from decorators import test_setup, test_command, device_class
+
 """
     ==================================
     ValveBank Class - Public Interface
@@ -18,15 +22,11 @@
     - all_off(): Turn off all valves.
     """
 
-import time
-import threading
-
-from decorators import setup_command, test_command, device_class
-
 @device_class
 class ValveBank:
+
     @classmethod
-    def instructions (cls):
+    def test_instructions (cls):
         return """
     Command: ~valve_on(*valve, duration)~
     Use: Turns on specified valves in SY3000 valve bank   
@@ -67,7 +67,6 @@ Command: ~all_off()~
         self.active_valves = set()
         self._lock = threading.Lock()
 
-    @test_command
     def valve_on(self, valve, duration=None):
         """
         Turn on a valve. If duration is specified, turn off automatically.
@@ -91,7 +90,6 @@ Command: ~all_off()~
                 self._write_state()
             print(f"Valve {valve} ON indefinitely")
 
-    @test_command
     def valve_off(self, *valves):
         """
         Turn off one or more valves.
@@ -105,7 +103,6 @@ Command: ~all_off()~
                     print(f"Valve {valve} was not active")
             self._write_state()
 
-    @test_command
     def all_off(self):
         """
         Turn off all valves.

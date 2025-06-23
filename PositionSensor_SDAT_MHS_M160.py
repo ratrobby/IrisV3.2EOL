@@ -43,13 +43,14 @@ from decorators import setup_command, test_command, device_class
 class PositionSensor:
 
     @classmethod
-    def instructions(cls):
+    def setup_instructions(cls):
         return """
 Test Setup Commands:
     Command: ~Calibrate_PosSensor()~
         Use: Launch wizard to calibrate all mapped position sensors
-
-Test Commands:
+"""
+    def Test_instructions(cls):
+        return """
     Command: ~read_position()~
         Use: Reads current position of cylinder in mm
         Inputs:

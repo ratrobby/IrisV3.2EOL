@@ -1,12 +1,8 @@
 from scipy.interpolate import interp1d
+from decorators import setup_command, test_command, device_class
 import time
 
-from decorators import setup_command, test_command, device_class
-
-@device_class
-class ITV1050Controller:
-
-    """
+ """
     =====================================
     ITV1050Controller - Public Interface
     =====================================
@@ -29,8 +25,11 @@ class ITV1050Controller:
     - Converts desired psi to raw command register value.
     """
 
+@device_class
+class ITV1050Controller:
+
     @classmethod
-    def instructions(cls):
+    def setup_instructions(cls):
         return """
 Command: ~set_pressure(target_psi)~
     Use: Sets ITV-1050 to target pressure value
@@ -40,6 +39,16 @@ Command: ~set_pressure(target_psi)~
         - set_pressure(25) - Sets ITV-1050 to 25psi
                 
             """
+    def test_instructions(cls):
+        return """
+    Command: ~set_pressure(target_psi)~
+        Use: Sets ITV-1050 to target pressure value
+        Inputs:
+            - target_psi: Pressure value in psi
+        Example:
+            - set_pressure(25) - Sets ITV-1050 to 25psi
+
+                """
     def __init__(self, io_master, port_number, default_tolerance=1.0, default_timeout=10):
         self.io_master = io_master
         self.port = port_number
@@ -55,7 +64,7 @@ Command: ~set_pressure(target_psi)~
 
     ...
 
-    @test_command
+
     def set_pressure(self, target_psi):
         """
         Set the regulator to the target pressure and wait until it's within default tolerance.
