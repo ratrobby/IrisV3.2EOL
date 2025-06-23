@@ -1,7 +1,7 @@
 from scipy.interpolate import interp1d
 import time
 
-from decorators import test_setup, test_command, device_class
+from decorators import setup_command, test_command, device_class
 
 @device_class
 class ITV1050Controller:

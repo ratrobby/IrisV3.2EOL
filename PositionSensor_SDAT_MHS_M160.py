@@ -36,7 +36,7 @@ def class_api(func):
     func._is_class_api = True
     return func
 
-from decorators import test_setup, test_command, device_class
+from decorators import setup_command, test_command, device_class
 
 
 @device_class
@@ -67,7 +67,7 @@ Test Commands:
         if "stroke" in self.calibration_data:
             self.stroke_mm = self.calibration_data["stroke"]
 
-    @test_setup
+    @setup_command
     def calibrate_min(self):
         """
         Save current raw value as the 0mm calibration point.
@@ -77,7 +77,7 @@ Test Commands:
         print(f"✅ Calibrated MIN for X1.{self.x1_index}: {raw_value}")
         return raw_value
 
-    @test_setup
+    @setup_command
     def calibrate_max(self):
         """
         Save current raw value as the max (stroke_mm) calibration point.
@@ -106,7 +106,7 @@ Test Commands:
         position = ((raw - min_val) / span) * self.stroke_mm
         return round(max(0.0, min(position, self.stroke_mm)), 2)
 
-    @test_setup
+    @setup_command
     def set_stroke_length(self, length_mm):
         """Persist and apply a new stroke length for this sensor."""
         self.stroke_mm = float(length_mm)
@@ -252,7 +252,7 @@ class CalibrationWizard:
             _log(f"{name} {port} STROKE: {length}")
 
 
-@test_setup
+@setup_command
 def Calibrate_PosSensor():
     """Launch the calibration wizard for all mapped position sensors."""
     sensors = _load_position_sensors()

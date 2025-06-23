@@ -193,7 +193,7 @@ class InstructionPanel(ttk.Frame):
         setup_cmds = []
         test_cmds = []
         for name, meth in inspect.getmembers(cls, predicate=inspect.isfunction):
-            if getattr(meth, "_is_test_setup", False):
+            if getattr(meth, "_is_setup_command", False):
                 setup_cmds.append((name, inspect.getdoc(meth) or ""))
             if getattr(meth, "_is_test_command", False):
                 test_cmds.append((name, inspect.getdoc(meth) or ""))
@@ -568,7 +568,7 @@ class DeviceTab(ttk.Frame):
         commands = []
         for dev in devices:
             for name, meth in inspect.getmembers(dev, predicate=inspect.ismethod):
-                if getattr(meth, "_is_test_setup", False):
+                if getattr(meth, "_is_setup_command", False):
                     setup.append((dev, meth))
                 if getattr(meth, "_is_test_command", False):
                     commands.append((dev, meth))
