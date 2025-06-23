@@ -31,6 +31,8 @@ def class_api(func):
     func._is_class_api = True
     return func
 
+from decorators import test_setup, test_command
+
 
 class PositionSensor:
 
@@ -52,6 +54,7 @@ class PositionSensor:
         self.stroke_mm = stroke_mm
         self.calibration_data = self._load_calibration()
 
+    @test_setup
     @public_api
     def calibrate_min(self):
         """
@@ -61,6 +64,7 @@ class PositionSensor:
         self._save_calibration_value("min", raw_value)
         print(f"✅ Calibrated MIN for X1.{self.x1_index}: {raw_value}")
 
+    @test_setup
     @public_api
     def calibrate_max(self):
         """
@@ -70,6 +74,7 @@ class PositionSensor:
         self._save_calibration_value("max", raw_value)
         print(f"✅ Calibrated MAX for X1.{self.x1_index}: {raw_value}")
 
+    @test_command
     @public_api
     def read_position(self):
         """

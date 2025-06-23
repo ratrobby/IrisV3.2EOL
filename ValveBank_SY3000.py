@@ -26,6 +26,8 @@ def public_api(func):
     func._is_public_api = True
     return func
 
+from decorators import test_setup, test_command
+
 class ValveBank:
     @classmethod
     def instructions (cls):
@@ -69,6 +71,7 @@ Command: ~all_off()~
         self.active_valves = set()
         self._lock = threading.Lock()
 
+    @test_command
     @public_api
     def valve_on(self, valve, duration=None):
         """
@@ -93,6 +96,7 @@ Command: ~all_off()~
                 self._write_state()
             print(f"Valve {valve} ON indefinitely")
 
+    @test_command
     @public_api
     def valve_off(self, *valves):
         """
@@ -107,6 +111,7 @@ Command: ~all_off()~
                     print(f"Valve {valve} was not active")
             self._write_state()
 
+    @test_command
     @public_api
     def all_off(self):
         """
