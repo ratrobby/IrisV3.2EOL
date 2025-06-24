@@ -3,6 +3,7 @@ import sys
 import json
 import time
 import threading
+import queue
 import subprocess
 import importlib
 import inspect
@@ -140,6 +141,48 @@ def build_instance_map(cfg):
     return result
 
 
+class TestMonitor(tk.Toplevel):
+    """Simple window that displays test output."""
+
+    def __init__(self, master):
+        super().__init__(master)
+        self.title("Test Monitor")
+        self.geometry("600x400")
+        self.text = ScrolledText(self, state="disabled")
+        self.text.pack(fill="both", expand=True)
+
+    def append(self, message):
+        self.text.configure(state="normal")
+        self.text.insert("end", message)
+        self.text.see("end")
+        self.text.configure(state="disabled")
+
+
+class _QueueWriter:
+    def __init__(self, q):
+        self.q = q
+
+    def write(self, msg):
+        self.q.put(msg)
+
+    def flush(self):
+        pass
+
+
+class _Tee:
+    def __init__(self, *writers):
+        self.writers = writers
+
+    def write(self, msg):
+        for w in self.writers:
+            w.write(msg)
+
+    def flush(self):
+        for w in self.writers:
+            if hasattr(w, "flush"):
+                w.flush()
+
+
 class TestWizard(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -154,6 +197,8 @@ class TestWizard(tk.Tk):
         self.worker = None
         self.log_file = None
         self.test_file_path = None
+        self.monitor = None
+        self.monitor_queue = queue.Queue()
 
         self.create_widgets()
         # Scale window after widgets have been laid out
@@ -161,6 +206,7 @@ class TestWizard(tk.Tk):
         # Position the window at x=100, y=50
         self.geometry("1600x950+150+20")
         self.check_connection()
+        self.after(100, self.poll_monitor_queue)
 
     # ----------------------- GUI Construction -----------------------
     def create_widgets(self):
@@ -480,6 +526,13 @@ class TestWizard(tk.Tk):
         self.status_label.configure(foreground="green" if ok else "red")
         self.after(1000, self.check_connection)
 
+    def poll_monitor_queue(self):
+        while not self.monitor_queue.empty():
+            msg = self.monitor_queue.get()
+            if self.monitor and self.monitor.winfo_exists():
+                self.monitor.append(msg)
+        self.after(100, self.poll_monitor_queue)
+
     # ----------------------- Test Execution ------------------------
     def start_test(self):
         if self.running:
@@ -489,6 +542,11 @@ class TestWizard(tk.Tk):
         name = self.test_name_var.get() or "test"
         log_path = os.path.join(LOG_DIR, f"{timestamp}_{name}.log")
         self.log_file = open(log_path, "w")
+        if not self.monitor or not self.monitor.winfo_exists():
+            self.monitor = TestMonitor(self)
+        else:
+            self.monitor.deiconify()
+            self.monitor.lift()
         self.running = True
         self.paused = False
         self.start_btn.configure(state="disabled")
@@ -504,8 +562,9 @@ class TestWizard(tk.Tk):
             print(f"Failed to load device objects: {e}")
         setup_code = self.setup_text.get("1.0", "end-1c")
         loop_code = self.script_text.get("1.0", "end-1c")
+        queue_writer = _QueueWriter(self.monitor_queue)
         def worker():
-            with redirect_stdout(self.log_file):
+            with redirect_stdout(_Tee(self.log_file, queue_writer)):
                 try:
                     exec(setup_code, context)
                 except Exception as e:

@@ -99,8 +99,11 @@ class LoadCellLCM300:
 
         unit = unit.lower()
         if unit == "lbf":
-            return force_lbf
+            result = force_lbf
         elif unit == "n":
-            return force_lbf * 4.44822
+            result = force_lbf * 4.44822
         else:
             raise ValueError("Invalid unit. Use 'lbf' or 'n'.")
+        unit_label = "lbf" if unit == "lbf" else "N"
+        print(f"Force = {result:.2f}{unit_label}")
+        return result
