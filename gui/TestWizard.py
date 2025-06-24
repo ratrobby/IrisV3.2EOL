@@ -8,6 +8,7 @@ import importlib
 import inspect
 from contextlib import redirect_stdout
 import re
+import traceback
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
@@ -62,21 +63,35 @@ def gather_library(cfg):
             try:
                 cmds = device_cls.setup_instructions()
                 if isinstance(cmds, list):
-                    setup_cmds.extend(cmds)
-                elif cmds:
+                    for cmd in cmds:
+                        if isinstance(cmd, dict) and "title" in cmd and "content" in cmd:
+                            setup_cmds.append(cmd)
+                        else:
+                            print(f"\u26A0\uFE0F Malformed setup instruction in {mod_name}: {cmd}")
+                elif isinstance(cmds, dict) and "title" in cmds and "content" in cmds:
                     setup_cmds.append(cmds)
-            except Exception:
-                pass
+                else:
+                    print(f"\u26A0\uFE0F Invalid format from {mod_name}.setup_instructions(): {cmds}")
+            except Exception as e:
+                print(f"\u274C Error in setup_instructions of {mod_name}: {e}")
+                traceback.print_exc()
 
         if hasattr(device_cls, "test_instructions"):
             try:
                 cmds = device_cls.test_instructions()
                 if isinstance(cmds, list):
-                    test_cmds.extend(cmds)
-                elif cmds:
+                    for cmd in cmds:
+                        if isinstance(cmd, dict) and "title" in cmd and "content" in cmd:
+                            test_cmds.append(cmd)
+                        else:
+                            print(f"\u26A0\uFE0F Malformed test instruction in {mod_name}: {cmd}")
+                elif isinstance(cmds, dict) and "title" in cmds and "content" in cmds:
                     test_cmds.append(cmds)
-            except Exception:
-                pass
+                else:
+                    print(f"\u26A0\uFE0F Invalid format from {mod_name}.test_instructions(): {cmds}")
+            except Exception as e:
+                print(f"\u274C Error in test_instructions of {mod_name}: {e}")
+                traceback.print_exc()
 
     if import_errors:
         try:
