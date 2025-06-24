@@ -8,6 +8,7 @@ import importlib
 import inspect
 from contextlib import redirect_stdout
 import re
+import traceback
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
@@ -71,17 +72,6 @@ def gather_library(cfg):
 
         if hasattr(device_cls, "setup_instructions"):
             try:
-                cmds = _normalize_instructions(device_cls.setup_instructions())
-                setup_cmds.extend(cmds)
-            except Exception:
-                pass
-
-        if hasattr(device_cls, "test_instructions"):
-            try:
-                cmds = _normalize_instructions(device_cls.test_instructions())
-                test_cmds.extend(cmds)
-            except Exception:
-                pass
 
     if import_errors:
         try:
