@@ -304,6 +304,9 @@ class TestWizard(tk.Tk):
 
 
     def _create_collapsible_text(self, parent, section_title, content):
+        if not section_title or not str(section_title).strip():
+            section_title = "<Untitled Command>"
+
         container = ttk.Frame(parent, relief="groove", borderwidth=1)
         container.pack(fill="x", pady=2, padx=5)
 
