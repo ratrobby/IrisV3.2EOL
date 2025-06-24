@@ -32,6 +32,17 @@ def load_config():
     return {}
 
 
+def _normalize_instructions(cmds):
+    """Return a list of instruction dictionaries with required keys."""
+    if not isinstance(cmds, list):
+        cmds = [cmds] if cmds else []
+    result = []
+    for item in cmds:
+        if isinstance(item, dict) and "title" in item and "content" in item:
+            result.append(item)
+    return result
+
+
 def gather_library(cfg):
     """Return dict of setup and test instructions from configured devices."""
     setup_cmds = []
@@ -60,21 +71,15 @@ def gather_library(cfg):
 
         if hasattr(device_cls, "setup_instructions"):
             try:
-                cmds = device_cls.setup_instructions()
-                if isinstance(cmds, list):
-                    setup_cmds.extend(cmds)
-                elif cmds:
-                    setup_cmds.append(cmds)
+                cmds = _normalize_instructions(device_cls.setup_instructions())
+                setup_cmds.extend(cmds)
             except Exception:
                 pass
 
         if hasattr(device_cls, "test_instructions"):
             try:
-                cmds = device_cls.test_instructions()
-                if isinstance(cmds, list):
-                    test_cmds.extend(cmds)
-                elif cmds:
-                    test_cmds.append(cmds)
+                cmds = _normalize_instructions(device_cls.test_instructions())
+                test_cmds.extend(cmds)
             except Exception:
                 pass
 
