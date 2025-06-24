@@ -223,11 +223,12 @@ class TestWizard(tk.Tk):
         inst_status.columnconfigure(0, weight=1)
         inst_status.columnconfigure(1, weight=1)
         inst_status.rowconfigure(0, weight=1)
+        inst_status.rowconfigure(1, weight=1)
 
         map_frame = None
         if self.instance_map:
             map_frame = ttk.LabelFrame(inst_status, text="Device Instances")
-            map_frame.grid(row=0, column=0, sticky="nsew")
+            map_frame.grid(row=0, column=0, sticky="nsew", rowspan=2)
 
             col1 = ttk.Frame(map_frame)
             col2 = ttk.Frame(map_frame)
