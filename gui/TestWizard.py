@@ -540,6 +540,37 @@ class TestWizard(tk.Tk):
         except Exception as e:
             messagebox.showerror("Error", f"Failed to write {DEVICES_FILE}: {e}")
 
+    def reset_device_names(self):
+        """Revert device instance names to defaults from the configuration."""
+        # Restore GUI fields and internal map
+        for section in ("al1342", "al2205"):
+            for port, var in self.name_vars.get(section, {}).items():
+                default = self.base_map[section][port]
+                var.set(default)
+                self.instance_map[section][port] = default
+
+        # Remove any custom alias lines from the devices file
+        try:
+            with open(DEVICES_FILE, "r") as fh:
+                lines = fh.read().splitlines()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to read {DEVICES_FILE}: {e}")
+            return
+
+        start_marker = "# --- Custom Instance Names ---"
+        end_marker = "# --- End Custom Instance Names ---"
+        if start_marker in lines:
+            s = lines.index(start_marker)
+            if end_marker in lines[s:]:
+                e = s + lines[s:].index(end_marker)
+                del lines[s : e + 1]
+
+        try:
+            with open(DEVICES_FILE, "w") as fh:
+                fh.write("\n".join(lines))
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to write {DEVICES_FILE}: {e}")
+
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
         try:
@@ -727,6 +758,8 @@ class TestWizard(tk.Tk):
         self.setup_text.insert("1.0", "# Setup code\n")
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n")
+        # Reset any custom device naming back to defaults
+        self.reset_device_names()
 
     def reconfigure_cell(self):
         current_filled = (
