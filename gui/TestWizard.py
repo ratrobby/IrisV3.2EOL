@@ -612,6 +612,24 @@ class TestWizard(tk.Tk):
         self.pause_btn.configure(text="Resume" if self.paused else "Pause")
 
     # ----------------------- Test File Handling -------------------
+    def _verify_mapping(self, imported_cfg):
+        """Warn if the imported test's device mapping differs from current config."""
+        if not imported_cfg:
+            return
+        current = {s: self.cfg.get(s, {}) for s in ("al1342", "al2205")}
+        imported = {s: imported_cfg.get(s, {}) for s in ("al1342", "al2205")}
+        if current != imported:
+            try:
+                messagebox.showwarning(
+                    "Configuration Mismatch",
+                    (
+                        "Imported test uses a different device mapping.\n"
+                        "Reconfigure the test cell to match the test's configuration."
+                    ),
+                )
+            except Exception:
+                pass
+
     def save_test(self):
         name = self.test_name_var.get().strip()
         if not name:
@@ -624,6 +642,7 @@ class TestWizard(tk.Tk):
             "name": name,
             "setup": self.setup_text.get("1.0", "end-1c"),
             "loop": self.script_text.get("1.0", "end-1c"),
+            "config": self.cfg,
         }
         try:
             with open(path, "w") as fh:
@@ -648,6 +667,7 @@ class TestWizard(tk.Tk):
         self.setup_text.insert("1.0", data.get("setup", ""))
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", data.get("loop", ""))
+        self._verify_mapping(data.get("config"))
 
     def browse_test_file(self):
         path = filedialog.askopenfilename(
