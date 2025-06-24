@@ -107,6 +107,7 @@ class ConfigApp(tk.Tk):
         cfg = self.gather_config()
         save_config(cfg, CONFIG_PATH)
         self.launch_wizard()
+        self.destroy()
 
     def launch_wizard(self):
         wizard_path = os.path.join(os.path.dirname(__file__), "TestWizard.py")

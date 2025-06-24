@@ -254,6 +254,12 @@ class TestWizard(tk.Tk):
 
         self.save_btn = ttk.Button(btn_frame, text="Save Test", command=self.save_test)
         self.new_btn = ttk.Button(btn_frame, text="New Test", command=self.new_test)
+        self.reconfig_btn = ttk.Button(
+            btn_frame,
+            text="Reconfigure Test Cell",
+            command=self.reconfigure_cell,
+        )
+        self.reconfig_btn.pack(side="right", padx=5)
         self.new_btn.pack(side="right", padx=5)
         self.save_btn.pack(side="right", padx=5)
 
@@ -476,6 +482,22 @@ class TestWizard(tk.Tk):
         self.setup_text.insert("1.0", "# Setup code\n")
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n")
+
+    def reconfigure_cell(self):
+        current_filled = (
+            self.test_name_var.get().strip()
+            or self.setup_text.get("1.0", "end-1c").strip()
+            or self.script_text.get("1.0", "end-1c").strip()
+        )
+        if current_filled:
+            if messagebox.askyesno(
+                "Save Test",
+                "Save current test before reconfiguring the test cell?",
+            ):
+                self.save_test()
+        config_path = os.path.join(os.path.dirname(__file__), "ConfigureTestCell.py")
+        subprocess.Popen([sys.executable, config_path])
+        self.destroy()
 
 
 if __name__ == "__main__":
