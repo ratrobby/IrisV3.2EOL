@@ -232,7 +232,7 @@ class TestWizard(tk.Tk):
         map_frame = None
         if self.instance_map:
             map_frame = ttk.LabelFrame(inst_status, text="Device Instances")
-            map_frame.grid(row=0, column=0, sticky="nsew", rowspan=2)
+            map_frame.grid(row=0, column=0, sticky="nsew")
 
             col1 = ttk.Frame(map_frame)
             col2 = ttk.Frame(map_frame)
@@ -248,19 +248,19 @@ class TestWizard(tk.Tk):
                 ttk.Label(col1, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
                 var = tk.StringVar(value=self.instance_map["al1342"][port].lower())
                 self.name_vars["al1342"][port] = var
-                ttk.Entry(col1, textvariable=var, width=15).grid(row=r, column=1, sticky="w")
+                ttk.Entry(col1, textvariable=var, width=23).grid(row=r, column=1, sticky="w")
 
             for r, port in enumerate(sorted(self.instance_map["al2205"]), start=1):
                 ttk.Label(col2, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
                 var = tk.StringVar(value=self.instance_map["al2205"][port].lower())
                 self.name_vars["al2205"][port] = var
-                ttk.Entry(col2, textvariable=var, width=15).grid(row=r, column=1, sticky="w")
+                ttk.Entry(col2, textvariable=var, width=23).grid(row=r, column=1, sticky="w")
 
             ttk.Button(
-                map_frame,
+                inst_status,
                 text="Update Device Naming",
                 command=self.update_device_naming,
-            ).pack(side="bottom", pady=(4, 2))
+            ).grid(row=1, column=0, columnspan=2, pady=(4, 2))
 
         status_frame = ttk.LabelFrame(inst_status, text="AL1342 Connection Status:")
         status_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
