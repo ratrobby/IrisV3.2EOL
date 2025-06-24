@@ -4,9 +4,23 @@ import sys
 # Allow importing project modules when executed directly
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from decorators import test_command, setup_command
+from decorators import device_class, test_command, setup_command
 
-class UI_Button:
+@device_class
+class UIButton:
+    """Read a UI push button wired to an AL2205 input."""
+
+    @classmethod
+    def setup_instructions(cls):
+        return ""
+
+    @classmethod
+    def test_instructions(cls):
+        return """\
+Command: ~state()~
+    Use: Return the interpreted state of the push button
+    Returns: 'START', 'STOP', 'HOLD', or None
+    """
     def __init__(self, al2205_instance, x1_index):
         """
         Initialize the button interface.

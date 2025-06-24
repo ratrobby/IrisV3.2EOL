@@ -4,9 +4,24 @@ import sys
 # Allow importing project modules when executed directly
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from decorators import test_command, setup_command
+from decorators import device_class, test_command, setup_command
 
-class AL2205:
+@device_class
+class AL2205Hub:
+    """Interface to an AL2205 IO-Link hub."""
+
+    @classmethod
+    def setup_instructions(cls):
+        return ""
+
+    @classmethod
+    def test_instructions(cls):
+        return """\
+Command: ~read_index(x1_index)~
+    Use: Read raw 16-bit value from a port on the AL2205 hub
+    Inputs:
+        - x1_index: Port index 0-7 for X1.0-X1.7
+    """
 
 
     def __init__(self, io_master, port_number):

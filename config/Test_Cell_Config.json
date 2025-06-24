@@ -11,7 +11,7 @@
     "X08": "Empty"
   },
   "al2205": {
-    "X1.0": "read_UI_button",
+    "X1.0": "UI_Button",
     "X1.1": "PositionSensor_SDAT_MHS_M160",
     "X1.2": "PositionSensor_SDAT_MHS_M160",
     "X1.3": "LoadCell_LCM300",
