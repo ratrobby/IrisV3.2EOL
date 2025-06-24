@@ -218,6 +218,10 @@ class TestWizard(tk.Tk):
 
             for line in entries2205:
                 self.map_list2205.insert("end", line)
+
+        # Collapsible command library below the device instances
+        lib_frame = ttk.LabelFrame(right, text="Command Library")
+        lib_frame.pack(fill="both", expand=True, padx=5, pady=5)
         lib_frame.columnconfigure(0, weight=1)
 
         ttk.Label(lib_frame, text="Setup Commands").pack(anchor="w")
