@@ -146,20 +146,25 @@ class TestWizard(tk.Tk):
         # Top frame with test name, connection status and device map
         header = ttk.Frame(main)
         header.pack(fill="x")
+        header.columnconfigure(0, weight=3)
+        header.columnconfigure(1, weight=2)
+
+        test_frame = ttk.Frame(header)
+        test_frame.grid(row=0, column=0, sticky="nsew")
 
         self.style.configure("TestName.TLabel", font=("Arial", 12, "bold"))
-        ttk.Label(header, text="Test Name:", style="TestName.TLabel").pack(side="left")
+        ttk.Label(test_frame, text="Test Name:", style="TestName.TLabel").pack(side="left")
         self.test_name_var = tk.StringVar()
-        entry_width = int(self.winfo_screenwidth() * 0.5 / 8)
-        self.test_name_entry = ttk.Entry(header, textvariable=self.test_name_var,
+        entry_width = int(self.winfo_screenwidth() * 0.6 / 8)
+        self.test_name_entry = ttk.Entry(test_frame, textvariable=self.test_name_var,
                   width=entry_width, font=("Arial", 12))
         self.test_name_entry.pack(side="left", padx=5, fill="x", expand=True, ipady=4)
 
-        ttk.Button(header, text="Browse", command=self.browse_test_file).pack(side="left", padx=5)
+        ttk.Button(test_frame, text="Browse", command=self.browse_test_file).pack(side="left", padx=5)
 
         # --- Right side with connection status and device map ---
         right_container = ttk.Frame(header)
-        right_container.pack(side="right", anchor="n")
+        right_container.grid(row=0, column=1, sticky="ne")
 
         status_frame = ttk.LabelFrame(right_container, text="AL1342 Connection Status:")
         status_frame.pack(side="top", padx=5, anchor="e")
