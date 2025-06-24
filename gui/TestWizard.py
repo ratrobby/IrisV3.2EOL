@@ -586,16 +586,24 @@ class TestWizard(tk.Tk):
         self.worker.start()
 
     def stop_test(self):
-        if not self.running:
-            return
+        """Stop the running test and reset UI state."""
+        # Even if the test thread has already finished, allow this method to
+        # reset the buttons so the user can start a new test.
         self.running = False
+
         if self.worker:
             self.worker.join(timeout=2)
+            self.worker = None
+
         if self.log_file and not self.log_file.closed:
             self.log_file.close()
+
+        # Reset pause state in case the test was stopped while paused
+        self.paused = False
+
         self.start_btn.configure(state="normal")
         self.stop_btn.configure(state="disabled")
-        self.pause_btn.configure(state="disabled")
+        self.pause_btn.configure(state="disabled", text="Pause")
 
     def toggle_pause(self):
         if not self.running:
