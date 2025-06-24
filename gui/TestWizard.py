@@ -248,13 +248,19 @@ class TestWizard(tk.Tk):
                 ttk.Label(col1, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
                 var = tk.StringVar(value=self.instance_map["al1342"][port].lower())
                 self.name_vars["al1342"][port] = var
-                ttk.Entry(col1, textvariable=var, width=23).grid(row=r, column=1, sticky="w")
+                entry = ttk.Entry(col1, textvariable=var, width=23)
+                if self.cfg.get("al1342", {}).get(port) == "AL2205_Hub":
+                    entry.configure(state="disabled")
+                entry.grid(row=r, column=1, sticky="w")
 
             for r, port in enumerate(sorted(self.instance_map["al2205"]), start=1):
                 ttk.Label(col2, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
                 var = tk.StringVar(value=self.instance_map["al2205"][port].lower())
                 self.name_vars["al2205"][port] = var
-                ttk.Entry(col2, textvariable=var, width=23).grid(row=r, column=1, sticky="w")
+                entry = ttk.Entry(col2, textvariable=var, width=23)
+                if self.cfg.get("al2205", {}).get(port) == "UI_Button":
+                    entry.configure(state="disabled")
+                entry.grid(row=r, column=1, sticky="w")
 
             ttk.Button(
                 inst_status,
