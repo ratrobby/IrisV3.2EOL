@@ -9,7 +9,7 @@ from devices.PositionSensor_SDAT_MHS_M160 import PositionSensorSDATMHS_M160
 from devices.UI_Button import UIButton
 
 master = IO_master("192.168.1.250")
-AL2205_Hub = AL2205Hub(master, port_number="X01")
+AL2205_Hub = AL2205Hub(master, port_number=1)
 UI_Button = UIButton(AL2205_Hub, x1_index=0)
 PositionSensor_SDAT_MHS_M160 = PositionSensorSDATMHS_M160(AL2205_Hub, x1_index=2)
 LoadCell_LCM300 = LoadCellLCM300(AL2205_Hub, x1_index=3)

@@ -77,8 +77,9 @@ def export_device_setup(cfg, path=None):
             continue
         cls_name = classes.get(dev_name)
         inst_name = instance_map["al1342"][port]
+        port_num = int(port.replace("X0", ""))
         lines.append(
-            f"{inst_name} = {cls_name}(master, port_number=\"{port}\")"
+            f"{inst_name} = {cls_name}(master, port_number={port_num})"
         )
         if dev_name == "AL2205_Hub":
             hub_vars[port] = inst_name
