@@ -74,7 +74,24 @@ def gather_library(cfg):
 
 
 def build_instance_map(cfg):
-    """Return mapping of ports to instance names for each AL section."""
+    """Return mapping of ports to instance names for each AL section.
+
+    If only one instance of a given device is present across both sections,
+    the instance name will simply be the device name. When multiple devices of
+    the same type are connected, each instance is numbered starting from
+    ``device_1``.
+    """
+
+    # Count how many times each device appears across all sections
+    device_totals = {}
+    for section in ("al1342", "al2205"):
+        for port in cfg.get(section, {}):
+            device = cfg.get(section, {}).get(port, "Empty")
+            if str(device).lower() == "empty":
+                continue
+            device_totals[device] = device_totals.get(device, 0) + 1
+
+    # Track numbering for devices that appear more than once
     counts = {}
     result = {"al1342": {}, "al2205": {}}
     for section in ("al1342", "al2205"):
@@ -83,9 +100,14 @@ def build_instance_map(cfg):
             if str(device).lower() == "empty":
                 result[section][port] = "empty"
                 continue
-            idx = counts.get(device, 0) + 1
-            counts[device] = idx
-            result[section][port] = f"{device}_{idx}"
+
+            if device_totals.get(device, 0) == 1:
+                # Only one device of this type, no numbering
+                result[section][port] = device
+            else:
+                idx = counts.get(device, 0) + 1
+                counts[device] = idx
+                result[section][port] = f"{device}_{idx}"
     return result
 
 
