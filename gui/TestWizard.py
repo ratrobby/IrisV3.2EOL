@@ -140,6 +140,24 @@ class TestWizard(tk.Tk):
                          len(self.instance_map["al2205"]))
             height = min(height, 10) or 1
 
+
+            entries1342 = [f"{p}: {self.instance_map['al1342'][p]}" for p in sorted(self.instance_map['al1342'])]
+            entries2205 = [f"{p}: {self.instance_map['al2205'][p]}" for p in sorted(self.instance_map['al2205'])]
+            width1342 = max((len(e) for e in entries1342), default=10) + 1
+            width2205 = max((len(e) for e in entries2205), default=10) + 1
+
+            bg = self.cget("bg")
+            self.map_list1342 = tk.Listbox(col1, height=height, width=width1342, bg=bg)
+            self.map_list2205 = tk.Listbox(col2, height=height, width=width2205, bg=bg)
+            self.map_list1342.pack()
+            self.map_list2205.pack()
+
+            for line in entries1342:
+                self.map_list1342.insert("end", line)
+
+            for line in entries2205:
+                self.map_list2205.insert("end", line)
+
             self.map_list1342 = tk.Listbox(col1, height=height, width=20)
             self.map_list2205 = tk.Listbox(col2, height=height, width=20)
             self.map_list1342.pack()
