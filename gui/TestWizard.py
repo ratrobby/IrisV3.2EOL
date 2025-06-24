@@ -319,12 +319,15 @@ class TestWizard(tk.Tk):
         text_widget.insert("1.0", content)
 
         # Temporarily display to measure required width and then hide again
+        header.update_idletasks()
+        header_height = header.winfo_height()
         text_widget.pack(fill="x", padx=15, pady=2)
         text_widget.update_idletasks()
-        container.configure(width=text_widget.winfo_width())
+        width = text_widget.winfo_width()
+        open_height = header_height + text_widget.winfo_height()
         text_widget.pack_forget()
-        container.update_idletasks()
-        container.pack_propagate(False)  # keep width constant and maintain header height
+        container.configure(width=width, height=header_height)
+        container.pack_propagate(False)  # keep width constant
 
         keyword_styles = {
             "Command:": "command_style",
@@ -350,10 +353,12 @@ class TestWizard(tk.Tk):
         def toggle():
             if text_widget.winfo_viewable():
                 text_widget.pack_forget()
+                container.configure(height=header_height)
                 arrow_label.configure(text="\u25BC")
                 container.configure(style="TFrame")
             else:
                 text_widget.pack(fill="x", padx=15, pady=2)
+                container.configure(height=open_height)
                 arrow_label.configure(text="\u25B2")
                 container.configure(style="Open.TFrame")
 
