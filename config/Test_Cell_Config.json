@@ -7,7 +7,8 @@
     "5": "Empty",
     "6": "Empty",
     "7": "Empty",
-    "8": "Empty"
+    "8": "Empty",
+    "X01": "AL2205_Hub"
   },
   "al2205": {
     "X1.0": "read_UI_button",
