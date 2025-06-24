@@ -166,15 +166,21 @@ class TestWizard(tk.Tk):
 
         ttk.Button(name_frame, text="Browse", command=self.browse_test_file).grid(row=0, column=2, padx=5)
 
+        ttk.Label(left, text="Test Setup", style="TestName.TLabel").grid(
+            row=1, column=0, sticky="w", pady=(20, 0)
+        )
         self.setup_text = ScrolledText(left, height=8)
-        self.setup_text.grid(row=1, column=0, sticky="nsew", pady=(30, 20))
+        self.setup_text.grid(row=2, column=0, sticky="nsew", pady=(5, 20))
         self.setup_text.insert("end", "# Setup code\n")
-        left.rowconfigure(1, weight=1)
-
-        self.script_text = ScrolledText(left, height=12)
-        self.script_text.grid(row=2, column=0, sticky="nsew", pady=(5, 0))
-        self.script_text.insert("end", "# Test loop code\n")
         left.rowconfigure(2, weight=1)
+
+        ttk.Label(left, text="Test Loop", style="TestName.TLabel").grid(
+            row=3, column=0, sticky="w"
+        )
+        self.script_text = ScrolledText(left, height=12)
+        self.script_text.grid(row=4, column=0, sticky="nsew", pady=(5, 0))
+        self.script_text.insert("end", "# Test loop code\n")
+        left.rowconfigure(4, weight=1)
 
         # ----------------------- Right Column ----------------------
         right = ttk.Frame(content)
