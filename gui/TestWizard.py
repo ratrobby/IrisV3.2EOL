@@ -119,18 +119,32 @@ class TestWizard(tk.Tk):
         self.style = ttk.Style(self)
         self.style.configure("Open.TFrame", background="#e8f0fe")
 
-        # Top frame with test name and device map
+        # Top frame with test name, connection status and device map
         header = ttk.Frame(main)
         header.pack(fill="x")
 
+        # --- Test name on its own row ---
         name_frame = ttk.Frame(header)
-        name_frame.pack(side="left", fill="x", expand=True)
-        ttk.Label(name_frame, text="Test Name:").pack(side="left")
+        name_frame.pack(fill="x")
+        self.style.configure("TestName.TLabel", font=("Arial", 12, "bold"))
+        ttk.Label(name_frame, text="Test Name:", style="TestName.TLabel").pack(side="left")
         self.test_name_var = tk.StringVar()
-        ttk.Entry(name_frame, textvariable=self.test_name_var, width=30).pack(side="left", padx=5)
+        entry_width = int(self.winfo_screenwidth() * 0.5 / 8)
+        ttk.Entry(name_frame, textvariable=self.test_name_var,
+                  width=entry_width, font=("Arial", 12)).pack(side="left", padx=5, fill="x", expand=True, ipady=4)
+
+        # --- Row with connection status and device map ---
+        sub_header = ttk.Frame(header)
+        sub_header.pack(fill="x", pady=(5, 0))
+
+        status_frame = ttk.LabelFrame(sub_header, text="AL1342 Connection Status:")
+        status_frame.pack(side="left", padx=5, anchor="n")
+        self.status_var = tk.StringVar(value="Disconnected")
+        self.status_label = ttk.Label(status_frame, textvariable=self.status_var, foreground="red")
+        self.status_label.pack(padx=5, pady=2)
 
         if self.instance_map:
-            map_frame = ttk.LabelFrame(header, text="Device Instances")
+            map_frame = ttk.LabelFrame(sub_header, text="Device Instances")
             map_frame.pack(side="right", padx=5)
 
             col1 = ttk.Frame(map_frame)
@@ -193,7 +207,7 @@ class TestWizard(tk.Tk):
         self.script_text.pack(fill="both", expand=True)
         self.script_text.insert("end", "# Test loop code\n")
 
-        # Buttons and status
+        # Buttons
         btn_frame = ttk.Frame(main)
         btn_frame.pack(fill="x", pady=10)
         self.start_btn = ttk.Button(btn_frame, text="Start", command=self.start_test)
@@ -202,9 +216,6 @@ class TestWizard(tk.Tk):
         self.start_btn.pack(side="left", padx=5)
         self.stop_btn.pack(side="left", padx=5)
         self.pause_btn.pack(side="left", padx=5)
-        self.status_var = tk.StringVar(value="Disconnected")
-        self.status_label = ttk.Label(btn_frame, textvariable=self.status_var, foreground="red")
-        self.status_label.pack(side="right")
 
     def _extract_section(self, instructions, section_title):
         pattern = rf"{section_title}\s*:(.*?)(\n[A-Z].*?:|\Z)"
