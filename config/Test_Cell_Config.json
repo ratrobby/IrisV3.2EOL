@@ -2,8 +2,8 @@
   "al1342": {
     "1": "AL2205_Hub",
     "2": "Valve_Bank",
-    "3": "ITV_1050",
-    "4": "ITV_1050",
+    "3": "PressureRegulator_ITV_1050",
+    "4": "PressureRegulator_ITV_1050",
     "5": "Empty",
     "6": "Empty",
     "7": "Empty",
@@ -12,8 +12,8 @@
   },
   "al2205": {
     "X1.0": "read_UI_button",
-    "X1.1": "Position_Sensor",
-    "X1.2": "Position_Sensor",
+    "X1.1": "PositionSensor_SDAT_MHS_M160",
+    "X1.2": "PositionSensor_SDAT_MHS_M160",
     "X1.3": "Empty",
     "X1.4": "Empty",
     "X1.5": "Empty",
