@@ -218,9 +218,6 @@ class TestWizard(tk.Tk):
 
             for line in entries2205:
                 self.map_list2205.insert("end", line)
-
-        lib_frame = ttk.LabelFrame(right, text="Command Library")
-        lib_frame.pack(fill="both", expand=True, pady=(10, 0))
         lib_frame.columnconfigure(0, weight=1)
 
         ttk.Label(lib_frame, text="Setup Commands").pack(anchor="w")
@@ -236,6 +233,20 @@ class TestWizard(tk.Tk):
         for instr in self.library["test"]:
             for title, content in self._parse_commands(instr, "Test Commands"):
                 self._create_collapsible_text(test_container, title, content)
+
+        # Frame below the header holds the test editors
+        body = ttk.Frame(main)
+        body.pack(fill="both", expand=True, pady=(10, 0))
+        body.columnconfigure(0, weight=1)
+
+        editor_frame = ttk.Frame(body)
+        editor_frame.grid(row=0, column=0, sticky="nsew")
+
+        # Test loop text box
+        self.script_text = ScrolledText(editor_frame, height=12)
+        self.script_text.pack(fill="both", expand=True, pady=(5, 0))
+        self.script_text.insert("end", "# Test loop code\n")
+
 
         # Buttons
         btn_frame = ttk.Frame(main)
