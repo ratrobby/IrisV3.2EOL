@@ -190,7 +190,9 @@ class TestWizard(tk.Tk):
         self.cfg = load_config()
         self.ip_address = self.cfg.get("ip_address", "192.168.XXX.XXX")
         self.library = gather_library(self.cfg)
-        self.instance_map = build_instance_map(self.cfg)
+        self.base_map = build_instance_map(self.cfg)
+        self.instance_map = {s: dict(p) for s, p in self.base_map.items()}
+        self._apply_custom_names()
 
         self.running = False
         self.paused = False
@@ -207,6 +209,34 @@ class TestWizard(tk.Tk):
         self.geometry("1600x950+150+20")
         self.check_connection()
         self.after(100, self.poll_monitor_queue)
+
+    def _load_custom_names(self):
+        """Return mapping of original instance names to custom aliases."""
+        try:
+            with open(DEVICES_FILE, "r") as fh:
+                lines = fh.read().splitlines()
+        except Exception:
+            return {}
+        start_marker = "# --- Custom Instance Names ---"
+        end_marker = "# --- End Custom Instance Names ---"
+        mapping = {}
+        if start_marker in lines:
+            s = lines.index(start_marker)
+            if end_marker in lines[s:]:
+                e = s + lines[s:].index(end_marker)
+                for line in lines[s + 1 : e]:
+                    if "=" in line:
+                        alias, orig = line.split("=", 1)
+                        mapping[orig.strip().lower()] = alias.strip()
+        return mapping
+
+    def _apply_custom_names(self):
+        mapping = self._load_custom_names()
+        for section in ("al1342", "al2205"):
+            for port, orig in self.base_map[section].items():
+                alias = mapping.get(orig.lower())
+                if alias:
+                    self.instance_map[section][port] = alias
 
     # ----------------------- GUI Construction -----------------------
     def create_widgets(self):
@@ -292,7 +322,7 @@ class TestWizard(tk.Tk):
 
             for r, port in enumerate(sorted(self.instance_map["al1342"]), start=1):
                 ttk.Label(col1, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
-                var = tk.StringVar(value=self.instance_map["al1342"][port].lower())
+                var = tk.StringVar(value=self.instance_map["al1342"][port])
                 self.name_vars["al1342"][port] = var
                 entry = ttk.Entry(col1, textvariable=var, width=23)
                 if self.cfg.get("al1342", {}).get(port) == "AL2205_Hub":
@@ -301,7 +331,7 @@ class TestWizard(tk.Tk):
 
             for r, port in enumerate(sorted(self.instance_map["al2205"]), start=1):
                 ttk.Label(col2, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
-                var = tk.StringVar(value=self.instance_map["al2205"][port].lower())
+                var = tk.StringVar(value=self.instance_map["al2205"][port])
                 self.name_vars["al2205"][port] = var
                 entry = ttk.Entry(col2, textvariable=var, width=23)
                 if self.cfg.get("al2205", {}).get(port) == "UI_Button":
@@ -474,9 +504,12 @@ class TestWizard(tk.Tk):
         for section in ("al1342", "al2205"):
             for port, var in self.name_vars.get(section, {}).items():
                 new_name = var.get().strip()
-                orig = self.instance_map[section][port].lower()
-                if new_name and new_name != orig:
-                    alias_lines.append(f"{new_name} = {orig}")
+                base = self.base_map[section][port].lower()
+                if new_name and new_name != base:
+                    alias_lines.append(f"{new_name} = {base}")
+                    self.instance_map[section][port] = new_name
+                else:
+                    self.instance_map[section][port] = base
 
         try:
             with open(DEVICES_FILE, "r") as fh:
