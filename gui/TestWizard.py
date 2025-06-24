@@ -488,7 +488,14 @@ class TestWizard(tk.Tk):
         self.start_btn.configure(state="disabled")
         self.stop_btn.configure(state="normal")
         self.pause_btn.configure(state="normal", text="Pause")
-        context = {}
+        context = {"__name__": "__main__"}
+        try:
+            devices_mod = importlib.import_module("config.Test_Cell_1_Devices")
+            for name, obj in devices_mod.__dict__.items():
+                if not name.startswith("_"):
+                    context[name] = obj
+        except Exception as e:
+            print(f"Failed to load device objects: {e}")
         setup_code = self.setup_text.get("1.0", "end-1c")
         loop_code = self.script_text.get("1.0", "end-1c")
         def worker():
