@@ -180,24 +180,16 @@ class TestWizard(tk.Tk):
         right.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
         right.columnconfigure(0, weight=1)
 
-        status_frame = ttk.LabelFrame(right, text="AL1342 Connection Status:")
-        status_frame.pack(anchor="n")
-        status_frame.pack_propagate(False)
-        self.status_var = tk.StringVar(value="Disconnected")
-        self.status_label = ttk.Label(status_frame, textvariable=self.status_var, foreground="red")
-        self.status_label.pack(padx=5, pady=2)
+        inst_status = ttk.Frame(right)
+        inst_status.pack(fill="x", padx=5, pady=(0, 5))
+        inst_status.columnconfigure(0, weight=1)
+        inst_status.columnconfigure(1, weight=1)
+        inst_status.rowconfigure(0, weight=1)
 
-        def _resize_status(event):
-            width = event.width
-            frame_width = width // 2
-            status_frame.configure(width=frame_width)
-            status_frame.pack_configure(padx=(width - frame_width) // 2)
-
-        right.bind("<Configure>", _resize_status)
-
+        map_frame = None
         if self.instance_map:
-            map_frame = ttk.LabelFrame(right, text="Device Instances")
-            map_frame.pack(fill="x", padx=5, pady=(5, 0))
+            map_frame = ttk.LabelFrame(inst_status, text="Device Instances")
+            map_frame.grid(row=0, column=0, sticky="nsew")
 
             col1 = ttk.Frame(map_frame)
             col2 = ttk.Frame(map_frame)
@@ -226,6 +218,12 @@ class TestWizard(tk.Tk):
 
             for line in entries2205:
                 self.map_list2205.insert("end", line)
+
+        status_frame = ttk.LabelFrame(inst_status, text="AL1342 Connection Status:")
+        status_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
+        self.status_var = tk.StringVar(value="Disconnected")
+        self.status_label = ttk.Label(status_frame, textvariable=self.status_var, foreground="red")
+        self.status_label.pack(padx=5, pady=2)
 
         # Collapsible command library below the device instances
         lib_frame = ttk.LabelFrame(right, text="Command Library")
