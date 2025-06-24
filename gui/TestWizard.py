@@ -329,7 +329,6 @@ class TestWizard(tk.Tk):
         header_height = header.winfo_reqheight()
         text_widget.pack(fill="x", padx=15, pady=2)
         text_widget.update_idletasks()
-        open_height = header_height + text_widget.winfo_reqheight()
         text_widget.pack_forget()
         container.configure(height=header_height)
         container.pack_propagate(False)  # maintain header height when collapsed
@@ -354,6 +353,8 @@ class TestWizard(tk.Tk):
         text_widget.tag_configure("bold", font=("Arial", 10, "bold"))
         text_widget.tag_configure("command_style", font=("Arial", 11, "bold"), foreground="#003366")
         text_widget.configure(state="disabled", height=min(30, content.count("\n") + 2))
+        text_widget.update_idletasks()
+        open_height = header_height + text_widget.winfo_reqheight()
 
         def toggle():
             if text_widget.winfo_viewable():
