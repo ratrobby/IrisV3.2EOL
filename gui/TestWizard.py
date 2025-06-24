@@ -109,6 +109,10 @@ class TestWizard(tk.Tk):
         main = ttk.Frame(self)
         main.pack(fill="both", expand=True, padx=10, pady=10)
 
+        # Style for highlighted open command boxes
+        self.style = ttk.Style(self)
+        self.style.configure("Open.TFrame", background="#e8f0fe")
+
         # Top frame with test name and device map
         header = ttk.Frame(main)
         header.pack(fill="x")
@@ -185,7 +189,9 @@ class TestWizard(tk.Tk):
                 if current_title:
                     commands.append((current_title, "\n".join(lines).strip()))
                     lines = []
-                current_title = line.strip()
+                # Extract title between ~ symbols if present
+                m = re.search(r"~(.*?)~", line)
+                current_title = m.group(1).strip() if m else line.replace("Command:", "").strip()
             else:
                 lines.append(line)
         if current_title:
@@ -198,10 +204,19 @@ class TestWizard(tk.Tk):
         return self._split_commands(instructions)
 
     def _create_collapsible_text(self, parent, section_title, content):
-        header = ttk.Label(parent, text=section_title, font=("Arial", 10, "bold italic"))
-        header.pack(anchor="w", padx=10, pady=(4, 0))
+        container = ttk.Frame(parent, relief="groove", borderwidth=1)
+        container.pack(fill="x", pady=2, padx=5)
 
-        text_widget = tk.Text(parent, wrap="word", height=1, width=60,
+        header = ttk.Frame(container)
+        header.pack(fill="x")
+
+        title_label = ttk.Label(header, text=section_title, font=("Arial", 10, "bold italic"))
+        title_label.pack(side="left", padx=5, pady=(2, 0))
+
+        arrow_label = ttk.Label(header, text="\u25BC")  # Down arrow
+        arrow_label.pack(side="right", padx=5)
+
+        text_widget = tk.Text(container, wrap="word", height=1, width=60,
                               font=("Arial", 9), background="#f5f5f5")
         text_widget.insert("1.0", content)
 
@@ -227,8 +242,20 @@ class TestWizard(tk.Tk):
         text_widget.configure(state="disabled", height=min(30, content.count("\n") + 2))
 
         text_widget.pack_forget()
-        header.bind("<Button-1>", lambda e, t=text_widget: t.pack(fill="x", padx=10)
-                    if not t.winfo_viewable() else t.pack_forget())
+
+        def toggle():
+            if text_widget.winfo_viewable():
+                text_widget.pack_forget()
+                arrow_label.configure(text="\u25BC")
+                container.configure(style="TFrame")
+            else:
+                text_widget.pack(fill="x", padx=15, pady=2)
+                arrow_label.configure(text="\u25B2")
+                container.configure(style="Open.TFrame")
+
+        header.bind("<Button-1>", lambda e: toggle())
+        title_label.bind("<Button-1>", lambda e: toggle())
+        arrow_label.bind("<Button-1>", lambda e: toggle())
 
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
