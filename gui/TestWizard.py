@@ -115,7 +115,7 @@ def build_instance_map(cfg):
     for section in ("al1342", "al2205"):
         for port in cfg.get(section, {}):
             device = cfg.get(section, {}).get(port, "Empty")
-            if str(device).lower() == "Empty":
+            if str(device).lower() == "empty":
                 continue
             device_totals[device] = device_totals.get(device, 0) + 1
 
@@ -125,7 +125,7 @@ def build_instance_map(cfg):
     for section in ("al1342", "al2205"):
         for port in sorted(cfg.get(section, {})):
             device = cfg.get(section, {}).get(port, "Empty")
-            if str(device).lower() == "Empty":
+            if str(device).lower() == "empty":
                 result[section][port] = "Empty"
                 continue
 
