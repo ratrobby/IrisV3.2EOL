@@ -335,15 +335,18 @@ class TestWizard(tk.Tk):
         )
         text_widget.insert("1.0", content)
 
-        # Temporarily display to measure required height and then hide again
-        header_height = header.winfo_reqheight()
+        # Temporarily display to measure required width and then hide again
         text_widget.pack(fill="x", padx=15, pady=2)
         text_widget.update_idletasks()
+        container.configure(width=text_widget.winfo_width())
+        header_height = header.winfo_reqheight()
         text_widget.pack_forget()
+        container.update_idletasks()
         container.configure(height=header_height)
-        container.pack_propagate(False)  # maintain header height when collapsed
+        container.pack_propagate(False)  # keep width constant and maintain header height
 
         keyword_styles = {
+            "Command:": "command_style",
             "Inputs:": "bold",
             "Example:": "bold",
             "Use:": "bold",
@@ -360,6 +363,7 @@ class TestWizard(tk.Tk):
                 start = end
 
         text_widget.tag_configure("bold", font=("Arial", 10, "bold"))
+        text_widget.tag_configure("command_style", font=("Arial", 11, "bold"), foreground="#003366")
         text_widget.configure(state="disabled", height=min(30, content.count("\n") + 2))
         text_widget.update_idletasks()
         open_height = header_height + text_widget.winfo_reqheight()
