@@ -280,7 +280,10 @@ class TestWizard(tk.Tk):
         self.status_label.pack(expand=True, fill="both")
 
         # Collapsible command library below the device instances
-        lib_frame = ttk.LabelFrame(right, text="Command Library")
+        lib_label = ttk.Label(
+            right, text="Command Library", font=("Arial", 12, "bold")
+        )
+        lib_frame = ttk.LabelFrame(right, labelwidget=lib_label)
         lib_frame.pack(fill="both", expand=True, padx=5, pady=5)
         lib_frame.columnconfigure(0, weight=1)
 
