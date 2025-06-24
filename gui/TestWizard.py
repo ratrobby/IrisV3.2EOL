@@ -10,7 +10,7 @@ from contextlib import redirect_stdout
 import re
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from tkinter.scrolledtext import ScrolledText
 
 # Allow running from repo root
@@ -19,6 +19,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(REPO_ROOT, "config", "Test_Cell_Config.json")
 LOG_DIR = os.path.join(REPO_ROOT, "logs")
+TESTS_DIR = os.path.join(REPO_ROOT, "user_tests")
 
 
 def load_config():
@@ -101,6 +102,7 @@ class TestWizard(tk.Tk):
         self.paused = False
         self.worker = None
         self.log_file = None
+        self.test_file_path = None
 
         self.create_widgets()
         # Scale window width by 1.25 after widgets have been laid out
@@ -130,8 +132,10 @@ class TestWizard(tk.Tk):
         ttk.Label(name_frame, text="Test Name:", style="TestName.TLabel").pack(side="left")
         self.test_name_var = tk.StringVar()
         entry_width = int(self.winfo_screenwidth() * 0.5 / 8)
-        ttk.Entry(name_frame, textvariable=self.test_name_var,
-                  width=entry_width, font=("Arial", 12)).pack(side="left", padx=5, fill="x", expand=True, ipady=4)
+        self.test_name_entry = ttk.Entry(name_frame, textvariable=self.test_name_var,
+                  width=entry_width, font=("Arial", 12))
+        self.test_name_entry.pack(side="left", padx=5, fill="x", expand=True, ipady=4)
+        ttk.Button(name_frame, text="Browse", command=self.browse_test_file).pack(side="left", padx=5)
 
         # --- Row with connection status and device map ---
         sub_header = ttk.Frame(header)
@@ -216,6 +220,11 @@ class TestWizard(tk.Tk):
         self.start_btn.pack(side="left", padx=5)
         self.stop_btn.pack(side="left", padx=5)
         self.pause_btn.pack(side="left", padx=5)
+
+        self.save_btn = ttk.Button(btn_frame, text="Save Test", command=self.save_test)
+        self.new_btn = ttk.Button(btn_frame, text="New Test", command=self.new_test)
+        self.new_btn.pack(side="right", padx=5)
+        self.save_btn.pack(side="right", padx=5)
 
     def _extract_section(self, instructions, section_title):
         pattern = rf"{section_title}\s*:(.*?)(\n[A-Z].*?:|\Z)"
@@ -374,6 +383,68 @@ class TestWizard(tk.Tk):
             return
         self.paused = not self.paused
         self.pause_btn.configure(text="Resume" if self.paused else "Pause")
+
+    # ----------------------- Test File Handling -------------------
+    def save_test(self):
+        name = self.test_name_var.get().strip()
+        if not name:
+            messagebox.showerror("Error", "Please enter a test name.")
+            return
+        os.makedirs(TESTS_DIR, exist_ok=True)
+        fname = re.sub(r"\W+", "_", name)
+        path = os.path.join(TESTS_DIR, f"{fname}.json")
+        data = {
+            "name": name,
+            "setup": self.setup_text.get("1.0", "end-1c"),
+            "loop": self.script_text.get("1.0", "end-1c"),
+        }
+        try:
+            with open(path, "w") as fh:
+                json.dump(data, fh, indent=2)
+            self.test_file_path = path
+            messagebox.showinfo("Saved", f"Test saved to {path}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save test: {e}")
+
+    def load_test(self, path):
+        if not path:
+            return
+        try:
+            with open(path, "r") as fh:
+                data = json.load(fh)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load test: {e}")
+            return
+        self.test_file_path = path
+        self.test_name_var.set(data.get("name", ""))
+        self.setup_text.delete("1.0", "end")
+        self.setup_text.insert("1.0", data.get("setup", ""))
+        self.script_text.delete("1.0", "end")
+        self.script_text.insert("1.0", data.get("loop", ""))
+
+    def browse_test_file(self):
+        path = filedialog.askopenfilename(
+            initialdir=TESTS_DIR,
+            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
+        )
+        if path:
+            self.load_test(path)
+
+    def new_test(self):
+        current_filled = (
+            self.test_name_var.get().strip()
+            or self.setup_text.get("1.0", "end-1c").strip()
+            or self.script_text.get("1.0", "end-1c").strip()
+        )
+        if current_filled:
+            if messagebox.askyesno("Save Test", "Save current test before creating a new test?"):
+                self.save_test()
+        self.test_file_path = None
+        self.test_name_var.set("")
+        self.setup_text.delete("1.0", "end")
+        self.setup_text.insert("1.0", "# Setup code\n")
+        self.script_text.delete("1.0", "end")
+        self.script_text.insert("1.0", "# Test loop code\n")
 
 
 if __name__ == "__main__":
