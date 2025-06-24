@@ -54,6 +54,7 @@ class ConfigApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Configure Test Cell")
+        self.wizard_procs = []
 
         options = get_device_options()
         cfg = load_config(CONFIG_PATH)
@@ -105,13 +106,25 @@ class ConfigApp(tk.Tk):
     def configure_cell(self):
         cfg = self.gather_config()
         save_config(cfg, CONFIG_PATH)
-        # Automatically open the Test Wizard after saving without showing a
-        # confirmation dialog.
         self.launch_wizard()
 
     def launch_wizard(self):
         wizard_path = os.path.join(os.path.dirname(__file__), "TestWizard.py")
-        subprocess.Popen([sys.executable, wizard_path])
+        proc = subprocess.Popen([sys.executable, wizard_path])
+        self.wizard_procs.append(proc)
+
+    def close_wizards(self):
+        for p in getattr(self, "wizard_procs", []):
+            if p.poll() is None:
+                try:
+                    p.terminate()
+                    p.wait(timeout=2)
+                except Exception:
+                    try:
+                        p.kill()
+                    except Exception:
+                        pass
+        self.wizard_procs = []
 
 
 if __name__ == "__main__":
