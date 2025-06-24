@@ -16,16 +16,7 @@ class AL2205Hub:
 
     @classmethod
     def test_instructions(cls):
-        return [
-            {
-                "title": "read_index(x1_index)",
-                "content": (
-                    "Use: Read raw 16-bit value from a port on the AL2205 hub\n"
-                    "Inputs:\n"
-                    "    - x1_index: Port index 0-7 for X1.0-X1.7"
-                ),
-            }
-        ]
+        return []
 
 
     def __init__(self, io_master, port_number):

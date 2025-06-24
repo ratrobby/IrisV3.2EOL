@@ -155,7 +155,7 @@ class TestWizard(tk.Tk):
         # Scale window after widgets have been laid out
         self.update_idletasks()
         # Position the window at x=100, y=50
-        self.geometry("1600x950+100+50")
+        self.geometry("1600x950+150+20")
         self.check_connection()
 
     # ----------------------- GUI Construction -----------------------
@@ -166,7 +166,7 @@ class TestWizard(tk.Tk):
         # Style for highlighted open command boxes
         self.style = ttk.Style(self)
         self.style.configure("Open.TFrame", background="#e8f0fe")
-        self.style.configure("TestName.TLabel", font=("Arial", 12, "bold"))
+        self.style.configure("TestName.TLabel", font=("Segoe UI Variable Display Semib", 12,))
 
         # Main content split into left and right columns
         content = ttk.Frame(main)
@@ -197,7 +197,7 @@ class TestWizard(tk.Tk):
             row=1, column=1, padx=5
         )
 
-        ttk.Label(left, text="Test Setup", style="TestName.TLabel").grid(
+        ttk.Label(left, text="Test Setup:", style="TestName.TLabel").grid(
             row=1, column=0, sticky="w", pady=(20, 0)
         )
         self.setup_text = ScrolledText(left, height=8)
@@ -205,7 +205,7 @@ class TestWizard(tk.Tk):
         self.setup_text.insert("end", "# Setup code\n")
         left.rowconfigure(2, weight=1)
 
-        ttk.Label(left, text="Test Loop", style="TestName.TLabel").grid(
+        ttk.Label(left, text="Test Loop:", style="TestName.TLabel").grid(
             row=3, column=0, sticky="w"
         )
         self.script_text = ScrolledText(left, height=12)
@@ -265,7 +265,7 @@ class TestWizard(tk.Tk):
             status_frame,
             textvariable=self.status_var,
             foreground="red",
-            font=("Arial", 14, "bold"),
+            font=("Arial", 12),
         )
         self.status_label.pack(expand=True, fill="both", padx=5, pady=2)
 
