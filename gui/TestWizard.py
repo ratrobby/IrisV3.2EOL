@@ -157,14 +157,20 @@ class TestWizard(tk.Tk):
 
         name_frame = ttk.Frame(left)
         name_frame.grid(row=0, column=0, sticky="ew")
-        name_frame.columnconfigure(1, weight=1)
+        name_frame.columnconfigure(0, weight=1)
 
-        ttk.Label(name_frame, text="Test Name:", style="TestName.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(name_frame, text="Test Name:", style="TestName.TLabel").grid(
+            row=0, column=0, sticky="w", pady=(0, 5)
+        )
         self.test_name_var = tk.StringVar()
-        self.test_name_entry = ttk.Entry(name_frame, textvariable=self.test_name_var, font=("Arial", 12))
-        self.test_name_entry.grid(row=0, column=1, sticky="ew", padx=5, ipady=4)
+        self.test_name_entry = ttk.Entry(
+            name_frame, textvariable=self.test_name_var, font=("Arial", 12)
+        )
+        self.test_name_entry.grid(row=1, column=0, sticky="ew", padx=5, ipady=4)
 
-        ttk.Button(name_frame, text="Browse", command=self.browse_test_file).grid(row=0, column=2, padx=5)
+        ttk.Button(name_frame, text="Browse", command=self.browse_test_file).grid(
+            row=1, column=1, padx=5
+        )
 
         ttk.Label(left, text="Test Setup", style="TestName.TLabel").grid(
             row=1, column=0, sticky="w", pady=(20, 0)
