@@ -130,7 +130,7 @@ class TestWizard(tk.Tk):
         # Scale window after widgets have been laid out
         self.update_idletasks()
         width = int(self.winfo_width() * 1.25)
-        height = int(self.winfo_height() * 1.25)
+        height = int(self.winfo_height() * 1.15)
         self.geometry(f"{width}x{height}")
         self.check_connection()
 
@@ -142,45 +142,54 @@ class TestWizard(tk.Tk):
         # Style for highlighted open command boxes
         self.style = ttk.Style(self)
         self.style.configure("Open.TFrame", background="#e8f0fe")
-
-        # Top frame with test name, connection status and device map
-        header = ttk.Frame(main)
-        header.pack(fill="x")
-        header.columnconfigure(0, weight=3)
-        header.columnconfigure(1, weight=2)
-
         self.style.configure("TestName.TLabel", font=("Arial", 12, "bold"))
 
-        name_frame = ttk.Frame(header)
+        # Main content split into left and right columns
+        content = ttk.Frame(main)
+        content.pack(fill="both", expand=True)
+        content.columnconfigure(0, weight=3)
+        content.columnconfigure(1, weight=2)
+
+        # ----------------------- Left Column -----------------------
+        left = ttk.Frame(content)
+        left.grid(row=0, column=0, sticky="nsew")
+        left.columnconfigure(0, weight=1)
+
+        name_frame = ttk.Frame(left)
         name_frame.grid(row=0, column=0, sticky="ew")
         name_frame.columnconfigure(1, weight=1)
 
         ttk.Label(name_frame, text="Test Name:", style="TestName.TLabel").grid(row=0, column=0, sticky="w")
         self.test_name_var = tk.StringVar()
-        self.test_name_entry = ttk.Entry(name_frame, textvariable=self.test_name_var,
-                                         font=("Arial", 12))
+        self.test_name_entry = ttk.Entry(name_frame, textvariable=self.test_name_var, font=("Arial", 12))
         self.test_name_entry.grid(row=0, column=1, sticky="ew", padx=5, ipady=4)
 
         ttk.Button(name_frame, text="Browse", command=self.browse_test_file).grid(row=0, column=2, padx=5)
 
-        self.setup_text = ScrolledText(header, height=8)
+        self.setup_text = ScrolledText(left, height=8)
         self.setup_text.grid(row=1, column=0, sticky="nsew", pady=(5, 0))
         self.setup_text.insert("end", "# Setup code\n")
-        header.rowconfigure(1, weight=1)
+        left.rowconfigure(1, weight=1)
 
-        # --- Right side with connection status and device map ---
-        right_container = ttk.Frame(header)
-        right_container.grid(row=0, column=1, sticky="ne")
+        self.script_text = ScrolledText(left, height=12)
+        self.script_text.grid(row=2, column=0, sticky="nsew", pady=(5, 0))
+        self.script_text.insert("end", "# Test loop code\n")
+        left.rowconfigure(2, weight=1)
 
-        status_frame = ttk.LabelFrame(right_container, text="AL1342 Connection Status:")
-        status_frame.pack(side="top", padx=5, anchor="e")
+        # ----------------------- Right Column ----------------------
+        right = ttk.Frame(content)
+        right.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        right.columnconfigure(0, weight=1)
+
+        status_frame = ttk.LabelFrame(right, text="AL1342 Connection Status:")
+        status_frame.pack(fill="x", anchor="n")
         self.status_var = tk.StringVar(value="Disconnected")
         self.status_label = ttk.Label(status_frame, textvariable=self.status_var, foreground="red")
         self.status_label.pack(padx=5, pady=2)
 
         if self.instance_map:
-            map_frame = ttk.LabelFrame(right_container, text="Device Instances")
-            map_frame.pack(side="top", padx=5, pady=(5, 0), anchor="e")
+            map_frame = ttk.LabelFrame(right, text="Device Instances")
+            map_frame.pack(fill="x", padx=5, pady=(5, 0))
 
             col1 = ttk.Frame(map_frame)
             col2 = ttk.Frame(map_frame)
@@ -190,10 +199,8 @@ class TestWizard(tk.Tk):
             ttk.Label(col1, text="AL1342").pack()
             ttk.Label(col2, text="AL2205").pack()
 
-            height = max(len(self.instance_map["al1342"]),
-                         len(self.instance_map["al2205"]))
+            height = max(len(self.instance_map["al1342"]), len(self.instance_map["al2205"]))
             height = min(height, 10) or 1
-
 
             entries1342 = [f"{p}: {self.instance_map['al1342'][p]}" for p in sorted(self.instance_map['al1342'])]
             entries2205 = [f"{p}: {self.instance_map['al2205'][p]}" for p in sorted(self.instance_map['al2205'])]
@@ -212,23 +219,8 @@ class TestWizard(tk.Tk):
             for line in entries2205:
                 self.map_list2205.insert("end", line)
 
-        # Frame below the header holds the text editors and command library side by side
-        body = ttk.Frame(main)
-        body.pack(fill="both", expand=True, pady=(10, 0))
-        body.columnconfigure(0, weight=3)
-        body.columnconfigure(1, weight=2)
-
-        editor_frame = ttk.Frame(body)
-        editor_frame.grid(row=0, column=0, sticky="nsew")
-
-        # Test loop text box
-        self.script_text = ScrolledText(editor_frame, height=12)
-        self.script_text.pack(fill="both", expand=True, pady=(5, 0))
-        self.script_text.insert("end", "# Test loop code\n")
-
-        # Collapsible command library to the right of editors
-        lib_frame = ttk.LabelFrame(body, text="Command Library")
-        lib_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        lib_frame = ttk.LabelFrame(right, text="Command Library")
+        lib_frame.pack(fill="both", expand=True, pady=(10, 0))
         lib_frame.columnconfigure(0, weight=1)
 
         ttk.Label(lib_frame, text="Setup Commands").pack(anchor="w")
