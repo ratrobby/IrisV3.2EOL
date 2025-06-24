@@ -33,6 +33,17 @@ def load_config():
     return {}
 
 
+def _normalize_instructions(cmds):
+    """Return a list of instruction dictionaries with required keys."""
+    if not isinstance(cmds, list):
+        cmds = [cmds] if cmds else []
+    result = []
+    for item in cmds:
+        if isinstance(item, dict) and "title" in item and "content" in item:
+            result.append(item)
+    return result
+
+
 def gather_library(cfg):
     """Return dict of setup and test instructions from configured devices."""
     setup_cmds = []
@@ -61,37 +72,6 @@ def gather_library(cfg):
 
         if hasattr(device_cls, "setup_instructions"):
             try:
-                cmds = device_cls.setup_instructions()
-                if isinstance(cmds, list):
-                    for cmd in cmds:
-                        if isinstance(cmd, dict) and "title" in cmd and "content" in cmd:
-                            setup_cmds.append(cmd)
-                        else:
-                            print(f"\u26A0\uFE0F Malformed setup instruction in {mod_name}: {cmd}")
-                elif isinstance(cmds, dict) and "title" in cmds and "content" in cmds:
-                    setup_cmds.append(cmds)
-                else:
-                    print(f"\u26A0\uFE0F Invalid format from {mod_name}.setup_instructions(): {cmds}")
-            except Exception as e:
-                print(f"\u274C Error in setup_instructions of {mod_name}: {e}")
-                traceback.print_exc()
-
-        if hasattr(device_cls, "test_instructions"):
-            try:
-                cmds = device_cls.test_instructions()
-                if isinstance(cmds, list):
-                    for cmd in cmds:
-                        if isinstance(cmd, dict) and "title" in cmd and "content" in cmd:
-                            test_cmds.append(cmd)
-                        else:
-                            print(f"\u26A0\uFE0F Malformed test instruction in {mod_name}: {cmd}")
-                elif isinstance(cmds, dict) and "title" in cmds and "content" in cmds:
-                    test_cmds.append(cmds)
-                else:
-                    print(f"\u26A0\uFE0F Invalid format from {mod_name}.test_instructions(): {cmds}")
-            except Exception as e:
-                print(f"\u274C Error in test_instructions of {mod_name}: {e}")
-                traceback.print_exc()
 
     if import_errors:
         try:
@@ -314,6 +294,9 @@ class TestWizard(tk.Tk):
 
 
     def _create_collapsible_text(self, parent, section_title, content):
+        if not section_title or not str(section_title).strip():
+            section_title = "<Untitled Command>"
+
         container = ttk.Frame(parent, relief="groove", borderwidth=1)
         container.pack(fill="x", pady=2, padx=5)
 
