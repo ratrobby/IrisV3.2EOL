@@ -269,6 +269,13 @@ class TestWizard(tk.Tk):
         self.script_text.insert("end", "# Test loop code\n")
         left.rowconfigure(4, weight=1)
 
+        ttk.Label(left, text="Iterations:", style="TestName.TLabel").grid(
+            row=5, column=0, sticky="w", pady=(10, 0)
+        )
+        self.iterations_var = tk.StringVar()
+        self.iterations_entry = ttk.Entry(left, textvariable=self.iterations_var)
+        self.iterations_entry.grid(row=6, column=0, sticky="w", padx=5, pady=(0, 10))
+
         # ----------------------- Right Column ----------------------
         right = ttk.Frame(content)
         right.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
@@ -526,6 +533,7 @@ class TestWizard(tk.Tk):
 
         setup_code = self.setup_text.get("1.0", "end-1c")
         loop_code = self.script_text.get("1.0", "end-1c")
+        iter_str = self.iterations_var.get().strip() or "1"
 
         script_parts = [
             base_content,
@@ -535,7 +543,7 @@ class TestWizard(tk.Tk):
             setup_code,
             "",
             "# ---------------- Test Loop ----------------",
-            "while True:",
+            f"for _ in range({iter_str}):",
             *["    " + line for line in loop_code.splitlines()],
             "",
         ]
@@ -588,6 +596,7 @@ class TestWizard(tk.Tk):
         self.browse_btn.configure(state=state)
         self.setup_text.configure(state=state)
         self.script_text.configure(state=state)
+        self.iterations_entry.configure(state=state)
         self.save_btn.configure(state=state)
         self.new_btn.configure(state=state)
         self.reconfig_btn.configure(state=state)
@@ -611,6 +620,19 @@ class TestWizard(tk.Tk):
         if not self.test_name_var.get().strip():
             messagebox.showerror("Error", "Please enter a test name before starting the test.")
             self.test_name_entry.focus_set()
+            return
+        iter_str = self.iterations_var.get().strip()
+        if not iter_str:
+            messagebox.showerror("Error", "Please enter the number of iterations before starting the test.")
+            self.iterations_entry.focus_set()
+            return
+        try:
+            iterations = int(iter_str)
+            if iterations <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", "Iterations must be a positive integer.")
+            self.iterations_entry.focus_set()
             return
         if not self.save_test(show_message=False):
             return
@@ -665,10 +687,13 @@ class TestWizard(tk.Tk):
                     print(f"Setup error: {e}")
                     self.running = False
                     return
-                while self.running:
-                    if self.paused:
+                for _ in range(iterations):
+                    if not self.running:
+                        break
+                    while self.paused and self.running:
                         time.sleep(0.1)
-                        continue
+                    if not self.running:
+                        break
                     try:
                         exec(loop_code, context)
                     except Exception as e:
@@ -740,6 +765,7 @@ class TestWizard(tk.Tk):
             "name": name,
             "setup": self.setup_text.get("1.0", "end-1c"),
             "loop": self.script_text.get("1.0", "end-1c"),
+            "iterations": self.iterations_var.get().strip(),
             "config": self.cfg,
             "device_names": self.instance_map,
             "script_file": os.path.basename(self.test_script_path)
@@ -771,6 +797,7 @@ class TestWizard(tk.Tk):
         self.setup_text.insert("1.0", data.get("setup", ""))
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", data.get("loop", ""))
+        self.iterations_var.set(data.get("iterations", ""))
         self._verify_mapping(data.get("config"))
         saved_names = data.get("device_names")
         self.test_script_path = os.path.join(
@@ -810,6 +837,7 @@ class TestWizard(tk.Tk):
         self.setup_text.insert("1.0", "# Setup code\n")
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n")
+        self.iterations_var.set("")
         # Reset any custom device naming back to defaults
         self.reset_device_names()
         self.test_script_path = None
