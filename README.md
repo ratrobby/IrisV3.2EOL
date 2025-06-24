@@ -13,12 +13,13 @@ MRLF Repo/
 └── README.md
 ```
 
-`gui/ConfigureTestCell.py` presents a minimal GUI used to configure a test cell. The tool allows entering the AL1342 IP address, mapping devices to IO‑Link ports and saving the configuration to `config/Test_Cell_Config.json`. After saving, the TestWizard placeholder GUI is launched.
+`gui/ConfigureTestCell.py` presents a minimal GUI used to configure a test cell. The tool allows entering the AL1342 IP address, mapping devices to IO‑Link ports and saving the configuration to `config/Test_Cell_Config.json`. After saving, the TestWizard GUI is launched.
 
 Saving the configuration also generates `config/Test_Cell_1_Devices.py`. This
 file contains an `IO_master` instance and device objects created for every
-selected port, using names from the instance map. Test scripts can import this
-module to work directly with the configured devices.
+selected port, using names from the instance map. The Test Wizard now
+automatically imports this module when a test starts so the objects are
+available in the setup and loop editors without any manual `import` statements.
 
 `gui/TestWizard.py` remains a simple placeholder for future test execution tools.
 
