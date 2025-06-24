@@ -46,20 +46,24 @@ class PositionSensorSDATMHS_M160:
 
     @classmethod
     def setup_instructions(cls):
-        return """
-Test Setup Commands:
-    Command: ~Calibrate_PosSensor()~
-        Use: Launch wizard to calibrate all mapped position sensors
-"""
+        return [
+            {
+                "title": "Calibrate_PosSensor()",
+                "content": "Use: Launch wizard to calibrate all mapped position sensors",
+            }
+        ]
     @classmethod
     def test_instructions(cls):
-        return """
-    Command: ~read_position()~
-        Use: Reads current position of cylinder in mm
-        Inputs:
-            - none
-
-                """
+        return [
+            {
+                "title": "read_position()",
+                "content": (
+                    "Use: Reads current position of cylinder in mm\n"
+                    "Inputs:\n"
+                    "    - none"
+                ),
+            }
+        ]
 
     CALIBRATION_FILE = "sensor_calibrations.json"
 

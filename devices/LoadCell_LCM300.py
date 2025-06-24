@@ -33,21 +33,25 @@ class LoadCellLCM300:
 
     @classmethod
     def test_instructions(cls):
-        return """
-    Command: ~read_force(unit)~
-      Use: Returns force of load cell in pounds-force or newtons
-      Inputs:
-        - unit: Defines the unit of force the reading will be in
-                    - lbf: pounds-force
-                    - N: Newtons
-      Example:
-        - read_force(N) - Reads force in newtons
-        - read_force(lbf) - Reads force in pounds-force
-                """
+        return [
+            {
+                "title": "read_force(unit)",
+                "content": (
+                    "Use: Returns force of load cell in pounds-force or newtons\n"
+                    "Inputs:\n"
+                    "  - unit: Defines the unit of force the reading will be in\n"
+                    "          - lbf: pounds-force\n"
+                    "          - N: Newtons\n"
+                    "Example:\n"
+                    "  - read_force(N) - Reads force in newtons\n"
+                    "  - read_force(lbf) - Reads force in pounds-force"
+                ),
+            }
+        ]
 
     @classmethod
     def setup_instructions(cls):
-        return ""
+        return []
 
     def __init__(self, al2205_instance, x1_index):
         """
