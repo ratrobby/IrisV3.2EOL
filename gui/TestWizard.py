@@ -103,6 +103,11 @@ class TestWizard(tk.Tk):
         self.log_file = None
 
         self.create_widgets()
+        # Scale window width by 1.25 after widgets have been laid out
+        self.update_idletasks()
+        width = int(self.winfo_width() * 1.25)
+        height = self.winfo_height()
+        self.geometry(f"{width}x{height}")
         self.check_connection()
 
     # ----------------------- GUI Construction -----------------------
