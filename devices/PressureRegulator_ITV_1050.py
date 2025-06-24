@@ -10,7 +10,7 @@ from decorators import setup_command, test_command, device_class
 
  """
     =====================================
-    ITV1050Controller - Public Interface
+    PressureRegulatorITV1050 - Public Interface
     =====================================
 
     Purpose:
@@ -19,7 +19,7 @@ from decorators import setup_command, test_command, device_class
 
     Constructor:
     ------------
-    ITV1050Controller(io_master, port_number)
+    PressureRegulatorITV1050(io_master, port_number)
 
     Public Method:
     --------------
@@ -32,7 +32,7 @@ from decorators import setup_command, test_command, device_class
     """
 
 @device_class
-class ITV1050Controller:
+class PressureRegulatorITV1050:
 
     @classmethod
     def setup_instructions(cls):

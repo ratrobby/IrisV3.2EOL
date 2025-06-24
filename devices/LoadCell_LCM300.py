@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from decorators import device_class
 """
     =====================================
-    ReadLoadCell Class - Public Interface
+    LoadCellLCM300 - Public Interface
     =====================================
 
     Purpose:
@@ -16,7 +16,7 @@ from decorators import device_class
 
     Constructor:
     ------------
-    ReadLoadCell(al2205_instance, x1_index)
+    LoadCellLCM300(al2205_instance, x1_index)
 
     Public Methods:
     ---------------
@@ -29,7 +29,7 @@ from decorators import device_class
 """
 
 @device_class
-class LCM300:
+class LoadCellLCM300:
 
     @classmethod
     def test_instructions(cls):

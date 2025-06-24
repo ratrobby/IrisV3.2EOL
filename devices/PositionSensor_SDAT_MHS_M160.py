@@ -1,6 +1,6 @@
 """
     =======================================
-    SDAT_MHS_M160 Class - Public Interface
+    PositionSensorSDATMHS_M160 - Public Interface
     =======================================
 
     Purpose:
@@ -9,7 +9,7 @@
 
     Constructor:
     ------------
-    SDAT_MHS_M160(al2205, x1_index, stroke_mm=150)
+    PositionSensorSDATMHS_M160(al2205, x1_index, stroke_mm=150)
 
     Public Methods:
     ---------------
@@ -42,7 +42,7 @@ from decorators import setup_command, test_command, device_class
 
 
 @device_class
-class SDAT_MHS_M160:
+class PositionSensorSDATMHS_M160:
 
     @classmethod
     def setup_instructions(cls):
@@ -165,7 +165,7 @@ def _load_position_sensors():
 
     sensors = []
     for name, obj in module.__dict__.items():
-        if isinstance(obj, SDAT_MHS_M160):
+        if isinstance(obj, PositionSensorSDATMHS_M160):
             port = f"X1.{obj.x1_index}"
             sensors.append((obj, name, port))
     return sensors
