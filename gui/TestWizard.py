@@ -287,7 +287,10 @@ class TestWizard(tk.Tk):
         lib_frame.pack(fill="both", expand=True, padx=5, pady=5)
         lib_frame.columnconfigure(0, weight=1)
 
-        setup_container = ttk.LabelFrame(lib_frame, text="Setup Commands")
+        setup_label = ttk.Label(
+            lib_frame, text="Setup Commands", font=("Arial", 11, "underline")
+        )
+        setup_container = ttk.LabelFrame(lib_frame, labelwidget=setup_label)
         setup_container.pack(fill="both", expand=True, padx=5, pady=2)
         for device, cmds in self.library["setup"].items():
             ttk.Label(setup_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
@@ -296,7 +299,10 @@ class TestWizard(tk.Tk):
             for cmd in cmds:
                 self._create_collapsible_text(dev_frame, cmd["title"], cmd["content"])
 
-        test_container = ttk.LabelFrame(lib_frame, text="Test Commands")
+        test_label = ttk.Label(
+            lib_frame, text="Test Commands", font=("Arial", 11, "underline")
+        )
+        test_container = ttk.LabelFrame(lib_frame, labelwidget=test_label)
         test_container.pack(fill="both", expand=True, padx=5, pady=5)
         for device, cmds in self.library["test"].items():
             ttk.Label(test_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
