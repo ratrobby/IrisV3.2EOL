@@ -23,7 +23,10 @@ your test code. The Test Wizard automatically imports this module when a test
 starts so the objects are available without manual `import` statements.
 
 Custom device instance names are saved with each test rather than written back
-to `config/Test_Cell_1_Devices.py`.
+to `config/Test_Cell_1_Devices.py`. When device names are updated in the Test
+Wizard a copy of this module is written to `user_tests/<TestName>_Script.py`.
+The copy includes alias assignments for the customised names along with the
+current setup and loop code so the test configuration can be reproduced later.
 
 `gui/TestWizard.py` remains a simple placeholder for future test execution tools.
 
