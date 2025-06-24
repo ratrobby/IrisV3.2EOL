@@ -94,7 +94,7 @@ class ValveBank:
             raise ValueError(f"Invalid valve name: {valve}")
 
         def _turn_on_and_off():
-            print(f"[Thread] Turning ON {valve} for {duration}s")
+            print(f"Valve {valve} ON")
             with self._lock:
                 self.active_valves.add(valve)
                 self._write_state()
