@@ -48,8 +48,10 @@ class PositionSensorSDATMHS_M160:
     def setup_instructions(cls):
         return [
             {
-                "title": "Calibrate_PosSensor()",
-                "content": "Use: Launch wizard to calibrate all mapped position sensors",
+                "title": "Calibrate_PosSensor_PSG()",
+                "content": (
+                    "Use: Launch PySimpleGUI tool to calibrate all mapped position sensors"
+                ),
             }
         ]
     @classmethod
