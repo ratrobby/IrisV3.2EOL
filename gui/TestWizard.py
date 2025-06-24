@@ -127,14 +127,14 @@ class TestWizard(tk.Tk):
     def check_connection(self):
         try:
             result = subprocess.run([
-                "ping", "-c", "1", self.ip_address
+                "ping", "-n", "1", self.ip_address
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             ok = result.returncode == 0
         except Exception:
             ok = False
         self.status_var.set("Connected" if ok else "Disconnected")
         self.status_label.configure(foreground="green" if ok else "red")
-        self.after(3000, self.check_connection)
+        self.after(1000, self.check_connection)
 
     # ----------------------- Test Execution ------------------------
     def start_test(self):
