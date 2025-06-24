@@ -7,6 +7,7 @@ import subprocess
 import importlib
 import inspect
 from contextlib import redirect_stdout
+import re
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -127,19 +128,25 @@ class TestWizard(tk.Tk):
             for port, inst in self.instance_map:
                 self.map_list.insert("end", f"{port}: {inst}")
 
-        # Library lists
+        # Collapsible command library
         lib_frame = ttk.LabelFrame(main, text="Command Library")
         lib_frame.pack(fill="both", expand=False, pady=10)
-        setup_list = tk.Listbox(lib_frame, height=6)
-        test_list = tk.Listbox(lib_frame, height=6)
-        setup_list.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
-        test_list.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
-        ttk.Label(lib_frame, text="Setup Commands").grid(row=0, column=0)
-        ttk.Label(lib_frame, text="Test Commands").grid(row=0, column=1)
-        for cmd in self.library["setup"]:
-            setup_list.insert("end", cmd)
-        for cmd in self.library["test"]:
-            test_list.insert("end", cmd)
+        ttk.Label(lib_frame, text="Setup Commands").grid(row=0, column=0, sticky="w")
+        ttk.Label(lib_frame, text="Test Commands").grid(row=0, column=1, sticky="w")
+
+        setup_container = ttk.Frame(lib_frame)
+        test_container = ttk.Frame(lib_frame)
+        setup_container.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        test_container.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
+
+        for instr in self.library["setup"]:
+            for title, content in self._parse_commands(instr, "Test Setup Commands"):
+                self._create_collapsible_text(setup_container, title, content)
+
+        for instr in self.library["test"]:
+            for title, content in self._parse_commands(instr, "Test Commands"):
+                self._create_collapsible_text(test_container, title, content)
+
         lib_frame.columnconfigure(0, weight=1)
         lib_frame.columnconfigure(1, weight=1)
 
@@ -163,6 +170,65 @@ class TestWizard(tk.Tk):
         self.status_var = tk.StringVar(value="Disconnected")
         self.status_label = ttk.Label(btn_frame, textvariable=self.status_var, foreground="red")
         self.status_label.pack(side="right")
+
+    def _extract_section(self, instructions, section_title):
+        pattern = rf"{section_title}\s*:(.*?)(\n[A-Z].*?:|\Z)"
+        match = re.search(pattern, instructions, re.DOTALL)
+        return match.group(1).strip() if match else instructions.strip()
+
+    def _split_commands(self, text):
+        commands = []
+        current_title = None
+        lines = []
+        for line in text.splitlines():
+            if line.strip().startswith("Command:"):
+                if current_title:
+                    commands.append((current_title, "\n".join(lines).strip()))
+                    lines = []
+                current_title = line.strip()
+            else:
+                lines.append(line)
+        if current_title:
+            commands.append((current_title, "\n".join(lines).strip()))
+        return commands
+
+    def _parse_commands(self, instructions, section_title=None):
+        if section_title:
+            instructions = self._extract_section(instructions, section_title)
+        return self._split_commands(instructions)
+
+    def _create_collapsible_text(self, parent, section_title, content):
+        header = ttk.Label(parent, text=section_title, font=("Arial", 10, "bold italic"))
+        header.pack(anchor="w", padx=10, pady=(4, 0))
+
+        text_widget = tk.Text(parent, wrap="word", height=1, width=60,
+                              font=("Arial", 9), background="#f5f5f5")
+        text_widget.insert("1.0", content)
+
+        keyword_styles = {
+            "Command:": "command_style",
+            "Inputs:": "bold",
+            "Example:": "bold",
+            "Use:": "bold",
+        }
+
+        for keyword, tag in keyword_styles.items():
+            start = "1.0"
+            while True:
+                pos = text_widget.search(keyword, start, stopindex="end")
+                if not pos:
+                    break
+                end = f"{pos}+{len(keyword)}c"
+                text_widget.tag_add(tag, pos, end)
+                start = end
+
+        text_widget.tag_configure("bold", font=("Arial", 10, "bold"))
+        text_widget.tag_configure("command_style", font=("Arial", 11, "bold"), foreground="#003366")
+        text_widget.configure(state="disabled", height=min(30, content.count("\n") + 2))
+
+        text_widget.pack_forget()
+        header.bind("<Button-1>", lambda e, t=text_widget: t.pack(fill="x", padx=10)
+                    if not t.winfo_viewable() else t.pack_forget())
 
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
