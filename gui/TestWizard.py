@@ -650,6 +650,8 @@ class TestWizard(tk.Tk):
         if not name:
             messagebox.showerror("Error", "Please enter a test name.")
             return
+        # Persist any edited device instance names
+        self.update_device_naming()
         os.makedirs(TESTS_DIR, exist_ok=True)
         fname = re.sub(r"\W+", "_", name)
         path = os.path.join(TESTS_DIR, f"{fname}.json")

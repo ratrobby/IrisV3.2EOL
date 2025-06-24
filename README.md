@@ -21,6 +21,9 @@ selected port, using names from the instance map. The Test Wizard now
 automatically imports this module when a test starts so the objects are
 available in the setup and loop editors without any manual `import` statements.
 
+The Test Wizard's **Save Test** button also writes any custom device instance
+names to `config/Test_Cell_1_Devices.py`.
+
 `gui/TestWizard.py` remains a simple placeholder for future test execution tools.
 
 To calibrate any connected `PositionSensorSDATMHS_M160` devices with a GUI run:
