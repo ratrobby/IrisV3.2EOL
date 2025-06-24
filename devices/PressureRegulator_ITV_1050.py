@@ -13,26 +13,21 @@ class PressureRegulatorITV1050:
 
     @classmethod
     def setup_instructions(cls):
-        return """
-Command: ~set_pressure(target_psi)~
-    Use: Sets ITV-1050 to target pressure value
-    Inputs:
-        - target_psi: Pressure value in psi
-    Example:
-        - set_pressure(25) - Sets ITV-1050 to 25psi
-                
-            """
+        return [
+            {
+                "title": "set_pressure(target_psi)",
+                "content": (
+                    "Use: Sets ITV-1050 to target pressure value\n"
+                    "Inputs:\n"
+                    "    - target_psi: Pressure value in psi\n"
+                    "Example:\n"
+                    "    - set_pressure(25) - Sets ITV-1050 to 25psi"
+                ),
+            }
+        ]
     @classmethod
     def test_instructions(cls):
-        return """
-    Command: ~set_pressure(target_psi)~
-        Use: Sets ITV-1050 to target pressure value
-        Inputs:
-            - target_psi: Pressure value in psi
-        Example:
-            - set_pressure(25) - Sets ITV-1050 to 25psi
-
-                """
+        return cls.setup_instructions()
     def __init__(self, io_master, port_number, default_tolerance=1.0, default_timeout=10):
         self.io_master = io_master
         self.port = port_number

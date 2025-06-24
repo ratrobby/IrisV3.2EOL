@@ -32,32 +32,40 @@ from decorators import test_setup, test_command, device_class
 class ValveBank:
 
     @classmethod
-    def test_instructions (cls):
-        return """
-    Command: ~valve_on(*valve, duration)~
-    Use: Turns on specified valves in SY3000 valve bank   
-    Inputs:
-        - *valve: Valve to turn on (e.g., 1.A, 1.B ... 8.A)
-        - duration=: Time (sec) valve stays active 
-                - "duration=None" - Turns valve on indefinitely
-    Example:
-        - valve_on(1.A, duration = 3) - Turns valve 1.A on for 3 sec
-        - valve_on(1.B, duration = None) - Turns valve 1.B on indefinitely
-
-Command: ~valve_off(*valves)~
-        Use: Turns off specified valves
-        Inputs:
-            - *valves: Valves to shut off, separated by "," (e.g., 1.A... 8.A)
-        Example:
-            - valve_off(1.A, 1.B) - Turns valves 1.A & 1.B off 
-                    
-Command: ~all_off()~
-        Use: Turns off all valves in SY3000 valve bank
-            """
+    def test_instructions(cls):
+        return [
+            {
+                "title": "valve_on(*valve, duration)",
+                "content": (
+                    "Use: Turns on specified valves in SY3000 valve bank\n"
+                    "Inputs:\n"
+                    "    - *valve: Valve to turn on (e.g., 1.A, 1.B ... 8.A)\n"
+                    "    - duration=: Time (sec) valve stays active\n"
+                    "            - \"duration=None\" - Turns valve on indefinitely\n"
+                    "Example:\n"
+                    "    - valve_on(1.A, duration = 3) - Turns valve 1.A on for 3 sec\n"
+                    "    - valve_on(1.B, duration = None) - Turns valve 1.B on indefinitely"
+                ),
+            },
+            {
+                "title": "valve_off(*valves)",
+                "content": (
+                    "Use: Turns off specified valves\n"
+                    "Inputs:\n"
+                    "    - *valves: Valves to shut off, separated by ',' (e.g., 1.A... 8.A)\n"
+                    "Example:\n"
+                    "    - valve_off(1.A, 1.B) - Turns valves 1.A & 1.B off"
+                ),
+            },
+            {
+                "title": "all_off()",
+                "content": "Use: Turns off all valves in SY3000 valve bank",
+            },
+        ]
 
     @classmethod
     def setup_instructions(cls):
-        return ""
+        return []
 
 
     VALVE_BITMASKS = {

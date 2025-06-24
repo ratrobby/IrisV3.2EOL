@@ -55,18 +55,21 @@ def gather_library(cfg):
 
         if hasattr(device_cls, "setup_instructions"):
             try:
-                setup_cmds.append(device_cls.setup_instructions())
+                cmds = device_cls.setup_instructions()
+                if isinstance(cmds, list):
+                    setup_cmds.extend(cmds)
+                elif cmds:
+                    setup_cmds.append(cmds)
             except Exception:
                 pass
 
-        if hasattr(device_cls, "test_instruction"):
+        if hasattr(device_cls, "test_instructions"):
             try:
-                test_cmds.append(device_cls.test_instruction())
-            except Exception:
-                pass
-        elif hasattr(device_cls, "test_instructions"):
-            try:
-                test_cmds.append(device_cls.test_instructions())
+                cmds = device_cls.test_instructions()
+                if isinstance(cmds, list):
+                    test_cmds.extend(cmds)
+                elif cmds:
+                    test_cmds.append(cmds)
             except Exception:
                 pass
 
@@ -240,16 +243,14 @@ class TestWizard(tk.Tk):
         ttk.Label(lib_frame, text="Setup Commands").pack(anchor="w")
         setup_container = ttk.Frame(lib_frame)
         setup_container.pack(fill="both", expand=True, padx=5, pady=2)
-        for instr in self.library["setup"]:
-            for title, content in self._parse_commands(instr, "Test Setup Commands"):
-                self._create_collapsible_text(setup_container, title, content)
+        for cmd in self.library["setup"]:
+            self._create_collapsible_text(setup_container, cmd["title"], cmd["content"])
 
         ttk.Label(lib_frame, text="Test Commands").pack(anchor="w", pady=(5, 0))
         test_container = ttk.Frame(lib_frame)
         test_container.pack(fill="both", expand=True, padx=5, pady=2)
-        for instr in self.library["test"]:
-            for title, content in self._parse_commands(instr, "Test Commands"):
-                self._create_collapsible_text(test_container, title, content)
+        for cmd in self.library["test"]:
+            self._create_collapsible_text(test_container, cmd["title"], cmd["content"])
 
         # The lower test editor has been removed to avoid duplication. The
         # primary test loop editor remains in the left column above.
@@ -274,33 +275,6 @@ class TestWizard(tk.Tk):
         self.new_btn.pack(side="right", padx=5)
         self.save_btn.pack(side="right", padx=5)
 
-    def _extract_section(self, instructions, section_title):
-        pattern = rf"{section_title}\s*:(.*?)(\n[A-Z].*?:|\Z)"
-        match = re.search(pattern, instructions, re.DOTALL)
-        return match.group(1).strip() if match else instructions.strip()
-
-    def _split_commands(self, text):
-        commands = []
-        current_title = None
-        lines = []
-        for line in text.splitlines():
-            if line.strip().startswith("Command:"):
-                if current_title:
-                    commands.append((current_title, "\n".join(lines).strip()))
-                    lines = []
-                # Extract title between ~ symbols if present
-                m = re.search(r"~(.*?)~", line)
-                current_title = m.group(1).strip() if m else line.replace("Command:", "").strip()
-            else:
-                lines.append(line)
-        if current_title:
-            commands.append((current_title, "\n".join(lines).strip()))
-        return commands
-
-    def _parse_commands(self, instructions, section_title=None):
-        if section_title:
-            instructions = self._extract_section(instructions, section_title)
-        return self._split_commands(instructions)
 
     def _create_collapsible_text(self, parent, section_title, content):
         container = ttk.Frame(parent, relief="groove", borderwidth=1)
@@ -334,7 +308,6 @@ class TestWizard(tk.Tk):
         container.pack_propagate(False)  # maintain header height when collapsed
 
         keyword_styles = {
-            "Command:": "command_style",
             "Inputs:": "bold",
             "Example:": "bold",
             "Use:": "bold",
@@ -351,7 +324,6 @@ class TestWizard(tk.Tk):
                 start = end
 
         text_widget.tag_configure("bold", font=("Arial", 10, "bold"))
-        text_widget.tag_configure("command_style", font=("Arial", 11, "bold"), foreground="#003366")
         text_widget.configure(state="disabled", height=min(30, content.count("\n") + 2))
         text_widget.update_idletasks()
         open_height = header_height + text_widget.winfo_reqheight()

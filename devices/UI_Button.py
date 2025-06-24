@@ -12,15 +12,19 @@ class UIButton:
 
     @classmethod
     def setup_instructions(cls):
-        return ""
+        return []
 
     @classmethod
     def test_instructions(cls):
-        return """\
-Command: ~state()~
-    Use: Return the interpreted state of the push button
-    Returns: 'START', 'STOP', 'HOLD', or None
-    """
+        return [
+            {
+                "title": "state()",
+                "content": (
+                    "Use: Return the interpreted state of the push button\n"
+                    "Returns: 'START', 'STOP', 'HOLD', or None"
+                ),
+            }
+        ]
     def __init__(self, al2205_instance, x1_index):
         """
         Initialize the button interface.
