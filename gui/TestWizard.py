@@ -212,23 +212,9 @@ class TestWizard(tk.Tk):
             for line in entries2205:
                 self.map_list2205.insert("end", line)
 
-        # Frame below the header holds the text editors and command library side by side
-        body = ttk.Frame(main)
-        body.pack(fill="both", expand=True, pady=(10, 0))
-        body.columnconfigure(0, weight=3)
-        body.columnconfigure(1, weight=2)
-
-        editor_frame = ttk.Frame(body)
-        editor_frame.grid(row=0, column=0, sticky="nsew")
-
-        # Test loop text box
-        self.script_text = ScrolledText(editor_frame, height=12)
-        self.script_text.pack(fill="both", expand=True, pady=(5, 0))
-        self.script_text.insert("end", "# Test loop code\n")
-
-        # Collapsible command library to the right of editors
-        lib_frame = ttk.LabelFrame(body, text="Command Library")
-        lib_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        # Command library placed below the device instances
+        lib_frame = ttk.LabelFrame(right_container, text="Command Library")
+        lib_frame.pack(side="top", fill="both", expand=True, padx=5, pady=5, anchor="e")
         lib_frame.columnconfigure(0, weight=1)
 
         ttk.Label(lib_frame, text="Setup Commands").pack(anchor="w")
@@ -244,6 +230,20 @@ class TestWizard(tk.Tk):
         for instr in self.library["test"]:
             for title, content in self._parse_commands(instr, "Test Commands"):
                 self._create_collapsible_text(test_container, title, content)
+
+        # Frame below the header holds the test editors
+        body = ttk.Frame(main)
+        body.pack(fill="both", expand=True, pady=(10, 0))
+        body.columnconfigure(0, weight=1)
+
+        editor_frame = ttk.Frame(body)
+        editor_frame.grid(row=0, column=0, sticky="nsew")
+
+        # Test loop text box
+        self.script_text = ScrolledText(editor_frame, height=12)
+        self.script_text.pack(fill="both", expand=True, pady=(5, 0))
+        self.script_text.insert("end", "# Test loop code\n")
+
 
         # Buttons
         btn_frame = ttk.Frame(main)
