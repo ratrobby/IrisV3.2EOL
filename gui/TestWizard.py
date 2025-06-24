@@ -476,7 +476,7 @@ class TestWizard(tk.Tk):
         for section in ("al1342", "al2205"):
             for port, var in self.name_vars.get(section, {}).items():
                 new_name = var.get().strip()
-                base = self.base_map[section][port].lower()
+                base = self.base_map[section][port]
                 self.instance_map[section][port] = new_name or base
         try:
             messagebox.showinfo("Success", "Device names updated for this test")
@@ -551,7 +551,7 @@ class TestWizard(tk.Tk):
             for section in ("al1342", "al2205"):
                 for port in self.instance_map.get(section, {}):
                     alias = self.instance_map[section][port]
-                    base = self.base_map[section][port].lower()
+                    base = self.base_map[section][port]
                     if alias != base and base in context:
                         context[alias] = context[base]
         except Exception as e:

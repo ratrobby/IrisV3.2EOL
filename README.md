@@ -17,9 +17,10 @@ MRLF Repo/
 
 Saving the configuration also generates `config/Test_Cell_1_Devices.py`. This
 file contains an `IO_master` instance and device objects created for every
-selected port, using names from the instance map. The Test Wizard now
-automatically imports this module when a test starts so the objects are
-available in the setup and loop editors without any manual `import` statements.
+selected port. The object variable names exactly match those listed in the
+Test Wizard's **Device Instances** panel so you can reference them directly in
+your test code. The Test Wizard automatically imports this module when a test
+starts so the objects are available without manual `import` statements.
 
 Custom device instance names are saved with each test rather than written back
 to `config/Test_Cell_1_Devices.py`.

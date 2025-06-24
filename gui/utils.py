@@ -76,7 +76,7 @@ def export_device_setup(cfg, path=None):
         if dev_name == "Empty":
             continue
         cls_name = classes.get(dev_name)
-        inst_name = instance_map["al1342"][port].lower()
+        inst_name = instance_map["al1342"][port]
         lines.append(
             f"{inst_name} = {cls_name}(master, port_number=\"{port}\")"
         )
@@ -92,7 +92,7 @@ def export_device_setup(cfg, path=None):
             if dev_name == "Empty":
                 continue
             cls_name = classes.get(dev_name)
-            inst_name = instance_map["al2205"][port].lower()
+            inst_name = instance_map["al2205"][port]
             index = int(port.split(".")[-1])
             lines.append(
                 f"{inst_name} = {cls_name}({hub_var}, x1_index={index})"
@@ -104,14 +104,14 @@ def export_device_setup(cfg, path=None):
         dev_name = cfg["al1342"][port]
         if dev_name == "Empty":
             continue
-        inst = instance_map["al1342"][port].lower()
+        inst = instance_map["al1342"][port]
         lines.append(f"# AL1342 Port {port}: {inst} ({dev_name})")
 
     for port in sorted(cfg.get("al2205", {})):
         dev_name = cfg["al2205"][port]
         if dev_name == "Empty":
             continue
-        inst = instance_map["al2205"][port].lower()
+        inst = instance_map["al2205"][port]
         lines.append(f"# AL2205 {port}: {inst} ({dev_name})")
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
