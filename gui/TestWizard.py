@@ -203,35 +203,41 @@ class TestWizard(tk.Tk):
             for line in entries2205:
                 self.map_list2205.insert("end", line)
 
-        # Collapsible command library
-        lib_frame = ttk.LabelFrame(main, text="Command Library")
-        lib_frame.pack(fill="both", expand=False, pady=10)
-        ttk.Label(lib_frame, text="Setup Commands").grid(row=0, column=0, sticky="w")
-        ttk.Label(lib_frame, text="Test Commands").grid(row=0, column=1, sticky="w")
+        # Frame below the header holds the text editors and command library side by side
+        body = ttk.Frame(main)
+        body.pack(fill="both", expand=True, pady=(10, 0))
+        body.columnconfigure(0, weight=3)
+        body.columnconfigure(1, weight=2)
 
+        editor_frame = ttk.Frame(body)
+        editor_frame.grid(row=0, column=0, sticky="nsew")
+
+        # Setup and script text boxes
+        self.setup_text = ScrolledText(editor_frame, height=6)
+        self.setup_text.pack(fill="both", expand=True, pady=(0, 5))
+        self.setup_text.insert("end", "# Setup code\n")
+        self.script_text = ScrolledText(editor_frame, height=8)
+        self.script_text.pack(fill="both", expand=True)
+        self.script_text.insert("end", "# Test loop code\n")
+
+        # Collapsible command library to the right of editors
+        lib_frame = ttk.LabelFrame(body, text="Command Library")
+        lib_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        lib_frame.columnconfigure(0, weight=1)
+
+        ttk.Label(lib_frame, text="Setup Commands").pack(anchor="w")
         setup_container = ttk.Frame(lib_frame)
-        test_container = ttk.Frame(lib_frame)
-        setup_container.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
-        test_container.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
-
+        setup_container.pack(fill="both", expand=True, padx=5, pady=2)
         for instr in self.library["setup"]:
             for title, content in self._parse_commands(instr, "Test Setup Commands"):
                 self._create_collapsible_text(setup_container, title, content)
 
+        ttk.Label(lib_frame, text="Test Commands").pack(anchor="w", pady=(5, 0))
+        test_container = ttk.Frame(lib_frame)
+        test_container.pack(fill="both", expand=True, padx=5, pady=2)
         for instr in self.library["test"]:
             for title, content in self._parse_commands(instr, "Test Commands"):
                 self._create_collapsible_text(test_container, title, content)
-
-        lib_frame.columnconfigure(0, weight=1)
-        lib_frame.columnconfigure(1, weight=1)
-
-        # Setup and script text boxes
-        self.setup_text = ScrolledText(main, height=6)
-        self.setup_text.pack(fill="both", expand=True, pady=(10, 5))
-        self.setup_text.insert("end", "# Setup code\n")
-        self.script_text = ScrolledText(main, height=8)
-        self.script_text.pack(fill="both", expand=True)
-        self.script_text.insert("end", "# Test loop code\n")
 
         # Buttons
         btn_frame = ttk.Frame(main)
