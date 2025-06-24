@@ -238,20 +238,8 @@ class TestWizard(tk.Tk):
             for title, content in self._parse_commands(instr, "Test Commands"):
                 self._create_collapsible_text(test_container, title, content)
 
-        # Frame below the header holds the test editors
-        body = ttk.Frame(main)
-        body.pack(fill="both", expand=True, pady=(10, 0))
-        body.columnconfigure(0, weight=1)
-
-        editor_frame = ttk.Frame(body)
-        editor_frame.grid(row=0, column=0, sticky="nsew")
-
-        # Test loop text box
-        self.script_text = ScrolledText(editor_frame, height=12)
-        self.script_text.pack(fill="both", expand=True, pady=(5, 0))
-        self.script_text.insert("end", "# Test loop code\n")
-
-
+        # The lower test editor has been removed to avoid duplication. The
+        # primary test loop editor remains in the left column above.
         # Buttons
         btn_frame = ttk.Frame(main)
         btn_frame.pack(fill="x", pady=10)
