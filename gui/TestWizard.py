@@ -73,18 +73,19 @@ def gather_library(cfg):
 
 
 def build_instance_map(cfg):
-    """Return list of (port, instance_name) tuples from config."""
-    entries = []
+    """Return mapping of ports to instance names for each AL section."""
     counts = {}
+    result = {"al1342": {}, "al2205": {}}
     for section in ("al1342", "al2205"):
         for port in sorted(cfg.get(section, {})):
             device = cfg.get(section, {}).get(port, "Empty")
-            if device == "Empty":
+            if str(device).lower() == "empty":
+                result[section][port] = "empty"
                 continue
             idx = counts.get(device, 0) + 1
             counts[device] = idx
-            entries.append((port, f"{device}_{idx}"))
-    return entries
+            result[section][port] = f"{device}_{idx}"
+    return result
 
 
 class TestWizard(tk.Tk):
@@ -122,11 +123,31 @@ class TestWizard(tk.Tk):
         if self.instance_map:
             map_frame = ttk.LabelFrame(header, text="Device Instances")
             map_frame.pack(side="right", padx=5)
-            height = min(len(self.instance_map), 10) or 1
-            self.map_list = tk.Listbox(map_frame, height=height, width=25)
-            self.map_list.pack()
-            for port, inst in self.instance_map:
-                self.map_list.insert("end", f"{port}: {inst}")
+
+            col1 = ttk.Frame(map_frame)
+            col2 = ttk.Frame(map_frame)
+            col1.pack(side="left", padx=2)
+            col2.pack(side="left", padx=2)
+
+            ttk.Label(col1, text="AL1342").pack()
+            ttk.Label(col2, text="AL2205").pack()
+
+            height = max(len(self.instance_map["al1342"]),
+                         len(self.instance_map["al2205"]))
+            height = min(height, 10) or 1
+
+            self.map_list1342 = tk.Listbox(col1, height=height, width=20)
+            self.map_list2205 = tk.Listbox(col2, height=height, width=20)
+            self.map_list1342.pack()
+            self.map_list2205.pack()
+
+            for port in sorted(self.instance_map["al1342"]):
+                inst = self.instance_map["al1342"][port]
+                self.map_list1342.insert("end", f"{port}: {inst}")
+
+            for port in sorted(self.instance_map["al2205"]):
+                inst = self.instance_map["al2205"][port]
+                self.map_list2205.insert("end", f"{port}: {inst}")
 
         # Collapsible command library
         lib_frame = ttk.LabelFrame(main, text="Command Library")
