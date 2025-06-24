@@ -29,7 +29,7 @@ from decorators import device_class
 """
 
 @device_class
-class ReadLoadCell:
+class LCM300:
 
     @classmethod
     def test_instructions(cls):

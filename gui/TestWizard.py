@@ -166,7 +166,7 @@ class TestWizard(tk.Tk):
         ttk.Button(name_frame, text="Browse", command=self.browse_test_file).grid(row=0, column=2, padx=5)
 
         self.setup_text = ScrolledText(left, height=8)
-        self.setup_text.grid(row=1, column=0, sticky="nsew", pady=(5, 0))
+        self.setup_text.grid(row=1, column=0, sticky="nsew", pady=(30, 20))
         self.setup_text.insert("end", "# Setup code\n")
         left.rowconfigure(1, weight=1)
 
