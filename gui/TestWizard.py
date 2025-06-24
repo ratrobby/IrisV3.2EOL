@@ -281,7 +281,7 @@ class TestWizard(tk.Tk):
         setup_container = ttk.Frame(lib_frame)
         setup_container.pack(fill="both", expand=True, padx=5, pady=2)
         for device, cmds in self.library["setup"].items():
-            ttk.Label(setup_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=(2, 0))
+            ttk.Label(setup_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
             dev_frame = ttk.Frame(setup_container)
             dev_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
             for cmd in cmds:
@@ -291,7 +291,7 @@ class TestWizard(tk.Tk):
         test_container = ttk.Frame(lib_frame)
         test_container.pack(fill="both", expand=True, padx=5, pady=2)
         for device, cmds in self.library["test"].items():
-            ttk.Label(test_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=(2, 0))
+            ttk.Label(test_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
             dev_frame = ttk.Frame(test_container)
             dev_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
             for cmd in cmds:
@@ -326,7 +326,7 @@ class TestWizard(tk.Tk):
             section_title = "<Untitled Command>"
 
         container = ttk.Frame(parent, relief="groove", borderwidth=1)
-        container.pack(fill="x", pady=2, padx=5)
+        container.pack(fill="x", pady=(0, 2), padx=5)
 
         header = ttk.Frame(container)
         header.pack(fill="x")
