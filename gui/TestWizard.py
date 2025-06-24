@@ -126,9 +126,15 @@ class TestWizard(tk.Tk):
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
         try:
-            result = subprocess.run([
-                "ping", "-n", "1", self.ip_address
-            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if os.name == "nt":
+                cmd = ["ping", "-n", "1", "-w", "1000", self.ip_address]
+            else:
+                cmd = ["ping", "-c", "1", "-W", "1", self.ip_address]
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             ok = result.returncode == 0
         except Exception:
             ok = False
