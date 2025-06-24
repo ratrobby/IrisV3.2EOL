@@ -129,9 +129,7 @@ class TestWizard(tk.Tk):
         self.create_widgets()
         # Scale window after widgets have been laid out
         self.update_idletasks()
-        width = int(self.winfo_width() * 1.25)
-        height = int(self.winfo_height() * 1.15)
-        self.geometry(f"{width}x{height}")
+        self.geometry("1600x950")
         self.check_connection()
 
     # ----------------------- GUI Construction -----------------------
@@ -149,6 +147,7 @@ class TestWizard(tk.Tk):
         content.pack(fill="both", expand=True)
         content.columnconfigure(0, weight=3)
         content.columnconfigure(1, weight=2)
+        content.rowconfigure(0, weight=1)
 
         # ----------------------- Left Column -----------------------
         left = ttk.Frame(content)
