@@ -192,7 +192,6 @@ class TestWizard(tk.Tk):
         self.library = gather_library(self.cfg)
         self.base_map = build_instance_map(self.cfg)
         self.instance_map = {s: dict(p) for s, p in self.base_map.items()}
-        self._apply_custom_names()
 
         self.running = False
         self.paused = False
@@ -210,33 +209,7 @@ class TestWizard(tk.Tk):
         self.check_connection()
         self.after(100, self.poll_monitor_queue)
 
-    def _load_custom_names(self):
-        """Return mapping of original instance names to custom aliases."""
-        try:
-            with open(DEVICES_FILE, "r") as fh:
-                lines = fh.read().splitlines()
-        except Exception:
-            return {}
-        start_marker = "# --- Custom Instance Names ---"
-        end_marker = "# --- End Custom Instance Names ---"
-        mapping = {}
-        if start_marker in lines:
-            s = lines.index(start_marker)
-            if end_marker in lines[s:]:
-                e = s + lines[s:].index(end_marker)
-                for line in lines[s + 1 : e]:
-                    if "=" in line:
-                        alias, orig = line.split("=", 1)
-                        mapping[orig.strip().lower()] = alias.strip()
-        return mapping
 
-    def _apply_custom_names(self):
-        mapping = self._load_custom_names()
-        for section in ("al1342", "al2205"):
-            for port, orig in self.base_map[section].items():
-                alias = mapping.get(orig.lower())
-                if alias:
-                    self.instance_map[section][port] = alias
 
     # ----------------------- GUI Construction -----------------------
     def create_widgets(self):
@@ -499,46 +472,16 @@ class TestWizard(tk.Tk):
         arrow_label.bind("<Button-1>", lambda e: toggle())
 
     def update_device_naming(self):
-        """Write custom device name aliases to ``Test_Cell_1_Devices.py``."""
-        alias_lines = []
+        """Update internal instance map from the naming fields."""
         for section in ("al1342", "al2205"):
             for port, var in self.name_vars.get(section, {}).items():
                 new_name = var.get().strip()
                 base = self.base_map[section][port].lower()
-                if new_name and new_name != base:
-                    alias_lines.append(f"{new_name} = {base}")
-                    self.instance_map[section][port] = new_name
-                else:
-                    self.instance_map[section][port] = base
-
+                self.instance_map[section][port] = new_name or base
         try:
-            with open(DEVICES_FILE, "r") as fh:
-                lines = fh.read().splitlines()
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to read {DEVICES_FILE}: {e}")
-            return
-
-        start_marker = "# --- Custom Instance Names ---"
-        end_marker = "# --- End Custom Instance Names ---"
-        if start_marker in lines:
-            s = lines.index(start_marker)
-            if end_marker in lines[s:]:
-                e = s + lines[s:].index(end_marker)
-                del lines[s : e + 1]
-
-        if alias_lines:
-            lines.append("")
-            lines.append(start_marker)
-            lines.extend(alias_lines)
-            lines.append(end_marker)
-            lines.append("")
-
-        try:
-            with open(DEVICES_FILE, "w") as fh:
-                fh.write("\n".join(lines))
-            messagebox.showinfo("Success", "Device names updated")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to write {DEVICES_FILE}: {e}")
+            messagebox.showinfo("Success", "Device names updated for this test")
+        except Exception:
+            pass
 
     def reset_device_names(self):
         """Revert device instance names to defaults from the configuration."""
@@ -549,27 +492,7 @@ class TestWizard(tk.Tk):
                 var.set(default)
                 self.instance_map[section][port] = default
 
-        # Remove any custom alias lines from the devices file
-        try:
-            with open(DEVICES_FILE, "r") as fh:
-                lines = fh.read().splitlines()
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to read {DEVICES_FILE}: {e}")
-            return
-
-        start_marker = "# --- Custom Instance Names ---"
-        end_marker = "# --- End Custom Instance Names ---"
-        if start_marker in lines:
-            s = lines.index(start_marker)
-            if end_marker in lines[s:]:
-                e = s + lines[s:].index(end_marker)
-                del lines[s : e + 1]
-
-        try:
-            with open(DEVICES_FILE, "w") as fh:
-                fh.write("\n".join(lines))
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to write {DEVICES_FILE}: {e}")
+        # No file modification needed; naming resets to defaults only in memory
 
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
@@ -624,6 +547,13 @@ class TestWizard(tk.Tk):
             for name, obj in devices_mod.__dict__.items():
                 if not name.startswith("_"):
                     context[name] = obj
+            # Add any custom aliases for this test
+            for section in ("al1342", "al2205"):
+                for port in self.instance_map.get(section, {}):
+                    alias = self.instance_map[section][port]
+                    base = self.base_map[section][port].lower()
+                    if alias != base and base in context:
+                        context[alias] = context[base]
         except Exception as e:
             print(f"Failed to load device objects: {e}")
         setup_code = self.setup_text.get("1.0", "end-1c")
@@ -711,6 +641,7 @@ class TestWizard(tk.Tk):
             "setup": self.setup_text.get("1.0", "end-1c"),
             "loop": self.script_text.get("1.0", "end-1c"),
             "config": self.cfg,
+            "device_names": self.instance_map,
         }
         try:
             with open(path, "w") as fh:
@@ -736,6 +667,17 @@ class TestWizard(tk.Tk):
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", data.get("loop", ""))
         self._verify_mapping(data.get("config"))
+        saved_names = data.get("device_names")
+        if saved_names:
+            for section in ("al1342", "al2205"):
+                for port, var in self.name_vars.get(section, {}).items():
+                    new_name = saved_names.get(section, {}).get(port,
+                                                      self.base_map[section][port])
+                    var.set(new_name)
+                    self.instance_map[section][port] = new_name
+        else:
+            # revert to defaults if test has no naming info
+            self.reset_device_names()
 
     def browse_test_file(self):
         path = filedialog.askopenfilename(
