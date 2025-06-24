@@ -72,6 +72,22 @@ def gather_library(cfg):
 
         if hasattr(device_cls, "setup_instructions"):
             try:
+                setup_cmds.extend(
+                    _normalize_instructions(device_cls.setup_instructions())
+                )
+            except Exception as e:
+                print(
+                    f"Failed to load setup instructions for {device_cls.__name__}: {e}"
+                )
+        if hasattr(device_cls, "test_instructions"):
+            try:
+                test_cmds.extend(
+                    _normalize_instructions(device_cls.test_instructions())
+                )
+            except Exception as e:
+                print(
+                    f"Failed to load test instructions for {device_cls.__name__}: {e}"
+                )
 
     if import_errors:
         try:
