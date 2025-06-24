@@ -588,6 +588,8 @@ class TestWizard(tk.Tk):
         context = {"__name__": "__main__"}
         try:
             devices_mod = importlib.import_module("config.Test_Cell_1_Devices")
+            # Reload to pick up any changes made since the last import
+            devices_mod = importlib.reload(devices_mod)
             for name, obj in devices_mod.__dict__.items():
                 if not name.startswith("_"):
                     context[name] = obj
