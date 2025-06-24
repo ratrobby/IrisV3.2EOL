@@ -129,7 +129,8 @@ class TestWizard(tk.Tk):
         self.create_widgets()
         # Scale window after widgets have been laid out
         self.update_idletasks()
-        self.geometry("1600x950")
+        # Position the window at x=100, y=50
+        self.geometry("1600x950+100+50")
         self.check_connection()
 
     # ----------------------- GUI Construction -----------------------
