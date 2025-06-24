@@ -1,6 +1,6 @@
 import os
 import sys
-from .utils import load_config, save_config
+from .utils import load_config, save_config, export_device_setup
 import subprocess
 import tkinter as tk
 from tkinter import ttk
@@ -106,6 +106,7 @@ class ConfigApp(tk.Tk):
     def configure_cell(self):
         cfg = self.gather_config()
         save_config(cfg, CONFIG_PATH)
+        export_device_setup(cfg)
         self.launch_wizard()
         self.destroy()
 
