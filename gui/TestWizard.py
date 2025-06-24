@@ -289,6 +289,7 @@ class TestWizard(tk.Tk):
     def _create_collapsible_text(self, parent, section_title, content):
         container = ttk.Frame(parent, relief="groove", borderwidth=1)
         container.pack(fill="x", pady=2, padx=5)
+        container.pack_propagate(False)  # keep width constant
 
         header = ttk.Frame(container)
         header.pack(fill="x")
@@ -299,9 +300,21 @@ class TestWizard(tk.Tk):
         arrow_label = ttk.Label(header, text="\u25BC")  # Down arrow
         arrow_label.pack(side="right", padx=5)
 
-        text_widget = tk.Text(container, wrap="word", height=1, width=60,
-                              font=("Arial", 9), background="#f5f5f5")
+        text_widget = tk.Text(
+            container,
+            wrap="word",
+            height=1,
+            width=60,
+            font=("Arial", 9),
+            background="#f5f5f5",
+        )
         text_widget.insert("1.0", content)
+
+        # Temporarily display to measure required width and then hide again
+        text_widget.pack(fill="x", padx=15, pady=2)
+        text_widget.update_idletasks()
+        container.configure(width=text_widget.winfo_width())
+        text_widget.pack_forget()
 
         keyword_styles = {
             "Command:": "command_style",
@@ -323,8 +336,6 @@ class TestWizard(tk.Tk):
         text_widget.tag_configure("bold", font=("Arial", 10, "bold"))
         text_widget.tag_configure("command_style", font=("Arial", 11, "bold"), foreground="#003366")
         text_widget.configure(state="disabled", height=min(30, content.count("\n") + 2))
-
-        text_widget.pack_forget()
 
         def toggle():
             if text_widget.winfo_viewable():
