@@ -62,7 +62,9 @@ class ConfigApp(tk.Tk):
         ip_frame = ttk.Frame(self)
         ip_frame.pack(fill="x", padx=10, pady=10)
         ttk.Label(ip_frame, text="AL1342 IP:").pack(side="left")
-        self.ip_var = tk.StringVar(value=cfg.get("ip_address", ""))
+        self.ip_var = tk.StringVar(
+            value=cfg.get("ip_address", DEFAULT_CONFIG["ip_address"])
+        )
         ttk.Entry(ip_frame, textvariable=self.ip_var, width=20).pack(side="left", padx=5)
 
         # Device selector frames
