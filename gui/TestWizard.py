@@ -269,6 +269,8 @@ class TestWizard(tk.Tk):
             textvariable=self.status_var,
             foreground="red",
             font=("Arial", 12),
+            anchor="center",  # center text
+            justify="center"
         )
         self.status_label.pack(expand=True, fill="both", padx=5, pady=2)
 
@@ -283,17 +285,17 @@ class TestWizard(tk.Tk):
         for device, cmds in self.library["setup"].items():
             ttk.Label(setup_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
             dev_frame = ttk.Frame(setup_container)
-            dev_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+            dev_frame.pack(fill="x", padx=10, pady=(0, 5))  # <- updated
             for cmd in cmds:
                 self._create_collapsible_text(dev_frame, cmd["title"], cmd["content"])
 
         ttk.Label(lib_frame, text="Test Commands").pack(anchor="w", pady=(5, 0))
         test_container = ttk.Frame(lib_frame)
-        test_container.pack(fill="both", expand=True, padx=5, pady=2)
+        test_container.pack(fill="both", expand=True, padx=5, pady=5)
         for device, cmds in self.library["test"].items():
             ttk.Label(test_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
             dev_frame = ttk.Frame(test_container)
-            dev_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+            dev_frame.pack(fill="x", padx=10, pady=(0, 2))  # <- updated
             for cmd in cmds:
                 self._create_collapsible_text(dev_frame, cmd["title"], cmd["content"])
 
