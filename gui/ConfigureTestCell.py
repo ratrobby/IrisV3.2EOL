@@ -1,6 +1,6 @@
 import os
 import sys
-import json
+from .utils import load_config, save_config
 import subprocess
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -29,19 +29,6 @@ def get_device_options():
     return ["Empty"] + sorted(modules, key=str.lower)
 
 
-def load_config():
-    if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, "r") as fh:
-            try:
-                return json.load(fh)
-            except Exception:
-                pass
-    return DEFAULT_CONFIG.copy()
-
-
-def save_config(data):
-    with open(CONFIG_PATH, "w") as fh:
-        json.dump(data, fh, indent=2)
 
 
 class DeviceSelector(ttk.Frame):
@@ -69,7 +56,7 @@ class ConfigApp(tk.Tk):
         self.title("Configure Test Cell")
 
         options = get_device_options()
-        cfg = load_config()
+        cfg = load_config(CONFIG_PATH)
 
         # IP entry
         ip_frame = ttk.Frame(self)
@@ -115,7 +102,7 @@ class ConfigApp(tk.Tk):
 
     def configure_cell(self):
         cfg = self.gather_config()
-        save_config(cfg)
+        save_config(cfg, CONFIG_PATH)
         messagebox.showinfo("Saved", f"Configuration saved to {CONFIG_PATH}")
         self.launch_wizard()
 
