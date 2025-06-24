@@ -246,9 +246,10 @@ class TestWizard(tk.Tk):
         )
         self.test_name_entry.grid(row=1, column=0, sticky="ew", padx=5, ipady=4)
 
-        ttk.Button(name_frame, text="Browse", command=self.browse_test_file).grid(
-            row=1, column=1, padx=5
+        self.browse_btn = ttk.Button(
+            name_frame, text="Browse", command=self.browse_test_file
         )
+        self.browse_btn.grid(row=1, column=1, padx=5)
 
         ttk.Label(left, text="Test Setup:", style="TestName.TLabel").grid(
             row=1, column=0, sticky="w", pady=(20, 0)
@@ -278,6 +279,10 @@ class TestWizard(tk.Tk):
         inst_status.rowconfigure(0, weight=1)
         inst_status.rowconfigure(1, weight=1)
 
+        self.name_vars = {"al1342": {}, "al2205": {}}
+        self.name_entries = {"al1342": {}, "al2205": {}}
+        self.update_names_btn = None
+
         map_frame = None
         if self.instance_map:
             map_frame = ttk.LabelFrame(inst_status, text="Device Instances")
@@ -291,13 +296,13 @@ class TestWizard(tk.Tk):
             ttk.Label(col1, text="AL1342").grid(row=0, column=0, columnspan=2)
             ttk.Label(col2, text="AL2205").grid(row=0, column=0, columnspan=2)
 
-            self.name_vars = {"al1342": {}, "al2205": {}}
 
             for r, port in enumerate(sorted(self.instance_map["al1342"]), start=1):
                 ttk.Label(col1, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
                 var = tk.StringVar(value=self.instance_map["al1342"][port])
                 self.name_vars["al1342"][port] = var
                 entry = ttk.Entry(col1, textvariable=var, width=23)
+                self.name_entries["al1342"][port] = entry
                 if self.cfg.get("al1342", {}).get(port) == "AL2205_Hub":
                     entry.configure(state="disabled")
                 entry.grid(row=r, column=1, sticky="w")
@@ -307,15 +312,17 @@ class TestWizard(tk.Tk):
                 var = tk.StringVar(value=self.instance_map["al2205"][port])
                 self.name_vars["al2205"][port] = var
                 entry = ttk.Entry(col2, textvariable=var, width=23)
+                self.name_entries["al2205"][port] = entry
                 if self.cfg.get("al2205", {}).get(port) == "UI_Button":
                     entry.configure(state="disabled")
                 entry.grid(row=r, column=1, sticky="w")
 
-            ttk.Button(
+            self.update_names_btn = ttk.Button(
                 inst_status,
                 text="Update Device Naming",
                 command=self.update_device_naming,
-            ).grid(row=1, column=0, columnspan=2, pady=(4, 2))
+            )
+            self.update_names_btn.grid(row=1, column=0, columnspan=2, pady=(4, 2))
 
         status_frame = ttk.LabelFrame(inst_status, text="AL1342 Connection Status:")
         status_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
@@ -520,9 +527,37 @@ class TestWizard(tk.Tk):
                 self.monitor.append(msg)
         self.after(100, self.poll_monitor_queue)
 
+    def _set_edit_state(self, state):
+        """Enable or disable editing widgets based on state."""
+        self.test_name_entry.configure(state=state)
+        self.browse_btn.configure(state=state)
+        self.setup_text.configure(state=state)
+        self.script_text.configure(state=state)
+        self.save_btn.configure(state=state)
+        self.new_btn.configure(state=state)
+        self.reconfig_btn.configure(state=state)
+        if self.update_names_btn:
+            self.update_names_btn.configure(state=state)
+        for section in self.name_entries:
+            for port, entry in self.name_entries[section].items():
+                if state == "normal":
+                    disabled = (
+                        (section == "al1342" and self.cfg.get("al1342", {}).get(port) == "AL2205_Hub")
+                        or (section == "al2205" and self.cfg.get("al2205", {}).get(port) == "UI_Button")
+                    )
+                    entry.configure(state="disabled" if disabled else "normal")
+                else:
+                    entry.configure(state="disabled")
+
     # ----------------------- Test Execution ------------------------
     def start_test(self):
         if self.running:
+            return
+        if not self.test_name_var.get().strip():
+            messagebox.showerror("Error", "Please enter a test name before starting the test.")
+            self.test_name_entry.focus_set()
+            return
+        if not self.save_test(show_message=False):
             return
         os.makedirs(LOG_DIR, exist_ok=True)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -539,6 +574,7 @@ class TestWizard(tk.Tk):
         self.start_btn.configure(state="disabled")
         self.stop_btn.configure(state="normal")
         self.pause_btn.configure(state="normal", text="Pause")
+        self._set_edit_state("disabled")
         context = {"__name__": "__main__"}
         try:
             devices_mod = importlib.import_module("config.Test_Cell_1_Devices")
@@ -600,6 +636,7 @@ class TestWizard(tk.Tk):
         self.start_btn.configure(state="normal")
         self.stop_btn.configure(state="disabled")
         self.pause_btn.configure(state="disabled", text="Pause")
+        self._set_edit_state("normal")
 
     def toggle_pause(self):
         if not self.running:
@@ -626,11 +663,12 @@ class TestWizard(tk.Tk):
             except Exception:
                 pass
 
-    def save_test(self):
+    def save_test(self, show_message=True):
         name = self.test_name_var.get().strip()
         if not name:
-            messagebox.showerror("Error", "Please enter a test name.")
-            return
+            if show_message:
+                messagebox.showerror("Error", "Please enter a test name.")
+            return False
         # Persist any edited device instance names
         self.update_device_naming()
         os.makedirs(TESTS_DIR, exist_ok=True)
@@ -647,9 +685,13 @@ class TestWizard(tk.Tk):
             with open(path, "w") as fh:
                 json.dump(data, fh, indent=2)
             self.test_file_path = path
-            messagebox.showinfo("Saved", f"Test saved to {path}")
+            if show_message:
+                messagebox.showinfo("Saved", f"Test saved to {path}")
+            return True
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save test: {e}")
+            if show_message:
+                messagebox.showerror("Error", f"Failed to save test: {e}")
+            return False
 
     def load_test(self, path):
         if not path:
