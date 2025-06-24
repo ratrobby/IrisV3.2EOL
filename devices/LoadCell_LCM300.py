@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 # Allow importing project modules when executed directly
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -20,7 +21,8 @@ from decorators import device_class
 
     Public Methods:
     ---------------
-    - read_force(unit="lbf"): Return force in pounds-force or newtons.
+    - read_force(unit="lbf"): Return a single force reading.
+    - monitor_force(unit="lbf", interval=0.5): Continuously print force readings.
 
     Notes:
     ------
@@ -37,7 +39,7 @@ class LoadCellLCM300:
             {
                 "title": "read_force(unit)",
                 "content": (
-                    "Use: Returns force of load cell in pounds-force or newtons\n"
+                    "Use: Returns a single force reading in pounds-force or newtons\n"
                     "Inputs:\n"
                     "  - unit: Defines the unit of force the reading will be in\n"
                     "          - lbf: pounds-force\n"
@@ -46,7 +48,18 @@ class LoadCellLCM300:
                     "  - read_force(N) - Reads force in newtons\n"
                     "  - read_force(lbf) - Reads force in pounds-force"
                 ),
-            }
+            },
+            {
+                "title": "monitor_force(unit, interval)",
+                "content": (
+                    "Use: Continuously prints force readings until stopped\n"
+                    "Inputs:\n"
+                    "  - unit: Force units (lbf or N)\n"
+                    "  - interval=: Time between readings in seconds (default 0.5)\n"
+                    "Example:\n"
+                    "  - monitor_force(lbf, interval=1) - Print lbf every second"
+                ),
+            },
         ]
 
     @classmethod
@@ -107,3 +120,12 @@ class LoadCellLCM300:
         unit_label = "lbf" if unit == "lbf" else "N"
         print(f"Force = {result:.2f}{unit_label}")
         return result
+
+    def monitor_force(self, unit="lbf", interval=0.5):
+        """Continuously print force readings until interrupted."""
+        try:
+            while True:
+                self.read_force(unit=unit)
+                time.sleep(interval)
+        except KeyboardInterrupt:
+            print("Stopped force monitoring")
