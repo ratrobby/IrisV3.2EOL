@@ -147,31 +147,29 @@ class TestWizard(tk.Tk):
         header = ttk.Frame(main)
         header.pack(fill="x")
 
-        # --- Test name on its own row ---
-        name_frame = ttk.Frame(header)
-        name_frame.pack(fill="x")
         self.style.configure("TestName.TLabel", font=("Arial", 12, "bold"))
-        ttk.Label(name_frame, text="Test Name:", style="TestName.TLabel").pack(side="left")
+        ttk.Label(header, text="Test Name:", style="TestName.TLabel").pack(side="left")
         self.test_name_var = tk.StringVar()
         entry_width = int(self.winfo_screenwidth() * 0.5 / 8)
-        self.test_name_entry = ttk.Entry(name_frame, textvariable=self.test_name_var,
+        self.test_name_entry = ttk.Entry(header, textvariable=self.test_name_var,
                   width=entry_width, font=("Arial", 12))
         self.test_name_entry.pack(side="left", padx=5, fill="x", expand=True, ipady=4)
-        ttk.Button(name_frame, text="Browse", command=self.browse_test_file).pack(side="left", padx=5)
 
-        # --- Row with connection status and device map ---
-        sub_header = ttk.Frame(header)
-        sub_header.pack(fill="x", pady=(5, 0))
+        ttk.Button(header, text="Browse", command=self.browse_test_file).pack(side="left", padx=5)
 
-        status_frame = ttk.LabelFrame(sub_header, text="AL1342 Connection Status:")
-        status_frame.pack(side="left", padx=5, anchor="n")
+        # --- Right side with connection status and device map ---
+        right_container = ttk.Frame(header)
+        right_container.pack(side="right", anchor="n")
+
+        status_frame = ttk.LabelFrame(right_container, text="AL1342 Connection Status:")
+        status_frame.pack(side="top", padx=5, anchor="e")
         self.status_var = tk.StringVar(value="Disconnected")
         self.status_label = ttk.Label(status_frame, textvariable=self.status_var, foreground="red")
         self.status_label.pack(padx=5, pady=2)
 
         if self.instance_map:
-            map_frame = ttk.LabelFrame(sub_header, text="Device Instances")
-            map_frame.pack(side="right", padx=5)
+            map_frame = ttk.LabelFrame(right_container, text="Device Instances")
+            map_frame.pack(side="top", padx=5, pady=(5, 0), anchor="e")
 
             col1 = ttk.Frame(map_frame)
             col2 = ttk.Frame(map_frame)
