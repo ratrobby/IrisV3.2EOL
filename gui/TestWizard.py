@@ -21,6 +21,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(REPO_ROOT, "config", "Test_Cell_Config.json")
 LOG_DIR = os.path.join(REPO_ROOT, "logs")
 TESTS_DIR = os.path.join(REPO_ROOT, "user_tests")
+DEVICES_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
 
 
 def load_config():
@@ -235,31 +236,31 @@ class TestWizard(tk.Tk):
 
             col1 = ttk.Frame(map_frame)
             col2 = ttk.Frame(map_frame)
-            col1.pack(side="left", padx=2)
-            col2.pack(side="left", padx=2)
+            col1.pack(side="left", padx=5)
+            col2.pack(side="left", padx=5)
 
-            ttk.Label(col1, text="AL1342").pack()
-            ttk.Label(col2, text="AL2205").pack()
+            ttk.Label(col1, text="AL1342").grid(row=0, column=0, columnspan=2)
+            ttk.Label(col2, text="AL2205").grid(row=0, column=0, columnspan=2)
 
-            height = max(len(self.instance_map["al1342"]), len(self.instance_map["al2205"]))
-            height = min(height, 10) or 1
+            self.name_vars = {"al1342": {}, "al2205": {}}
 
-            entries1342 = [f"{p}: {self.instance_map['al1342'][p]}" for p in sorted(self.instance_map['al1342'])]
-            entries2205 = [f"{p}: {self.instance_map['al2205'][p]}" for p in sorted(self.instance_map['al2205'])]
-            width1342 = max((len(e) for e in entries1342), default=10) + 1
-            width2205 = max((len(e) for e in entries2205), default=10) + 1
+            for r, port in enumerate(sorted(self.instance_map["al1342"]), start=1):
+                ttk.Label(col1, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
+                var = tk.StringVar(value=self.instance_map["al1342"][port].lower())
+                self.name_vars["al1342"][port] = var
+                ttk.Entry(col1, textvariable=var, width=15).grid(row=r, column=1, sticky="w")
 
-            bg = self.cget("bg")
-            self.map_list1342 = tk.Listbox(col1, height=height, width=width1342, bg=bg)
-            self.map_list2205 = tk.Listbox(col2, height=height, width=width2205, bg=bg)
-            self.map_list1342.pack()
-            self.map_list2205.pack()
+            for r, port in enumerate(sorted(self.instance_map["al2205"]), start=1):
+                ttk.Label(col2, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
+                var = tk.StringVar(value=self.instance_map["al2205"][port].lower())
+                self.name_vars["al2205"][port] = var
+                ttk.Entry(col2, textvariable=var, width=15).grid(row=r, column=1, sticky="w")
 
-            for line in entries1342:
-                self.map_list1342.insert("end", line)
-
-            for line in entries2205:
-                self.map_list2205.insert("end", line)
+            ttk.Button(
+                map_frame,
+                text="Update Device Naming",
+                command=self.update_device_naming,
+            ).pack(side="bottom", pady=(4, 2))
 
         status_frame = ttk.LabelFrame(inst_status, text="AL1342 Connection Status:")
         status_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
@@ -414,6 +415,45 @@ class TestWizard(tk.Tk):
         header.bind("<Button-1>", lambda e: toggle())
         title_label.bind("<Button-1>", lambda e: toggle())
         arrow_label.bind("<Button-1>", lambda e: toggle())
+
+    def update_device_naming(self):
+        """Write custom device name aliases to ``Test_Cell_1_Devices.py``."""
+        alias_lines = []
+        for section in ("al1342", "al2205"):
+            for port, var in self.name_vars.get(section, {}).items():
+                new_name = var.get().strip()
+                orig = self.instance_map[section][port].lower()
+                if new_name and new_name != orig:
+                    alias_lines.append(f"{new_name} = {orig}")
+
+        try:
+            with open(DEVICES_FILE, "r") as fh:
+                lines = fh.read().splitlines()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to read {DEVICES_FILE}: {e}")
+            return
+
+        start_marker = "# --- Custom Instance Names ---"
+        end_marker = "# --- End Custom Instance Names ---"
+        if start_marker in lines:
+            s = lines.index(start_marker)
+            if end_marker in lines[s:]:
+                e = s + lines[s:].index(end_marker)
+                del lines[s : e + 1]
+
+        if alias_lines:
+            lines.append("")
+            lines.append(start_marker)
+            lines.extend(alias_lines)
+            lines.append(end_marker)
+            lines.append("")
+
+        try:
+            with open(DEVICES_FILE, "w") as fh:
+                fh.write("\n".join(lines))
+            messagebox.showinfo("Success", "Device names updated")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to write {DEVICES_FILE}: {e}")
 
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
