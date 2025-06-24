@@ -45,16 +45,19 @@ def _normalize_instructions(cmds):
 
 
 def gather_library(cfg):
-    """Return dict of setup and test instructions from configured devices."""
-    setup_cmds = []
-    test_cmds = []
+    """Return dict of setup and test instructions from configured devices.
+
+    The returned structure groups commands by device class name so the GUI can
+    display them in labeled sections.
+    """
+    library = {"setup": {}, "test": {}}
     modules = set()
     modules.update(v for v in cfg.get("al1342", {}).values() if v != "Empty")
     modules.update(v for v in cfg.get("al2205", {}).values() if v != "Empty")
 
     import_errors = []
 
-    for mod_name in modules:
+    for mod_name in sorted(modules):
         try:
             mod = importlib.import_module(f"devices.{mod_name}")
         except Exception as e:
@@ -72,18 +75,18 @@ def gather_library(cfg):
 
         if hasattr(device_cls, "setup_instructions"):
             try:
-                setup_cmds.extend(
-                    _normalize_instructions(device_cls.setup_instructions())
-                )
+                cmds = _normalize_instructions(device_cls.setup_instructions())
+                if cmds:
+                    library["setup"][device_cls.__name__] = cmds
             except Exception as e:
                 print(
                     f"Failed to load setup instructions for {device_cls.__name__}: {e}"
                 )
         if hasattr(device_cls, "test_instructions"):
             try:
-                test_cmds.extend(
-                    _normalize_instructions(device_cls.test_instructions())
-                )
+                cmds = _normalize_instructions(device_cls.test_instructions())
+                if cmds:
+                    library["test"][device_cls.__name__] = cmds
             except Exception as e:
                 print(
                     f"Failed to load test instructions for {device_cls.__name__}: {e}"
@@ -95,7 +98,7 @@ def gather_library(cfg):
         except Exception:
             pass
 
-    return {"setup": setup_cmds, "test": test_cmds}
+    return library
 
 
 def build_instance_map(cfg):
@@ -277,14 +280,22 @@ class TestWizard(tk.Tk):
         ttk.Label(lib_frame, text="Setup Commands").pack(anchor="w")
         setup_container = ttk.Frame(lib_frame)
         setup_container.pack(fill="both", expand=True, padx=5, pady=2)
-        for cmd in self.library["setup"]:
-            self._create_collapsible_text(setup_container, cmd["title"], cmd["content"])
+        for device, cmds in self.library["setup"].items():
+            ttk.Label(setup_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=(2, 0))
+            dev_frame = ttk.Frame(setup_container)
+            dev_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+            for cmd in cmds:
+                self._create_collapsible_text(dev_frame, cmd["title"], cmd["content"])
 
         ttk.Label(lib_frame, text="Test Commands").pack(anchor="w", pady=(5, 0))
         test_container = ttk.Frame(lib_frame)
         test_container.pack(fill="both", expand=True, padx=5, pady=2)
-        for cmd in self.library["test"]:
-            self._create_collapsible_text(test_container, cmd["title"], cmd["content"])
+        for device, cmds in self.library["test"].items():
+            ttk.Label(test_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=(2, 0))
+            dev_frame = ttk.Frame(test_container)
+            dev_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+            for cmd in cmds:
+                self._create_collapsible_text(dev_frame, cmd["title"], cmd["content"])
 
         # The lower test editor has been removed to avoid duplication. The
         # primary test loop editor remains in the left column above.
