@@ -3,7 +3,7 @@ import sys
 from .utils import load_config, save_config
 import subprocess
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 
 # Paths used throughout the GUI
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -105,7 +105,8 @@ class ConfigApp(tk.Tk):
     def configure_cell(self):
         cfg = self.gather_config()
         save_config(cfg, CONFIG_PATH)
-        messagebox.showinfo("Saved", f"Configuration saved to {CONFIG_PATH}")
+        # Automatically open the Test Wizard after saving without showing a
+        # confirmation dialog.
         self.launch_wizard()
 
     def launch_wizard(self):
