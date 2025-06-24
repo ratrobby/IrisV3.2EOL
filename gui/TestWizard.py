@@ -246,8 +246,13 @@ class TestWizard(tk.Tk):
         status_frame = ttk.LabelFrame(inst_status, text="AL1342 Connection Status:")
         status_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
         self.status_var = tk.StringVar(value="Disconnected")
-        self.status_label = ttk.Label(status_frame, textvariable=self.status_var, foreground="red")
-        self.status_label.pack(padx=5, pady=2)
+        self.status_label = ttk.Label(
+            status_frame,
+            textvariable=self.status_var,
+            foreground="red",
+            font=("Arial", 14, "bold"),
+        )
+        self.status_label.pack(expand=True, fill="both", padx=5, pady=2)
 
         # Collapsible command library below the device instances
         lib_frame = ttk.LabelFrame(right, text="Command Library")
