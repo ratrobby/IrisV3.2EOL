@@ -27,6 +27,8 @@ to `config/Test_Cell_1_Devices.py`. When device names are updated in the Test
 Wizard a copy of this module is written to `user_tests/<TestName>_Script.py`.
 The copy includes alias assignments for the customised names along with the
 current setup and loop code so the test configuration can be reproduced later.
+When a test is started the wizard will import this generated script instead of
+`Test_Cell_1_Devices.py` so the customised names are available automatically.
 
 `gui/TestWizard.py` remains a simple placeholder for future test execution tools.
 

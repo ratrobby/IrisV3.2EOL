@@ -6,6 +6,7 @@ import threading
 import queue
 import subprocess
 import importlib
+import importlib.util
 import inspect
 from contextlib import redirect_stdout
 import re
@@ -198,6 +199,7 @@ class TestWizard(tk.Tk):
         self.worker = None
         self.log_file = None
         self.test_file_path = None
+        self.test_script_path = None
         self.monitor = None
         self.monitor_queue = queue.Queue()
 
@@ -487,10 +489,19 @@ class TestWizard(tk.Tk):
                 self.instance_map[section][port] = new_name or base
 
         name = self.test_name_var.get().strip()
-        if name:
-            self.test_script_path = self._export_device_alias_script(name)
+        if not name:
+            try:
+                messagebox.showerror("Error", "Please enter a test name first.")
+            except Exception:
+                pass
+            return
+
+        self.test_script_path = self._export_device_alias_script(name)
         try:
-            messagebox.showinfo("Success", "Device names updated for this test")
+            messagebox.showinfo(
+                "Success",
+                f"Device names updated. Script saved to {self.test_script_path}",
+            )
         except Exception:
             pass
 
@@ -621,9 +632,16 @@ class TestWizard(tk.Tk):
         self._set_edit_state("disabled")
         context = {"__name__": "__main__"}
         try:
-            devices_mod = importlib.import_module("config.Test_Cell_1_Devices")
-            # Reload to pick up any changes made since the last import
-            devices_mod = importlib.reload(devices_mod)
+            if self.test_script_path and os.path.exists(self.test_script_path):
+                spec = importlib.util.spec_from_file_location(
+                    "user_devices", self.test_script_path
+                )
+                devices_mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(devices_mod)
+            else:
+                devices_mod = importlib.import_module("config.Test_Cell_1_Devices")
+                # Reload to pick up any changes made since the last import
+                devices_mod = importlib.reload(devices_mod)
             for name, obj in devices_mod.__dict__.items():
                 if not name.startswith("_"):
                     context[name] = obj
@@ -724,6 +742,7 @@ class TestWizard(tk.Tk):
             "loop": self.script_text.get("1.0", "end-1c"),
             "config": self.cfg,
             "device_names": self.instance_map,
+            "script_file": os.path.basename(self.test_script_path)
         }
         try:
             with open(path, "w") as fh:
@@ -754,6 +773,9 @@ class TestWizard(tk.Tk):
         self.script_text.insert("1.0", data.get("loop", ""))
         self._verify_mapping(data.get("config"))
         saved_names = data.get("device_names")
+        self.test_script_path = os.path.join(
+            TESTS_DIR, data.get("script_file", "")
+        )
         if saved_names:
             for section in ("al1342", "al2205"):
                 for port, var in self.name_vars.get(section, {}).items():
@@ -790,6 +812,7 @@ class TestWizard(tk.Tk):
         self.script_text.insert("1.0", "# Test loop code\n")
         # Reset any custom device naming back to defaults
         self.reset_device_names()
+        self.test_script_path = None
 
     def reconfigure_cell(self):
         current_filled = (
