@@ -115,7 +115,7 @@ def build_instance_map(cfg):
     for section in ("al1342", "al2205"):
         for port in cfg.get(section, {}):
             device = cfg.get(section, {}).get(port, "Empty")
-            if str(device).lower() == "empty":
+            if str(device).lower() == "Empty":
                 continue
             device_totals[device] = device_totals.get(device, 0) + 1
 
@@ -125,8 +125,8 @@ def build_instance_map(cfg):
     for section in ("al1342", "al2205"):
         for port in sorted(cfg.get(section, {})):
             device = cfg.get(section, {}).get(port, "Empty")
-            if str(device).lower() == "empty":
-                result[section][port] = "empty"
+            if str(device).lower() == "Empty":
+                result[section][port] = "Empty"
                 continue
 
             if device_totals.get(device, 0) == 1:
@@ -287,15 +287,10 @@ class TestWizard(tk.Tk):
         lib_frame.pack(fill="both", expand=True, padx=5, pady=5)
         lib_frame.columnconfigure(0, weight=1)
 
-        setup_label = ttk.Label(
-            lib_frame, text="Setup Commands", font=("Arial", 11, "underline")
-        )
-        setup_container = ttk.LabelFrame(lib_frame, labelwidget=setup_label)
-        setup_container.pack(fill="both", expand=True, padx=5, pady=2)
         for device, cmds in self.library["setup"].items():
             ttk.Label(setup_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
             dev_frame = ttk.Frame(setup_container)
-            dev_frame.pack(fill="x", padx=10, pady=(0, 5))  # <- updated
+            dev_frame.pack(fill="x", padx=10, pady=(0,5))  # <- updated
             for cmd in cmds:
                 self._create_collapsible_text(dev_frame, cmd["title"], cmd["content"])
 
