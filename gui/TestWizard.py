@@ -298,7 +298,6 @@ class TestWizard(tk.Tk):
     def _create_collapsible_text(self, parent, section_title, content):
         container = ttk.Frame(parent, relief="groove", borderwidth=1)
         container.pack(fill="x", pady=2, padx=5)
-        container.pack_propagate(False)  # keep width constant
 
         header = ttk.Frame(container)
         header.pack(fill="x")
@@ -324,6 +323,8 @@ class TestWizard(tk.Tk):
         text_widget.update_idletasks()
         container.configure(width=text_widget.winfo_width())
         text_widget.pack_forget()
+        container.update_idletasks()
+        container.pack_propagate(False)  # keep width constant and maintain header height
 
         keyword_styles = {
             "Command:": "command_style",
