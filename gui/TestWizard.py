@@ -31,7 +31,7 @@ def load_config():
 
 
 def gather_library(cfg):
-    """Return dict of setup and test commands from configured devices."""
+    """Return dict of setup and test instructions from configured devices."""
     setup_cmds = []
     test_cmds = []
     modules = set()
@@ -50,12 +50,25 @@ def gather_library(cfg):
                 break
         if not device_cls:
             continue
-        for name, meth in inspect.getmembers(device_cls, inspect.isfunction):
-            if getattr(meth, "_is_setup_command", False):
-                setup_cmds.append(f"{mod_name}.{name}()")
-            if getattr(meth, "_is_test_command", False):
-                test_cmds.append(f"{mod_name}.{name}()")
-    return {"setup": sorted(setup_cmds), "test": sorted(set(test_cmds))}
+
+        if hasattr(device_cls, "setup_instructions"):
+            try:
+                setup_cmds.append(device_cls.setup_instructions())
+            except Exception:
+                pass
+
+        if hasattr(device_cls, "test_instruction"):
+            try:
+                test_cmds.append(device_cls.test_instruction())
+            except Exception:
+                pass
+        elif hasattr(device_cls, "test_instructions"):
+            try:
+                test_cmds.append(device_cls.test_instructions())
+            except Exception:
+                pass
+
+    return {"setup": setup_cmds, "test": test_cmds}
 
 
 class TestWizard(tk.Tk):
