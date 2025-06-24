@@ -40,10 +40,15 @@ def gather_library(cfg):
     modules.update(v for v in cfg.get("al1342", {}).values() if v != "Empty")
     modules.update(v for v in cfg.get("al2205", {}).values() if v != "Empty")
 
+    import_errors = []
+
     for mod_name in modules:
         try:
             mod = importlib.import_module(f"devices.{mod_name}")
-        except Exception:
+        except Exception as e:
+            msg = f"Failed to import device module '{mod_name}': {e}"
+            print(msg)
+            import_errors.append(msg)
             continue
         device_cls = None
         for name, obj in inspect.getmembers(mod, inspect.isclass):
@@ -69,6 +74,12 @@ def gather_library(cfg):
                 test_cmds.append(device_cls.test_instructions())
             except Exception:
                 pass
+
+    if import_errors:
+        try:
+            messagebox.showerror("Device Import Error", "\n".join(import_errors))
+        except Exception:
+            pass
 
     return {"setup": setup_cmds, "test": test_cmds}
 
