@@ -8,29 +8,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from decorators import setup_command, test_command, device_class
 
- """
-    =====================================
-    PressureRegulatorITV1050 - Public Interface
-    =====================================
-
-    Purpose:
-    --------
-    Control an SMC ITV1050 electro-pneumatic regulator via Modbus.
-
-    Constructor:
-    ------------
-    PressureRegulatorITV1050(io_master, port_number)
-
-    Public Method:
-    --------------
-    - set_pressure(target_psi, tolerance=1.0, timeout=10)
-
-    Notes:
-    ------
-    - Automatically corrects for nonlinear output using interpolation.
-    - Converts desired psi to raw command register value.
-    """
-
 @device_class
 class PressureRegulatorITV1050:
 

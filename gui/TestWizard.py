@@ -181,10 +181,19 @@ class TestWizard(tk.Tk):
         right.columnconfigure(0, weight=1)
 
         status_frame = ttk.LabelFrame(right, text="AL1342 Connection Status:")
-        status_frame.pack(fill="x", anchor="n")
+        status_frame.pack(anchor="n")
+        status_frame.pack_propagate(False)
         self.status_var = tk.StringVar(value="Disconnected")
         self.status_label = ttk.Label(status_frame, textvariable=self.status_var, foreground="red")
         self.status_label.pack(padx=5, pady=2)
+
+        def _resize_status(event):
+            width = event.width
+            frame_width = width // 2
+            status_frame.configure(width=frame_width)
+            status_frame.pack_configure(padx=(width - frame_width) // 2)
+
+        right.bind("<Configure>", _resize_status)
 
         if self.instance_map:
             map_frame = ttk.LabelFrame(right, text="Device Instances")
