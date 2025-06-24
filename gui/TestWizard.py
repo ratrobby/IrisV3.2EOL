@@ -71,6 +71,21 @@ def gather_library(cfg):
     return {"setup": setup_cmds, "test": test_cmds}
 
 
+def build_instance_map(cfg):
+    """Return list of (port, instance_name) tuples from config."""
+    entries = []
+    counts = {}
+    for section in ("al1342", "al2205"):
+        for port in sorted(cfg.get(section, {})):
+            device = cfg.get(section, {}).get(port, "Empty")
+            if device == "Empty":
+                continue
+            idx = counts.get(device, 0) + 1
+            counts[device] = idx
+            entries.append((port, f"{device}_{idx}"))
+    return entries
+
+
 class TestWizard(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -78,6 +93,7 @@ class TestWizard(tk.Tk):
         self.cfg = load_config()
         self.ip_address = self.cfg.get("ip_address", "192.168.XXX.XXX")
         self.library = gather_library(self.cfg)
+        self.instance_map = build_instance_map(self.cfg)
 
         self.running = False
         self.paused = False
@@ -92,12 +108,24 @@ class TestWizard(tk.Tk):
         main = ttk.Frame(self)
         main.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Test name
-        name_frame = ttk.Frame(main)
-        name_frame.pack(fill="x")
+        # Top frame with test name and device map
+        header = ttk.Frame(main)
+        header.pack(fill="x")
+
+        name_frame = ttk.Frame(header)
+        name_frame.pack(side="left", fill="x", expand=True)
         ttk.Label(name_frame, text="Test Name:").pack(side="left")
         self.test_name_var = tk.StringVar()
         ttk.Entry(name_frame, textvariable=self.test_name_var, width=30).pack(side="left", padx=5)
+
+        if self.instance_map:
+            map_frame = ttk.LabelFrame(header, text="Device Instances")
+            map_frame.pack(side="right", padx=5)
+            height = min(len(self.instance_map), 10) or 1
+            self.map_list = tk.Listbox(map_frame, height=height, width=25)
+            self.map_list.pack()
+            for port, inst in self.instance_map:
+                self.map_list.insert("end", f"{port}: {inst}")
 
         # Library lists
         lib_frame = ttk.LabelFrame(main, text="Command Library")
