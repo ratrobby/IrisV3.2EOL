@@ -158,19 +158,6 @@ class TestWizard(tk.Tk):
             for line in entries2205:
                 self.map_list2205.insert("end", line)
 
-            self.map_list1342 = tk.Listbox(col1, height=height, width=20)
-            self.map_list2205 = tk.Listbox(col2, height=height, width=20)
-            self.map_list1342.pack()
-            self.map_list2205.pack()
-
-            for port in sorted(self.instance_map["al1342"]):
-                inst = self.instance_map["al1342"][port]
-                self.map_list1342.insert("end", f"{port}: {inst}")
-
-            for port in sorted(self.instance_map["al2205"]):
-                inst = self.instance_map["al2205"][port]
-                self.map_list2205.insert("end", f"{port}: {inst}")
-
         # Collapsible command library
         lib_frame = ttk.LabelFrame(main, text="Command Library")
         lib_frame.pack(fill="both", expand=False, pady=10)
