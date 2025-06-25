@@ -1,4 +1,25 @@
-from scipy.interpolate import interp1d
+try:
+    from scipy.interpolate import interp1d
+except Exception:  # pragma: no cover - optional SciPy dependency
+    def interp1d(x, y):
+        """Minimal linear interpolation fallback if SciPy is unavailable."""
+
+        x_vals = list(x)
+        y_vals = list(y)
+
+        def _interp(v):
+            if v <= x_vals[0]:
+                return y_vals[0]
+            if v >= x_vals[-1]:
+                return y_vals[-1]
+            for i in range(1, len(x_vals)):
+                if v <= x_vals[i]:
+                    x0, x1 = x_vals[i - 1], x_vals[i]
+                    y0, y1 = y_vals[i - 1], y_vals[i]
+                    return y0 + (y1 - y0) * (v - x0) / (x1 - x0)
+            return y_vals[-1]
+
+        return _interp
 import os
 import sys
 import time
