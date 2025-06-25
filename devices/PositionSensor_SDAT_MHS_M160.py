@@ -67,6 +67,32 @@ class PositionSensorSDATMHS_M160:
             }
         ]
 
+    @classmethod
+    def calibration_steps(cls):
+        """Return step definitions for the generic calibration wizard."""
+        return [
+            {
+                "prompt": (
+                    "Move sensor to fully retracted position then capture the minimum"
+                ),
+                "action": "calibrate_min",
+                "button": "Capture Min",
+            },
+            {
+                "prompt": (
+                    "Move sensor to fully extended position then capture the maximum"
+                ),
+                "action": "calibrate_max",
+                "button": "Capture Max",
+            },
+            {
+                "prompt": "Enter stroke length in mm and save",
+                "action": "set_stroke_length",
+                "input": "stroke_mm",
+                "button": "Save Stroke",
+            },
+        ]
+
     CALIBRATION_FILE = "sensor_calibrations.json"
 
     def __init__(self, al2205, x1_index, stroke_mm=150):
