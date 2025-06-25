@@ -119,6 +119,48 @@ class PositionSensorSDATMHS_M160:
         self._save_calibration_value("stroke", self.stroke_mm)
         print(f"✅ Set stroke length for X1.{self.x1_index}: {self.stroke_mm} mm")
 
+    # ---------------------- GUI Integration ----------------------
+    def setup_widget(self, parent, name=None):
+        """Return a Tkinter frame with calibration controls."""
+        frame = ttk.Frame(parent)
+        label = ttk.Label(frame, text=name or f"Sensor X1.{self.x1_index}")
+        label.grid(row=0, column=0, columnspan=4, sticky="w")
+
+        ttk.Label(frame, text="Min").grid(row=1, column=0)
+        ttk.Button(frame, text="Capture",
+                   command=self._capture_min).grid(row=2, column=0, padx=2)
+
+        ttk.Label(frame, text="Max").grid(row=1, column=1)
+        ttk.Button(frame, text="Capture",
+                   command=self._capture_max).grid(row=2, column=1, padx=2)
+
+        ttk.Label(frame, text="Stroke").grid(row=1, column=2)
+        stroke_var = tk.StringVar(value=str(self.stroke_mm))
+        entry = ttk.Entry(frame, textvariable=stroke_var, width=6)
+        entry.grid(row=2, column=2, padx=2)
+        ttk.Button(frame, text="Capture",
+                   command=lambda: self._capture_stroke(stroke_var)).grid(
+            row=2, column=3, padx=2)
+
+        return frame
+
+    def _capture_min(self):
+        value = self.calibrate_min()
+        _log(f"X1.{self.x1_index} MIN: {value}")
+
+    def _capture_max(self):
+        value = self.calibrate_max()
+        _log(f"X1.{self.x1_index} MAX: {value}")
+
+    def _capture_stroke(self, var):
+        try:
+            length = float(var.get())
+        except ValueError:
+            messagebox.showerror("Input Error", "Invalid stroke length")
+            return
+        self.set_stroke_length(length)
+        _log(f"X1.{self.x1_index} STROKE: {length}")
+
     # ---------- Internal-only ----------
 
     def _load_calibration(self):
