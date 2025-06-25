@@ -142,6 +142,24 @@ def build_instance_map(cfg):
     return result
 
 
+def load_device_objects():
+    """Import configured device instances from ``Test_Cell_1_Devices.py``."""
+    if not os.path.exists(DEVICES_FILE):
+        return {}
+    try:
+        spec = importlib.util.spec_from_file_location("Test_Cell_1_Devices", DEVICES_FILE)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    except Exception as e:
+        print(f"Failed to load device objects: {e}")
+        return {}
+    objects = {}
+    for name, obj in module.__dict__.items():
+        if hasattr(getattr(obj, "__class__", object), "_is_device_class"):
+            objects[name] = obj
+    return objects
+
+
 class TestMonitor(tk.Toplevel):
     """Simple window that displays test output."""
 
@@ -193,6 +211,8 @@ class TestWizard(tk.Tk):
         self.library = gather_library(self.cfg)
         self.base_map = build_instance_map(self.cfg)
         self.instance_map = {s: dict(p) for s, p in self.base_map.items()}
+        self.device_objects = load_device_objects()
+        self.setup_code = ""
 
         self.running = False
         self.paused = False
@@ -256,10 +276,10 @@ class TestWizard(tk.Tk):
         ttk.Label(left, text="Test Setup:", style="TestName.TLabel").grid(
             row=1, column=0, sticky="w", pady=(20, 0)
         )
-        self.setup_text = ScrolledText(left, height=8)
-        self.setup_text.grid(row=2, column=0, sticky="nsew", pady=(5, 20))
-        self.setup_text.insert("end", "# Setup code\n")
-        left.rowconfigure(2, weight=1)
+        self.setup_frame = ttk.Frame(left)
+        self.setup_frame.grid(row=2, column=0, sticky="nsew", pady=(5, 20))
+        left.rowconfigure(2, weight=0)
+        self.build_setup_widgets()
 
         ttk.Label(left, text="Test Loop:", style="TestName.TLabel").grid(
             row=3, column=0, sticky="w"
@@ -487,6 +507,23 @@ class TestWizard(tk.Tk):
         title_label.bind("<Button-1>", lambda e: toggle())
         arrow_label.bind("<Button-1>", lambda e: toggle())
 
+    def build_setup_widgets(self):
+        """Populate the setup frame with device-specific widgets."""
+        for w in self.setup_frame.winfo_children():
+            w.destroy()
+        for section in ("al1342", "al2205"):
+            for port in sorted(self.instance_map.get(section, {})):
+                alias = self.instance_map[section][port]
+                base = self.base_map[section][port]
+                obj = self.device_objects.get(base)
+                if obj and hasattr(obj, "setup_widget"):
+                    try:
+                        widget = obj.setup_widget(self.setup_frame, name=alias)
+                        if widget:
+                            widget.pack(fill="x", padx=5, pady=2)
+                    except Exception as e:
+                        print(f"Failed to build setup widget for {alias}: {e}")
+
     def update_device_naming(self):
         """Update internal instance map and write a device alias script."""
         for section in ("al1342", "al2205"):
@@ -511,6 +548,7 @@ class TestWizard(tk.Tk):
             )
         except Exception:
             pass
+        self.build_setup_widgets()
 
     def _export_device_alias_script(self, test_name):
         """Write ``<test_name>_Script.py`` with device aliases and code."""
@@ -531,7 +569,7 @@ class TestWizard(tk.Tk):
                 if alias != base:
                     alias_lines.append(f"{alias} = {base}")
 
-        setup_code = self.setup_text.get("1.0", "end-1c")
+        setup_code = self.setup_code
         loop_code = self.script_text.get("1.0", "end-1c")
         iter_str = self.iterations_var.get().strip() or "1"
 
@@ -594,7 +632,11 @@ class TestWizard(tk.Tk):
         """Enable or disable editing widgets based on state."""
         self.test_name_entry.configure(state=state)
         self.browse_btn.configure(state=state)
-        self.setup_text.configure(state=state)
+        for child in self.setup_frame.winfo_children():
+            try:
+                child.configure(state=state)
+            except Exception:
+                pass
         self.script_text.configure(state=state)
         self.iterations_entry.configure(state=state)
         self.save_btn.configure(state=state)
@@ -676,7 +718,7 @@ class TestWizard(tk.Tk):
                         context[alias] = context[base]
         except Exception as e:
             print(f"Failed to load device objects: {e}")
-        setup_code = self.setup_text.get("1.0", "end-1c")
+        setup_code = self.setup_code
         loop_code = self.script_text.get("1.0", "end-1c")
         queue_writer = _QueueWriter(self.monitor_queue)
         def worker():
@@ -763,7 +805,7 @@ class TestWizard(tk.Tk):
         path = os.path.join(TESTS_DIR, f"{fname}.json")
         data = {
             "name": name,
-            "setup": self.setup_text.get("1.0", "end-1c"),
+            "setup": self.setup_code,
             "loop": self.script_text.get("1.0", "end-1c"),
             "iterations": self.iterations_var.get().strip(),
             "config": self.cfg,
@@ -793,8 +835,7 @@ class TestWizard(tk.Tk):
             return
         self.test_file_path = path
         self.test_name_var.set(data.get("name", ""))
-        self.setup_text.delete("1.0", "end")
-        self.setup_text.insert("1.0", data.get("setup", ""))
+        self.setup_code = data.get("setup", "")
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", data.get("loop", ""))
         self.iterations_var.set(data.get("iterations", ""))
@@ -807,12 +848,13 @@ class TestWizard(tk.Tk):
             for section in ("al1342", "al2205"):
                 for port, var in self.name_vars.get(section, {}).items():
                     new_name = saved_names.get(section, {}).get(port,
-                                                      self.base_map[section][port])
+                                                     self.base_map[section][port])
                     var.set(new_name)
                     self.instance_map[section][port] = new_name
         else:
             # revert to defaults if test has no naming info
             self.reset_device_names()
+        self.build_setup_widgets()
 
     def browse_test_file(self):
         path = filedialog.askopenfilename(
@@ -825,7 +867,7 @@ class TestWizard(tk.Tk):
     def new_test(self):
         current_filled = (
             self.test_name_var.get().strip()
-            or self.setup_text.get("1.0", "end-1c").strip()
+            or self.setup_code.strip()
             or self.script_text.get("1.0", "end-1c").strip()
         )
         if current_filled:
@@ -833,19 +875,19 @@ class TestWizard(tk.Tk):
                 self.save_test()
         self.test_file_path = None
         self.test_name_var.set("")
-        self.setup_text.delete("1.0", "end")
-        self.setup_text.insert("1.0", "# Setup code\n")
+        self.setup_code = ""
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n")
         self.iterations_var.set("")
         # Reset any custom device naming back to defaults
         self.reset_device_names()
+        self.build_setup_widgets()
         self.test_script_path = None
 
     def reconfigure_cell(self):
         current_filled = (
             self.test_name_var.get().strip()
-            or self.setup_text.get("1.0", "end-1c").strip()
+            or self.setup_code.strip()
             or self.script_text.get("1.0", "end-1c").strip()
         )
         if current_filled:
