@@ -30,9 +30,13 @@ current setup and loop code so the test configuration can be reproduced later.
 When a test is started the wizard will import this generated script instead of
 `Test_Cell_1_Devices.py` so the customised names are available automatically.
 
-`gui/TestWizard.py` remains a simple placeholder for future test execution tools.
+`gui/TestWizard.py` now supports a generic calibration wizard. Any device
+implementing a `calibration_steps()` class method will show a **Calibrate…**
+button in the Test Wizard setup panel. Clicking the button launches a wizard
+that walks through the defined steps.
 
-To calibrate any connected `PositionSensorSDATMHS_M160` devices with a GUI run:
+The standalone PySimpleGUI tool for calibrating all
+`PositionSensorSDATMHS_M160` devices is still available:
 
 ```bash
 python -m gui.sensor_calibration_psg

@@ -16,6 +16,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from tkinter.scrolledtext import ScrolledText
 
+from .calibration_wizard import CalibrationWizard
+
 # Allow running from repo root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -516,13 +518,33 @@ class TestWizard(tk.Tk):
                 alias = self.instance_map[section][port]
                 base = self.base_map[section][port]
                 obj = self.device_objects.get(base)
-                if obj and hasattr(obj, "setup_widget"):
+                if not obj:
+                    continue
+                if hasattr(obj.__class__, "calibration_steps"):
+                    btn = ttk.Button(
+                        self.setup_frame,
+                        text=f"Calibrate {alias}",
+                        command=lambda o=obj: self.open_calibration(o),
+                    )
+                    btn.pack(fill="x", padx=5, pady=2)
+                elif hasattr(obj, "setup_widget"):
                     try:
                         widget = obj.setup_widget(self.setup_frame, name=alias)
                         if widget:
                             widget.pack(fill="x", padx=5, pady=2)
                     except Exception as e:
                         print(f"Failed to build setup widget for {alias}: {e}")
+
+    def open_calibration(self, device):
+        """Launch the generic calibration wizard for a device."""
+        try:
+            steps = device.__class__.calibration_steps()
+        except Exception as e:
+            print(f"Failed to load calibration steps: {e}")
+            return
+        if not steps:
+            return
+        CalibrationWizard(device, steps)
 
     def update_device_naming(self):
         """Update internal instance map and write a device alias script."""
