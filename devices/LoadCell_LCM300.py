@@ -26,6 +26,7 @@ from tkinter import messagebox, ttk
     ---------------
     - read_force(unit="lbf"): Return a single force reading.
     - monitor_force(unit="lbf", interval=0.5): Continuously print force readings.
+    - monitor_force_window(interval=0.2): Show live force in both lbf and N.
 
     Notes:
     ------
@@ -71,7 +72,8 @@ class LoadCellLCM300:
             {
                 "title": "Calibrate_LoadCell_Zero()",
                 "content": (
-                    "Use: Opens a live monitor window to zero the load cell amplifier"
+                    "Use: Opens a live monitor window to zero the load cell amplifier.\n"
+                    "The window shows force in both lbf and N."
                 ),
             }
         ]
@@ -81,7 +83,8 @@ class LoadCellLCM300:
         return [
             {
                 "prompt": (
-                    "Open a monitor window and adjust the amplifier's zero dial until the reading is 0"
+                    "Open a monitor window and adjust the amplifier's zero dial until the reading is 0.\n"
+                    "The window displays force in both lbf and N."
                 ),
                 "action": "monitor_force_window",
                 "button": "Open Monitor",
@@ -153,8 +156,8 @@ class LoadCellLCM300:
             print("Stopped force monitoring")
 
     # ------------------------------------------------------------------
-    def monitor_force_window(self, unit="lbf", interval=0.2):
-        """Open a small window showing the live force reading."""
+    def monitor_force_window(self, interval=0.2):
+        """Open a small window showing the live force reading in lbf and N."""
         win = tk.Toplevel()
         win.title("Load Cell Monitor")
 
@@ -166,12 +169,12 @@ class LoadCellLCM300:
         def update():
             if not running:
                 return
-            value = self._get_force_value(unit)
-            if value is None:
+            lbf_val = self._get_force_value("lbf")
+            n_val = self._get_force_value("n")
+            if lbf_val is None or n_val is None:
                 label.config(text="N/A")
             else:
-                unit_label = "lbf" if unit.lower() == "lbf" else "N"
-                label.config(text=f"{value:.2f} {unit_label}")
+                label.config(text=f"{lbf_val:.2f} lbf / {n_val:.2f} N")
             win.after(int(interval * 1000), update)
 
         def close():
