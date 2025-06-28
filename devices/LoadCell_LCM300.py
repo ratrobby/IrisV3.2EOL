@@ -6,6 +6,9 @@ import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from decorators import device_class
+import importlib.util
+import tkinter as tk
+from tkinter import messagebox, ttk
 """
     =====================================
     LoadCellLCM300 - Public Interface
@@ -64,7 +67,30 @@ class LoadCellLCM300:
 
     @classmethod
     def setup_instructions(cls):
-        return []
+        return [
+            {
+                "title": "Calibrate_LoadCell_Zero()",
+                "content": (
+                    "Use: Opens a live monitor window to zero the load cell amplifier"
+                ),
+            }
+        ]
+
+    @classmethod
+    def calibration_steps(cls):
+        return [
+            {
+                "prompt": (
+                    "Open a monitor window and adjust the amplifier's zero dial until the reading is 0"
+                ),
+                "action": "monitor_force_window",
+                "button": "Open Monitor",
+            },
+            {
+                "prompt": "Close the monitor window and click Finish",
+                "button": "Finish",
+            },
+        ]
 
     def __init__(self, al2205_instance, x1_index):
         """
@@ -93,31 +119,27 @@ class LoadCellLCM300:
         raw = self.read_raw_data()
         return raw / 1000 if raw is not None else None
 
-    def read_force(self, unit="lbf"):
-        """
-        Convert voltage to force.
-
-        Parameters:
-        - unit: "lbf" for pounds-force or "n" for newtons
-
-        Returns:
-        - Force in requested unit (float)
-        """
+    def _get_force_value(self, unit="lbf"):
+        """Return the current force without printing."""
         voltage = self.read_voltage()
         if voltage is None:
             return None
 
-        # Example calibration: 5 V = 0 lbf, 0 V = 50 lbf (10 lbf/V)
         force_lbf = (5.0 - voltage) * 10.0
 
         unit = unit.lower()
         if unit == "lbf":
-            result = force_lbf
-        elif unit == "n":
-            result = force_lbf * 4.44822
-        else:
-            raise ValueError("Invalid unit. Use 'lbf' or 'n'.")
-        unit_label = "lbf" if unit == "lbf" else "N"
+            return force_lbf
+        if unit == "n":
+            return force_lbf * 4.44822
+        raise ValueError("Invalid unit. Use 'lbf' or 'n'.")
+
+    def read_force(self, unit="lbf"):
+        """Convert voltage to force and print the value."""
+        result = self._get_force_value(unit)
+        if result is None:
+            return None
+        unit_label = "lbf" if unit.lower() == "lbf" else "N"
         print(f"Force = {result:.2f}{unit_label}")
         return result
 
@@ -129,3 +151,66 @@ class LoadCellLCM300:
                 time.sleep(interval)
         except KeyboardInterrupt:
             print("Stopped force monitoring")
+
+    # ------------------------------------------------------------------
+    def monitor_force_window(self, unit="lbf", interval=0.2):
+        """Open a small window showing the live force reading."""
+        win = tk.Toplevel()
+        win.title("Load Cell Monitor")
+
+        label = ttk.Label(win, text="", font=("Arial", 12))
+        label.pack(padx=10, pady=10)
+
+        running = True
+
+        def update():
+            if not running:
+                return
+            value = self._get_force_value(unit)
+            if value is None:
+                label.config(text="N/A")
+            else:
+                unit_label = "lbf" if unit.lower() == "lbf" else "N"
+                label.config(text=f"{value:.2f} {unit_label}")
+            win.after(int(interval * 1000), update)
+
+        def close():
+            nonlocal running
+            running = False
+            win.destroy()
+
+        ttk.Button(win, text="Close", command=close).pack(pady=5)
+        win.protocol("WM_DELETE_WINDOW", close)
+
+        update()
+
+
+# ==================== Calibration Helper ====================
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TEST_CELL_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
+
+
+def _load_load_cells():
+    if not os.path.exists(TEST_CELL_FILE):
+        return []
+    spec = importlib.util.spec_from_file_location("Test_Cell_1_Devices", TEST_CELL_FILE)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["Test_Cell_1_Devices"] = module
+    spec.loader.exec_module(module)
+
+    cells = []
+    for name, obj in module.__dict__.items():
+        if isinstance(obj, LoadCellLCM300):
+            port = f"X1.{obj.x1_index}"
+            cells.append((obj, name, port))
+    return cells
+
+
+def Calibrate_LoadCell_Zero():
+    """Launch monitor windows for all mapped load cells."""
+    cells = _load_load_cells()
+    if not cells:
+        messagebox.showinfo("No Load Cells", "No LoadCell_LCM300 devices mapped to Test Cell 1.")
+        return
+    for cell, name, port in cells:
+        cell.monitor_force_window()
