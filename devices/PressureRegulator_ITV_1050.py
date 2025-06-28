@@ -56,13 +56,46 @@ class PressureRegulatorITV1050:
         self.feedback_register = io_master.id_read_register(port_number)
         self.min_psi = 15.0
         self.max_psi = 115.0
+
+        # Build interpolation function converting psi -> raw command
         self.command_correction = self._build_correction_curve()
 
         # Default values for public method
         self.default_tolerance = default_tolerance
         self.default_timeout = default_timeout
 
-    ...
+    def _build_correction_curve(self):
+        """Return interpolation from pressure to raw command value."""
+        try:
+            return interp1d(
+                [self.min_psi, self.max_psi],
+                [0, 65535],
+            )
+        except Exception:
+            x0, x1 = self.min_psi, self.max_psi
+            y0, y1 = 0, 65535
+
+            def _linear(v):
+                if v <= x0:
+                    return y0
+                if v >= x1:
+                    return y1
+                return y0 + (y1 - y0) * (v - x0) / (x1 - x0)
+
+            return _linear
+
+    def _write_pressure(self, target_psi):
+        """Write corrected raw value for the desired pressure."""
+        psi = min(max(target_psi, self.min_psi), self.max_psi)
+        raw = int(self.command_correction(psi))
+        self.io_master.write_register(self.command_register, raw)
+        return raw
+
+    def _read_feedback_psi(self):
+        """Read raw feedback value and convert to psi."""
+        raw = self.io_master.read_register(self.feedback_register)
+        psi = ((raw / 65535) * (self.max_psi - self.min_psi)) + self.min_psi
+        return psi, raw
 
 
     def set_pressure(self, target_psi):
