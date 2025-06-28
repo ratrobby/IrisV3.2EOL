@@ -13,7 +13,7 @@ import re
 import traceback
 
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox
 from tkinter.scrolledtext import ScrolledText
 
 from .calibration_wizard import CalibrationWizard
@@ -276,19 +276,12 @@ class TestWizard(tk.Tk):
             ttk.Label(name_frame, text=self.initial_test_name, font=("Arial", 12)).grid(
                 row=1, column=0, sticky="w", padx=5, pady=2
             )
-            self.browse_btn = ttk.Button(
-                name_frame, text="Browse", command=self.browse_test_file
-            )
-            self.browse_btn.grid(row=1, column=1, padx=5)
         else:
             self.test_name_entry = ttk.Entry(
                 name_frame, textvariable=self.test_name_var, font=("Arial", 12)
             )
             self.test_name_entry.grid(row=1, column=0, sticky="ew", padx=5, ipady=4)
-            self.browse_btn = ttk.Button(
-                name_frame, text="Browse", command=self.browse_test_file
-            )
-            self.browse_btn.grid(row=1, column=1, padx=5)
+
 
         ttk.Label(left, text="Test Setup:", style="TestName.TLabel").grid(
             row=1, column=0, sticky="w", pady=(20, 0)
@@ -667,8 +660,8 @@ class TestWizard(tk.Tk):
 
     def _set_edit_state(self, state):
         """Enable or disable editing widgets based on state."""
-        self.test_name_entry.configure(state=state)
-        self.browse_btn.configure(state=state)
+        if hasattr(self, "test_name_entry"):
+            self.test_name_entry.configure(state=state)
         for child in self.setup_frame.winfo_children():
             try:
                 child.configure(state=state)
@@ -894,14 +887,6 @@ class TestWizard(tk.Tk):
             # revert to defaults if test has no naming info
             self.reset_device_names()
         self.build_setup_widgets()
-
-    def browse_test_file(self):
-        path = filedialog.askopenfilename(
-            initialdir=self.tests_dir,
-            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
-        )
-        if path:
-            self.load_test(path)
 
     def new_test(self):
         current_filled = (
