@@ -10,7 +10,9 @@ from tkinter import ttk, filedialog, messagebox
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEVICE_FOLDER = os.path.join(REPO_ROOT, "devices")
 CONFIG_PATH = os.path.join(REPO_ROOT, "config", "Test_Cell_Config.json")
-TEST_BASE_DIR = r"C:\\Users\\ratrobby\\Documents\\MRLF Tests"
+TEST_BASE_DIR = os.path.expanduser(
+    os.environ.get("MRLF_TEST_DIR", "~/MRLF Tests")
+)
 
 # Default configuration when no config file exists
 DEFAULT_CONFIG = {
