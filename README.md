@@ -42,3 +42,7 @@ The standalone PySimpleGUI tool for calibrating all
 ```bash
 python -m gui.sensor_calibration_psg
 ```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
