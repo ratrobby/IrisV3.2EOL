@@ -708,6 +708,9 @@ class TestWizard(tk.Tk):
             return
         if not self.save_test(show_message=False):
             return
+        os.environ["MRLF_CALIBRATION_FILE"] = os.path.join(
+            self.tests_dir, "sensor_calibrations.json"
+        )
         os.makedirs(self.log_dir, exist_ok=True)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         name = self.test_name_var.get() or "test"
@@ -788,6 +791,9 @@ class TestWizard(tk.Tk):
 
         if self.log_file and not self.log_file.closed:
             self.log_file.close()
+
+        if "MRLF_CALIBRATION_FILE" in os.environ:
+            del os.environ["MRLF_CALIBRATION_FILE"]
 
         # Reset pause state in case the test was stopped while paused
         self.paused = False
