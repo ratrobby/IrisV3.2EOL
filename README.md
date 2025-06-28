@@ -13,7 +13,7 @@ MRLF Repo/
 └── README.md
 ```
 
-`gui/ConfigureTestCell.py` presents a minimal GUI used to configure a test cell. The tool allows entering the AL1342 IP address, mapping devices to IO‑Link ports and saving the configuration to `config/Test_Cell_Config.json`. After saving, the TestWizard GUI is launched.
+`gui/TestLauncher.py` lets you map devices and create or load tests. Enter a test name, configure the mapping and click **Create New Test** to launch the Test Wizard. A folder is created inside `C:\Users\ratrobby\Documents\MRLF Tests` using the test name and any logs or scripts are written there. The launcher replaces the previous `ConfigureTestCell.py` tool.
 
 Saving the configuration also generates `config/Test_Cell_1_Devices.py`. This
 file contains an `IO_master` instance and device objects created for every
@@ -24,7 +24,8 @@ starts so the objects are available without manual `import` statements.
 
 Custom device instance names are saved with each test rather than written back
 to `config/Test_Cell_1_Devices.py`. When device names are updated in the Test
-Wizard a copy of this module is written to `user_tests/<TestName>_Script.py`.
+Wizard a copy of this module is written to the selected test folder as
+`<TestName>_Script.py`.
 The copy includes alias assignments for the customised names along with the
 current setup and loop code so the test configuration can be reproduced later.
 When a test is started the wizard will import this generated script instead of
