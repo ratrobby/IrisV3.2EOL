@@ -19,7 +19,7 @@
 
     Notes:
     ------
-    - Calibration values are saved in 'sensor_calibrations.json'.
+    - Calibration values are saved in 'config/sensor_calibrations.json'.
     - X1_index corresponds to analog input channel (0, 1, 2, ...).
     """
 
@@ -32,6 +32,9 @@ import sys
 import datetime
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Path to the repository root
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Public API decorator
 def class_api(func):
@@ -93,7 +96,7 @@ class PositionSensorSDATMHS_M160:
             },
         ]
 
-    CALIBRATION_FILE = "sensor_calibrations.json"
+    CALIBRATION_FILE = os.path.join(REPO_ROOT, "config", "sensor_calibrations.json")
 
     def __init__(self, al2205, x1_index, stroke_mm=150):
         self.al2205 = al2205
@@ -190,6 +193,7 @@ class PositionSensorSDATMHS_M160:
     # ---------- Internal-only ----------
 
     def _load_calibration(self):
+        os.makedirs(os.path.dirname(self.CALIBRATION_FILE), exist_ok=True)
         if os.path.exists(self.CALIBRATION_FILE):
             with open(self.CALIBRATION_FILE, "r") as f:
                 all_data = json.load(f)
@@ -208,6 +212,7 @@ class PositionSensorSDATMHS_M160:
 
         data[sensor_key][key] = value
 
+        os.makedirs(os.path.dirname(self.CALIBRATION_FILE), exist_ok=True)
         with open(self.CALIBRATION_FILE, "w") as f:
             json.dump(data, f, indent=4)
 
@@ -215,8 +220,6 @@ class PositionSensorSDATMHS_M160:
 
 
 # ==================== Calibration Wizard Integration ====================
-
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_CELL_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
 LOG_FILE = os.path.join(REPO_ROOT, "logs", "position_sensor_calibration.log")
 
