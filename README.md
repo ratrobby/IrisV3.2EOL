@@ -13,7 +13,7 @@ MRLF Repo/
 └── README.md
 ```
 
-`gui/TestLauncher.py` lets you map devices and create or load tests. Enter a test name, configure the mapping and click **Create New Test** to launch the Test Wizard. A folder is created inside `C:\Users\ratrobby\Documents\MRLF Tests` using the test name and any logs or scripts are written there. The launcher replaces the previous `ConfigureTestCell.py` tool.
+`gui/TestLauncher.py` lets you map devices and create or load tests. Enter a test name, configure the mapping and click **Create New Test** to launch the Test Wizard. Test folders are created inside `~/MRLF Tests` by default (or the location specified in the `MRLF_TEST_DIR` environment variable) and any logs or scripts are written there. The launcher replaces the previous `ConfigureTestCell.py` tool.
 
 Saving the configuration also generates `config/Test_Cell_1_Devices.py`. This
 file contains an `IO_master` instance and device objects created for every
