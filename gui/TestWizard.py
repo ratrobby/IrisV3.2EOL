@@ -50,12 +50,12 @@ def _normalize_instructions(cmds):
 
 
 def gather_library(cfg):
-    """Return dict of setup and test instructions from configured devices.
+    """Return dict of test instructions from configured devices.
 
     The returned structure groups commands by device class name so the GUI can
     display them in labeled sections.
     """
-    library = {"setup": {}, "test": {}}
+    library = {"test": {}}
     modules = set()
     modules.update(v for v in cfg.get("al1342", {}).values() if v != "Empty")
     modules.update(v for v in cfg.get("al2205", {}).values() if v != "Empty")
@@ -78,15 +78,6 @@ def gather_library(cfg):
         if not device_cls:
             continue
 
-        if hasattr(device_cls, "setup_instructions"):
-            try:
-                cmds = _normalize_instructions(device_cls.setup_instructions())
-                if cmds:
-                    library["setup"][device_cls.__name__] = cmds
-            except Exception as e:
-                print(
-                    f"Failed to load setup instructions for {device_cls.__name__}: {e}"
-                )
         if hasattr(device_cls, "test_instructions"):
             try:
                 cmds = _normalize_instructions(device_cls.test_instructions())
@@ -389,28 +380,11 @@ class TestWizard(tk.Tk):
         lib_frame.pack(fill="both", expand=True, padx=5, pady=5)
         lib_frame.columnconfigure(0, weight=1)
 
-        setup_label = ttk.Label(
-            lib_frame, text="Setup Commands", font=("Arial", 11, "underline")
-        )
-        setup_container = ttk.LabelFrame(lib_frame, labelwidget=setup_label)
-        setup_container.pack(fill="both", expand=True, padx=5, pady=(0, 5))
-
-        for device, cmds in self.library["setup"].items():
-            ttk.Label(
-                setup_container, text=device, font=("Arial", 10, "bold")
-            ).pack(anchor="w", pady=0)
-            dev_frame = ttk.Frame(setup_container)
-            dev_frame.pack(fill="x", padx=10, pady=(0, 5))
-            for cmd in cmds:
-                self._create_collapsible_text(
-                    dev_frame, cmd["title"], cmd["content"]
-                )
-
         test_label = ttk.Label(
             lib_frame, text="Test Commands", font=("Arial", 11, "underline")
         )
         test_container = ttk.LabelFrame(lib_frame, labelwidget=test_label)
-        test_container.pack(fill="both", expand=True, padx=5, pady=5)
+        test_container.pack(fill="both", expand=True, padx=5, pady=(0, 5))
         for device, cmds in self.library["test"].items():
             ttk.Label(test_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
             dev_frame = ttk.Frame(test_container)
