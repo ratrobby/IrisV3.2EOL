@@ -19,7 +19,9 @@
 
     Notes:
     ------
-    - Calibration values are saved in 'config/sensor_calibrations.json'.
+    - Calibration values are saved to the file given by the
+      ``MRLF_CALIBRATION_FILE`` environment variable. If the variable is not
+      set, ``config/sensor_calibrations.json`` in the repository root is used.
     - X1_index corresponds to analog input channel (0, 1, 2, ...).
     """
 
@@ -96,7 +98,12 @@ class PositionSensorSDATMHS_M160:
             },
         ]
 
-    CALIBRATION_FILE = os.path.join(REPO_ROOT, "config", "sensor_calibrations.json")
+    CALIBRATION_FILE = os.path.expanduser(
+        os.environ.get(
+            "MRLF_CALIBRATION_FILE",
+            os.path.join(REPO_ROOT, "config", "sensor_calibrations.json"),
+        )
+    )
 
     def __init__(self, al2205, x1_index, stroke_mm=150):
         self.al2205 = al2205

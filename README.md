@@ -15,6 +15,12 @@ MRLF Repo/
 
 `gui/TestLauncher.py` lets you map devices and create or load tests. Enter a test name, configure the mapping and click **Create New Test** to launch the Test Wizard. Test folders are created inside `~/MRLF Tests` by default (or the location specified in the `MRLF_TEST_DIR` environment variable) and any logs or scripts are written there. The launcher replaces the previous `ConfigureTestCell.py` tool.
 
+Calibration values for position sensors are stored in the file specified by the
+`MRLF_CALIBRATION_FILE` environment variable. The Test Wizard automatically sets
+this variable to `<TestFolder>/sensor_calibrations.json` when a test starts so
+each test keeps its own calibration data. If the variable is not set, the
+default `config/sensor_calibrations.json` path in the repository root is used.
+
 Saving the configuration also generates `config/Test_Cell_1_Devices.py`. This
 file contains an `IO_master` instance and device objects created for every
 selected port. The object variable names exactly match those listed in the
