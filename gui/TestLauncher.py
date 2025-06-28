@@ -1,14 +1,16 @@
 import os
+import re
 import sys
 from .utils import load_config, save_config, export_device_setup
 import subprocess
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox
 
 # Paths used throughout the GUI
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEVICE_FOLDER = os.path.join(REPO_ROOT, "devices")
 CONFIG_PATH = os.path.join(REPO_ROOT, "config", "Test_Cell_Config.json")
+TEST_BASE_DIR = r"C:\\Users\\ratrobby\\Documents\\MRLF Tests"
 
 # Default configuration when no config file exists
 DEFAULT_CONFIG = {
@@ -50,14 +52,20 @@ class DeviceSelector(ttk.Frame):
         self.columnconfigure(1, weight=1)
 
 
-class ConfigApp(tk.Tk):
+class TestLauncher(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Configure Test Cell")
+        self.title("Test Launcher")
         self.wizard_procs = []
 
         options = get_device_options()
         cfg = load_config(CONFIG_PATH)
+
+        name_frame = ttk.Frame(self)
+        name_frame.pack(fill="x", padx=10, pady=(10, 0))
+        ttk.Label(name_frame, text="Test Name:").pack(side="left")
+        self.test_name_var = tk.StringVar()
+        ttk.Entry(name_frame, textvariable=self.test_name_var, width=30).pack(side="left", padx=5)
 
         # IP entry
         ip_frame = ttk.Frame(self)
@@ -93,8 +101,10 @@ class ConfigApp(tk.Tk):
         for port, var in self.sel2205.vars.items():
             var.set(cfg.get("al2205", {}).get(port, "Empty"))
 
-        # Configure button
-        ttk.Button(self, text="Configure Test Cell", command=self.configure_cell).pack(pady=10)
+        btn_frame = ttk.Frame(self)
+        btn_frame.pack(pady=10)
+        ttk.Button(btn_frame, text="Create New Test", command=self.create_test).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Load Test From File", command=self.load_test).pack(side="left", padx=5)
 
     def gather_config(self):
         return {
@@ -103,17 +113,38 @@ class ConfigApp(tk.Tk):
             "al2205": {p: v.get() for p, v in self.sel2205.vars.items()},
         }
 
-    def configure_cell(self):
+    def create_test(self):
+        name = self.test_name_var.get().strip()
+        if not name:
+            messagebox.showerror("Error", "Please enter a test name")
+            return
         cfg = self.gather_config()
         save_config(cfg, CONFIG_PATH)
         export_device_setup(cfg)
-        self.launch_wizard()
+        safe = re.sub(r"\W+", "_", name)
+        test_dir = os.path.join(TEST_BASE_DIR, safe)
+        os.makedirs(test_dir, exist_ok=True)
+        self.launch_wizard(test_name=name, test_dir=test_dir)
         self.destroy()
 
-    def launch_wizard(self):
+    def launch_wizard(self, test_name=None, test_dir=None, load_file=None):
         wizard_path = os.path.join(os.path.dirname(__file__), "TestWizard.py")
-        proc = subprocess.Popen([sys.executable, wizard_path])
+        cmd = [sys.executable, wizard_path]
+        if test_name:
+            cmd += ["--test-name", test_name]
+        if test_dir:
+            cmd += ["--test-dir", test_dir]
+        if load_file:
+            cmd += ["--load-file", load_file]
+        proc = subprocess.Popen(cmd)
         self.wizard_procs.append(proc)
+
+    def load_test(self):
+        path = filedialog.askopenfilename(initialdir=TEST_BASE_DIR,
+                                          filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")])
+        if path:
+            self.launch_wizard(load_file=path)
+            self.destroy()
 
     def close_wizards(self):
         for p in getattr(self, "wizard_procs", []):
@@ -130,5 +161,5 @@ class ConfigApp(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = ConfigApp()
+    app = TestLauncher()
     app.mainloop()
