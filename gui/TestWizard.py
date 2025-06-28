@@ -23,8 +23,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(REPO_ROOT, "config", "Test_Cell_Config.json")
-DEFAULT_LOG_DIR = os.path.join(REPO_ROOT, "logs")
-DEFAULT_TESTS_DIR = os.path.join(REPO_ROOT, "user_tests")
+LOG_DIR = os.path.join(REPO_ROOT, "logs")
+TESTS_DIR = os.path.join(REPO_ROOT, "user_tests")
 DEVICES_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
 
 
@@ -205,7 +205,7 @@ class _Tee:
 
 
 class TestWizard(tk.Tk):
-    def __init__(self, test_name=None, test_dir=None, load_path=None):
+    def __init__(self):
         super().__init__()
         self.title("Test Wizard")
         self.cfg = load_config()
@@ -224,11 +224,6 @@ class TestWizard(tk.Tk):
         self.test_script_path = None
         self.monitor = None
         self.monitor_queue = queue.Queue()
-        self.initial_test_name = test_name
-        if load_path and not test_dir:
-            test_dir = os.path.dirname(load_path)
-        self.tests_dir = test_dir or DEFAULT_TESTS_DIR
-        self.log_dir = self.tests_dir
 
         self.create_widgets()
         # Scale window after widgets have been laid out
@@ -237,8 +232,6 @@ class TestWizard(tk.Tk):
         self.geometry("1600x950+150+20")
         self.check_connection()
         self.after(100, self.poll_monitor_queue)
-        if load_path:
-            self.load_test(load_path)
 
 
 
@@ -271,24 +264,16 @@ class TestWizard(tk.Tk):
         ttk.Label(name_frame, text="Test Name:", style="TestName.TLabel").grid(
             row=0, column=0, sticky="w", pady=(0, 5)
         )
-        self.test_name_var = tk.StringVar(value=self.initial_test_name or "")
-        if self.initial_test_name:
-            ttk.Label(name_frame, text=self.initial_test_name, font=("Arial", 12)).grid(
-                row=1, column=0, sticky="w", padx=5, pady=2
-            )
-            self.browse_btn = ttk.Button(
-                name_frame, text="Browse", command=self.browse_test_file
-            )
-            self.browse_btn.grid(row=1, column=1, padx=5)
-        else:
-            self.test_name_entry = ttk.Entry(
-                name_frame, textvariable=self.test_name_var, font=("Arial", 12)
-            )
-            self.test_name_entry.grid(row=1, column=0, sticky="ew", padx=5, ipady=4)
-            self.browse_btn = ttk.Button(
-                name_frame, text="Browse", command=self.browse_test_file
-            )
-            self.browse_btn.grid(row=1, column=1, padx=5)
+        self.test_name_var = tk.StringVar()
+        self.test_name_entry = ttk.Entry(
+            name_frame, textvariable=self.test_name_var, font=("Arial", 12)
+        )
+        self.test_name_entry.grid(row=1, column=0, sticky="ew", padx=5, ipady=4)
+
+        self.browse_btn = ttk.Button(
+            name_frame, text="Browse", command=self.browse_test_file
+        )
+        self.browse_btn.grid(row=1, column=1, padx=5)
 
         ttk.Label(left, text="Test Setup:", style="TestName.TLabel").grid(
             row=1, column=0, sticky="w", pady=(20, 0)
@@ -590,7 +575,7 @@ class TestWizard(tk.Tk):
     def _export_device_alias_script(self, test_name):
         """Write ``<test_name>_Script.py`` with device aliases and code."""
         safe = re.sub(r"\W+", "_", test_name)
-        script_path = os.path.join(self.tests_dir, f"{safe}_Script.py")
+        script_path = os.path.join(TESTS_DIR, f"{safe}_Script.py")
 
         try:
             with open(DEVICES_FILE, "r") as fh:
@@ -623,7 +608,7 @@ class TestWizard(tk.Tk):
             "",
         ]
 
-        os.makedirs(self.tests_dir, exist_ok=True)
+        os.makedirs(TESTS_DIR, exist_ok=True)
         with open(script_path, "w") as fh:
             fh.write("\n".join(script_parts))
         return script_path
@@ -715,10 +700,10 @@ class TestWizard(tk.Tk):
             return
         if not self.save_test(show_message=False):
             return
-        os.makedirs(self.log_dir, exist_ok=True)
+        os.makedirs(LOG_DIR, exist_ok=True)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         name = self.test_name_var.get() or "test"
-        log_path = os.path.join(self.log_dir, f"{timestamp}_{name}.log")
+        log_path = os.path.join(LOG_DIR, f"{timestamp}_{name}.log")
         self.log_file = open(log_path, "w")
         if not self.monitor or not self.monitor.winfo_exists():
             self.monitor = TestMonitor(self)
@@ -837,9 +822,9 @@ class TestWizard(tk.Tk):
             return False
         # Persist any edited device instance names
         self.update_device_naming()
-        os.makedirs(self.tests_dir, exist_ok=True)
+        os.makedirs(TESTS_DIR, exist_ok=True)
         fname = re.sub(r"\W+", "_", name)
-        path = os.path.join(self.tests_dir, f"{fname}.json")
+        path = os.path.join(TESTS_DIR, f"{fname}.json")
         data = {
             "name": name,
             "setup": self.setup_code,
@@ -871,8 +856,6 @@ class TestWizard(tk.Tk):
             messagebox.showerror("Error", f"Failed to load test: {e}")
             return
         self.test_file_path = path
-        self.tests_dir = os.path.dirname(path)
-        self.log_dir = self.tests_dir
         self.test_name_var.set(data.get("name", ""))
         self.setup_code = data.get("setup", "")
         self.script_text.delete("1.0", "end")
@@ -881,7 +864,7 @@ class TestWizard(tk.Tk):
         self._verify_mapping(data.get("config"))
         saved_names = data.get("device_names")
         self.test_script_path = os.path.join(
-            self.tests_dir, data.get("script_file", "")
+            TESTS_DIR, data.get("script_file", "")
         )
         if saved_names:
             for section in ("al1342", "al2205"):
@@ -897,7 +880,7 @@ class TestWizard(tk.Tk):
 
     def browse_test_file(self):
         path = filedialog.askopenfilename(
-            initialdir=self.tests_dir,
+            initialdir=TESTS_DIR,
             filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
         )
         if path:
@@ -935,17 +918,11 @@ class TestWizard(tk.Tk):
                 "Save current test before reconfiguring the test cell?",
             ):
                 self.save_test()
-        config_path = os.path.join(os.path.dirname(__file__), "TestLauncher.py")
+        config_path = os.path.join(os.path.dirname(__file__), "ConfigureTestCell.py")
         subprocess.Popen([sys.executable, config_path])
         self.destroy()
 
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--test-name")
-    parser.add_argument("--test-dir")
-    parser.add_argument("--load-file")
-    args = parser.parse_args()
-    app = TestWizard(test_name=args.test_name, test_dir=args.test_dir, load_path=args.load_file)
+    app = TestWizard()
     app.mainloop()

@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['TestLauncher.py'],
+    ['ConfigureTestCell.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='TestLauncher',
+    name='ConfigureTestCell',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
