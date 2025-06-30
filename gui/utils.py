@@ -12,24 +12,20 @@ def save_config(data, path="config/Test_Cell_Config.json"):
         json.dump(data, f, indent=2)
 
 
-def export_device_setup(cfg, path=None):
-    """Generate ``Test_Cell_1_Devices.py`` from a configuration dict.
+def export_device_setup(cfg, path):
+    """Generate a device setup script from a configuration dict.
 
     Parameters
     ----------
     cfg : dict
         Configuration as returned by ``gather_config()``.
-    path : str, optional
-        Destination file path. Defaults to ``config/Test_Cell_1_Devices.py``
-        inside the repository root.
+    path : str
+        Destination file path. The file is always written to this location.
     """
     import inspect
     import importlib
     from .TestWizard import build_instance_map
 
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if path is None:
-        path = os.path.join(repo_root, "config", "Test_Cell_1_Devices.py")
 
     instance_map = cfg.get("device_names")
     if not instance_map:
