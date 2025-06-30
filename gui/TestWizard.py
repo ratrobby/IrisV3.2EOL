@@ -713,12 +713,8 @@ class TestWizard(tk.Tk):
                 )
                 devices_mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(devices_mod)
-            elif self.device_file and os.path.exists(self.device_file):
-                spec = importlib.util.spec_from_file_location(
-                    "user_devices", self.device_file
-                )
-                devices_mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(devices_mod)
+            else:
+                devices_mod = types.ModuleType("user_devices")
         except Exception as e:
             print(f"Failed to load device objects: {e}")
             devices_mod = types.SimpleNamespace()
