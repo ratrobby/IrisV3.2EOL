@@ -79,11 +79,11 @@ class PressureRegulatorITV1050:
         try:
             return interp1d(
                 [self.min_psi, self.max_psi],
-                [0, 65535],
+                [0, 4095],
             )
         except Exception:
             x0, x1 = self.min_psi, self.max_psi
-            y0, y1 = 0, 65535
+            y0, y1 = 0, 4095
 
             def _linear(v):
                 if v <= x0:
@@ -104,7 +104,7 @@ class PressureRegulatorITV1050:
     def _read_feedback_psi(self):
         """Read raw feedback value and convert to psi."""
         raw = self.io_master.read_register(self.feedback_register)
-        psi = ((raw / 65535) * (self.max_psi - self.min_psi)) + self.min_psi
+        psi = ((raw / 4095) * (self.max_psi - self.min_psi)) + self.min_psi
         return psi, raw
 
 
