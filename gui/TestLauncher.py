@@ -45,8 +45,12 @@ class DeviceSelector(ttk.Frame):
         locked = locked or {}
         names = names or {}
 
-        ttk.Label(self, text=label, font=("Arial", 12, "bold")).grid(row=0, column=0, columnspan=3, pady=(0, 4))
-        for row, port in enumerate(ports, start=1):
+        ttk.Label(self, text=label, font=("Arial", 12, "bold")).grid(
+            row=0, column=0, columnspan=3, pady=(0, 4)
+        )
+        ttk.Label(self, text="Map Devices").grid(row=1, column=1, pady=(0, 4))
+        ttk.Label(self, text="Define Device Name").grid(row=1, column=2, pady=(0, 4))
+        for row, port in enumerate(ports, start=2):
             ttk.Label(self, text=f"{port}:").grid(row=row, column=0, sticky="w", padx=5)
             var = tk.StringVar()
             cmb = ttk.Combobox(self, textvariable=var, values=options, state="readonly", width=28)
