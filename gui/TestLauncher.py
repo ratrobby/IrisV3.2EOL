@@ -3,6 +3,7 @@ import re
 import sys
 import shutil
 from .utils import load_config, save_config, export_device_setup
+from .TestWizard import build_instance_map
 import subprocess
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -37,22 +38,30 @@ def get_device_options():
 
 
 class DeviceSelector(ttk.Frame):
-    def __init__(self, parent, label, ports, options, locked=None):
+    def __init__(self, parent, label, ports, options, locked=None, names=None):
         super().__init__(parent)
         self.vars = {}
+        self.name_vars = {}
         locked = locked or {}
+        names = names or {}
 
-        ttk.Label(self, text=label, font=("Arial", 12, "bold")).grid(row=0, column=0, columnspan=2, pady=(0, 4))
+        ttk.Label(self, text=label, font=("Arial", 12, "bold")).grid(row=0, column=0, columnspan=3, pady=(0, 4))
         for row, port in enumerate(ports, start=1):
             ttk.Label(self, text=f"{port}:").grid(row=row, column=0, sticky="w", padx=5)
             var = tk.StringVar()
             cmb = ttk.Combobox(self, textvariable=var, values=options, state="readonly", width=28)
             cmb.grid(row=row, column=1, sticky="ew", padx=5, pady=1)
+            name_var = tk.StringVar(value=names.get(port, ""))
+            ent = ttk.Entry(self, textvariable=name_var, width=20)
+            ent.grid(row=row, column=2, sticky="ew", padx=5, pady=1)
             if port in locked:
                 var.set(locked[port])
                 cmb.configure(state="disabled")
+                ent.configure(state="disabled")
             self.vars[port] = var
+            self.name_vars[port] = name_var
         self.columnconfigure(1, weight=1)
+        self.columnconfigure(2, weight=1)
 
 
 class TestLauncher(tk.Tk):
@@ -63,6 +72,8 @@ class TestLauncher(tk.Tk):
 
         options = get_device_options()
         cfg = load_config(CONFIG_PATH)
+        base_map = build_instance_map(cfg)
+        name_map = cfg.get("device_names", base_map)
 
         name_frame = ttk.Frame(self)
         name_frame.pack(fill="x", padx=10, pady=(10, 0))
@@ -89,10 +100,24 @@ class TestLauncher(tk.Tk):
         locked1342 = {"X01": "AL2205_Hub"}
         locked2205 = {"X1.0": "UI_Button"}
 
-        self.sel1342 = DeviceSelector(selector_frame, "AL1342", al1342_ports, options, locked1342)
+        self.sel1342 = DeviceSelector(
+            selector_frame,
+            "AL1342",
+            al1342_ports,
+            options,
+            locked1342,
+            names=name_map.get("al1342", {}),
+        )
         self.sel1342.grid(row=0, column=0, padx=(0, 10), sticky="nsew")
 
-        self.sel2205 = DeviceSelector(selector_frame, "AL2205", al2205_ports, options, locked2205)
+        self.sel2205 = DeviceSelector(
+            selector_frame,
+            "AL2205",
+            al2205_ports,
+            options,
+            locked2205,
+            names=name_map.get("al2205", {}),
+        )
         self.sel2205.grid(row=0, column=1, sticky="nsew")
 
         selector_frame.columnconfigure(0, weight=1)
@@ -110,11 +135,21 @@ class TestLauncher(tk.Tk):
         ttk.Button(btn_frame, text="Load Test From File", command=self.load_test).pack(side="left", padx=5)
 
     def gather_config(self):
-        return {
+        cfg = {
             "ip_address": self.ip_var.get(),
             "al1342": {p: v.get() for p, v in self.sel1342.vars.items()},
             "al2205": {p: v.get() for p, v in self.sel2205.vars.items()},
         }
+        base_map = build_instance_map(cfg)
+        names = {"al1342": {}, "al2205": {}}
+        for port, var in self.sel1342.name_vars.items():
+            alias = var.get().strip() or base_map["al1342"][port]
+            names["al1342"][port] = alias
+        for port, var in self.sel2205.name_vars.items():
+            alias = var.get().strip() or base_map["al2205"][port]
+            names["al2205"][port] = alias
+        cfg["device_names"] = names
+        return cfg
 
     def create_test(self):
         name = self.test_name_var.get().strip()

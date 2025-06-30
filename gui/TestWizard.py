@@ -203,7 +203,9 @@ class TestWizard(tk.Tk):
         self.ip_address = self.cfg.get("ip_address", "192.168.XXX.XXX")
         self.library = gather_library(self.cfg)
         self.base_map = build_instance_map(self.cfg)
-        self.instance_map = {s: dict(p) for s, p in self.base_map.items()}
+        self.instance_map = self.cfg.get("device_names") or {
+            s: dict(p) for s, p in self.base_map.items()
+        }
         self.device_objects = load_device_objects()
         self.setup_code = ""
 
@@ -309,10 +311,6 @@ class TestWizard(tk.Tk):
         inst_status.rowconfigure(0, weight=1)
         inst_status.rowconfigure(1, weight=1)
 
-        self.name_vars = {"al1342": {}, "al2205": {}}
-        self.name_entries = {"al1342": {}, "al2205": {}}
-        self.update_names_btn = None
-
         map_frame = None
         if self.instance_map:
             map_frame = ttk.LabelFrame(inst_status, text="Device Instances")
@@ -326,33 +324,15 @@ class TestWizard(tk.Tk):
             ttk.Label(col1, text="AL1342").grid(row=0, column=0, columnspan=2)
             ttk.Label(col2, text="AL2205").grid(row=0, column=0, columnspan=2)
 
-
             for r, port in enumerate(sorted(self.instance_map["al1342"]), start=1):
                 ttk.Label(col1, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
-                var = tk.StringVar(value=self.instance_map["al1342"][port])
-                self.name_vars["al1342"][port] = var
-                entry = ttk.Entry(col1, textvariable=var, width=23)
-                self.name_entries["al1342"][port] = entry
-                if self.cfg.get("al1342", {}).get(port) == "AL2205_Hub":
-                    entry.configure(state="disabled")
-                entry.grid(row=r, column=1, sticky="w")
+                val = self.instance_map["al1342"][port]
+                ttk.Label(col1, text=val).grid(row=r, column=1, sticky="w")
 
             for r, port in enumerate(sorted(self.instance_map["al2205"]), start=1):
                 ttk.Label(col2, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
-                var = tk.StringVar(value=self.instance_map["al2205"][port])
-                self.name_vars["al2205"][port] = var
-                entry = ttk.Entry(col2, textvariable=var, width=23)
-                self.name_entries["al2205"][port] = entry
-                if self.cfg.get("al2205", {}).get(port) == "UI_Button":
-                    entry.configure(state="disabled")
-                entry.grid(row=r, column=1, sticky="w")
-
-            self.update_names_btn = ttk.Button(
-                inst_status,
-                text="Update Device Naming",
-                command=self.update_device_naming,
-            )
-            self.update_names_btn.grid(row=1, column=0, columnspan=2, pady=(4, 2))
+                val = self.instance_map["al2205"][port]
+                ttk.Label(col2, text=val).grid(row=r, column=1, sticky="w")
 
         status_frame = ttk.LabelFrame(inst_status, text="AL1342 Connection Status:")
         status_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
@@ -528,31 +508,6 @@ class TestWizard(tk.Tk):
             return
         CalibrationWizard(device, steps)
 
-    def update_device_naming(self):
-        """Update internal instance map and write a device alias script."""
-        for section in ("al1342", "al2205"):
-            for port, var in self.name_vars.get(section, {}).items():
-                new_name = var.get().strip()
-                base = self.base_map[section][port]
-                self.instance_map[section][port] = new_name or base
-
-        name = self.test_name_var.get().strip()
-        if not name:
-            try:
-                messagebox.showerror("Error", "Please enter a test name first.")
-            except Exception:
-                pass
-            return
-
-        self.test_script_path = self._export_device_alias_script(name)
-        try:
-            messagebox.showinfo(
-                "Success",
-                f"Device names updated. Script saved to {self.test_script_path}",
-            )
-        except Exception:
-            pass
-        self.build_setup_widgets()
 
     def _export_device_alias_script(self, test_name):
         """Write ``<test_name>_Script.py`` with device aliases and code."""
@@ -597,14 +552,7 @@ class TestWizard(tk.Tk):
 
     def reset_device_names(self):
         """Revert device instance names to defaults from the configuration."""
-        # Restore GUI fields and internal map
-        for section in ("al1342", "al2205"):
-            for port, var in self.name_vars.get(section, {}).items():
-                default = self.base_map[section][port]
-                var.set(default)
-                self.instance_map[section][port] = default
-
-        # No file modification needed; naming resets to defaults only in memory
+        self.instance_map = {s: dict(p) for s, p in self.base_map.items()}
 
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
@@ -646,18 +594,6 @@ class TestWizard(tk.Tk):
         self.save_btn.configure(state=state)
         self.new_btn.configure(state=state)
         self.reconfig_btn.configure(state=state)
-        if self.update_names_btn:
-            self.update_names_btn.configure(state=state)
-        for section in self.name_entries:
-            for port, entry in self.name_entries[section].items():
-                if state == "normal":
-                    disabled = (
-                        (section == "al1342" and self.cfg.get("al1342", {}).get(port) == "AL2205_Hub")
-                        or (section == "al2205" and self.cfg.get("al2205", {}).get(port) == "UI_Button")
-                    )
-                    entry.configure(state="disabled" if disabled else "normal")
-                else:
-                    entry.configure(state="disabled")
 
     # ----------------------- Test Execution ------------------------
     def start_test(self):
@@ -808,8 +744,8 @@ class TestWizard(tk.Tk):
             if show_message:
                 messagebox.showerror("Error", "Please enter a test name.")
             return False
-        # Persist any edited device instance names
-        self.update_device_naming()
+        # Export alias script reflecting configured device names
+        self.test_script_path = self._export_device_alias_script(name)
         os.makedirs(self.tests_dir, exist_ok=True)
         fname = re.sub(r"\W+", "_", name)
         path = os.path.join(self.tests_dir, f"{fname}.json")
@@ -857,12 +793,7 @@ class TestWizard(tk.Tk):
             self.tests_dir, data.get("script_file", "")
         )
         if saved_names:
-            for section in ("al1342", "al2205"):
-                for port, var in self.name_vars.get(section, {}).items():
-                    new_name = saved_names.get(section, {}).get(port,
-                                                     self.base_map[section][port])
-                    var.set(new_name)
-                    self.instance_map[section][port] = new_name
+            self.instance_map = saved_names
         else:
             # revert to defaults if test has no naming info
             self.reset_device_names()
