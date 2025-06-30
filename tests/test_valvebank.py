@@ -37,3 +37,15 @@ def test_valve_off_clears_bit():
 
     # After turning off, the bank should write zero to the register
     assert io.writes[-1] == (1101, 0)
+
+
+def test_valve_pair_exclusivity():
+    io = FakeIOMaster()
+    vb = ValveBank(io, port_number=1)
+    vb.valve_on("1.A")
+    vb.valve_on("1.B")
+
+    # Activating 1.B should automatically deactivate 1.A
+    expected = ValveBank.VALVE_BITMASKS["1.B"]
+    assert vb.active_valves == {"1.B"}
+    assert io.writes[-1] == (1101, expected)
