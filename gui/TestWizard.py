@@ -19,6 +19,7 @@ from tkinter.scrolledtext import ScrolledText
 
 from .calibration_wizard import CalibrationWizard
 from IO_master import IO_master
+from commands import Hold
 
 # Allow running from repo root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -94,6 +95,14 @@ def gather_library(cfg):
             messagebox.showerror("Device Import Error", "\n".join(import_errors))
         except Exception:
             pass
+
+    # Add generic commands that are always available
+    library["test"]["General"] = [
+        {
+            "title": "Hold(seconds)",
+            "content": "Pause execution for the specified number of seconds",
+        }
+    ]
 
     return library
 
@@ -757,6 +766,9 @@ class TestWizard(tk.Tk):
                 if alias != base and base in context:
                     context[alias] = context[base]
 
+        # Add Hold() utility for pausing between commands
+        context["Hold"] = Hold
+
         setup_code = self.setup_code
         loop_code = self.script_text.get("1.0", "end-1c")
         if not self.monitor or not self.monitor.winfo_exists():
@@ -848,6 +860,8 @@ class TestWizard(tk.Tk):
                     base = self.base_map[section][port]
                     if alias != base and base in context:
                         context[alias] = context[base]
+            # Expose Hold() for timing delays
+            context["Hold"] = Hold
         except Exception as e:
             print(f"Failed to load device objects: {e}")
         setup_code = self.setup_code

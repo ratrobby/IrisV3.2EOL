@@ -50,6 +50,18 @@ optional `scipy` package:
 pip install scipy
 ```
 
+## Utility Commands
+
+Test scripts can use a small helper function to pause between actions:
+
+```python
+from commands import Hold
+
+Hold(3)  # wait 3 seconds
+```
+
+The `Hold` function is available automatically when running scripts in the Test Wizard.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
