@@ -193,6 +193,10 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _load_load_cells():
+    script = os.environ.get("MRLF_TEST_SCRIPT")
+    if not script or not os.path.exists(script):
+        return []
+    spec = importlib.util.spec_from_file_location("user_devices", script)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
