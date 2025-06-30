@@ -21,12 +21,6 @@ this variable to `<TestFolder>/sensor_calibrations.json` when a test starts so
 each test keeps its own calibration data. If the variable is not set, the
 default `config/sensor_calibrations.json` path in the repository root is used.
 
-Each test directory also contains a `<TestName>_Script.py` generated when the
-test is created. This script defines the `IO_master` instance and all mapped
-device objects. When the Test Wizard starts a test it sets the
-`MRLF_TEST_SCRIPT` environment variable to point at this file so calibration
-tools can load the same device objects. Custom device instance names are stored
-with the test so rerunning the wizard reproduces the exact configuration.
 
 `gui/TestWizard.py` now supports a generic calibration wizard. Any device
 implementing a `calibration_steps()` class method will show a **Calibrate…**
