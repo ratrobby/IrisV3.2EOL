@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import shutil
 from .utils import load_config, save_config, export_device_setup
 import subprocess
 import tkinter as tk
@@ -125,6 +126,23 @@ class TestLauncher(tk.Tk):
         export_device_setup(cfg)
         safe = re.sub(r"\W+", "_", name)
         test_dir = os.path.join(TEST_BASE_DIR, safe)
+
+        if os.path.exists(test_dir):
+            overwrite = messagebox.askyesno(
+                "Test Name already Exists",
+                "Test Name already Exists. Overwrite the existing test data?",
+            )
+            if not overwrite:
+                return
+            try:
+                shutil.rmtree(test_dir)
+            except Exception as e:
+                messagebox.showerror(
+                    "Error",
+                    f"Failed to overwrite existing test data: {e}",
+                )
+                return
+
         os.makedirs(test_dir, exist_ok=True)
         self.launch_wizard(test_name=name, test_dir=test_dir)
         self.destroy()
