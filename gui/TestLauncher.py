@@ -170,7 +170,6 @@ class TestLauncher(tk.Tk):
             return
         cfg = self.gather_config()
         save_config(cfg, CONFIG_PATH)
-        export_device_setup(cfg)
         safe = re.sub(r"\W+", "_", name)
         test_dir = os.path.join(TEST_BASE_DIR, safe)
 
@@ -189,12 +188,13 @@ class TestLauncher(tk.Tk):
                     f"Failed to overwrite existing test data: {e}",
                 )
                 return
-
         os.makedirs(test_dir, exist_ok=True)
-        self.launch_wizard(test_name=name, test_dir=test_dir)
+        script_path = os.path.join(test_dir, f"{safe}_Script.py")
+        export_device_setup(cfg, script_path)
+        self.launch_wizard(test_name=name, test_dir=test_dir, devices_file=script_path)
         self.destroy()
 
-    def launch_wizard(self, test_name=None, test_dir=None, load_file=None):
+    def launch_wizard(self, test_name=None, test_dir=None, load_file=None, devices_file=None):
         cmd = [sys.executable, "-m", "gui.TestWizard"]
         if test_name:
             cmd += ["--test-name", test_name]
@@ -202,6 +202,8 @@ class TestLauncher(tk.Tk):
             cmd += ["--test-dir", test_dir]
         if load_file:
             cmd += ["--load-file", load_file]
+        if devices_file:
+            cmd += ["--devices-file", devices_file]
         proc = subprocess.Popen(cmd, cwd=REPO_ROOT)
         self.wizard_procs.append(proc)
 
