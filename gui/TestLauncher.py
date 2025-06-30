@@ -178,6 +178,8 @@ class TestLauncher(tk.Tk):
             env["MRLF_TEST_SCRIPT"] = script_path
         proc = subprocess.Popen(cmd, cwd=REPO_ROOT, env=env)
         self.wizard_procs.append(proc)
+        # Close the launcher once the Test Wizard has been started
+        self.destroy()
 
     def gather_config(self):
         cfg = {
@@ -266,7 +268,6 @@ class TestLauncher(tk.Tk):
             except Exception:
                 script_path = None
             self.launch_wizard(load_file=path, script_path=script_path)
-            self.destroy()
 
     def close_wizards(self):
         for p in getattr(self, "wizard_procs", []):
