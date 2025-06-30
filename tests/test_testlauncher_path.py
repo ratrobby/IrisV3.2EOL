@@ -16,7 +16,7 @@ def reload_testlauncher():
 def test_default_base_dir(monkeypatch):
     monkeypatch.delenv('MRLF_TEST_DIR', raising=False)
     mod = reload_testlauncher()
-    expected = os.path.expanduser('~/MRLF Tests')
+    expected = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'user_tests')
     assert mod.TEST_BASE_DIR == expected
 
 
