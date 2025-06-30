@@ -355,6 +355,9 @@ class TestWizard(tk.Tk):
         self.iterations_entry = ttk.Entry(left, textvariable=self.iterations_var)
         self.iterations_entry.grid(row=6, column=0, sticky="w", padx=5, pady=(0, 10))
 
+        self.run_btn = ttk.Button(left, text="Run Script", command=self.run_script)
+        self.run_btn.grid(row=7, column=0, sticky="w", padx=5, pady=(0, 10))
+
         # ----------------------- Right Column ----------------------
         right = ttk.Frame(content)
         right.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
@@ -692,6 +695,60 @@ class TestWizard(tk.Tk):
         self.save_btn.configure(state=state)
         self.new_btn.configure(state=state)
         self.reconfig_btn.configure(state=state)
+
+    # ----------------------- Test Execution ------------------------
+    def run_script(self):
+        """Execute the test loop once without logging results."""
+        context = {"__name__": "__main__"}
+        try:
+            if self.test_script_path and os.path.exists(self.test_script_path):
+                spec = importlib.util.spec_from_file_location(
+                    "user_devices", self.test_script_path
+                )
+                devices_mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(devices_mod)
+            elif self.device_file and os.path.exists(self.device_file):
+                spec = importlib.util.spec_from_file_location(
+                    "user_devices", self.device_file
+                )
+                devices_mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(devices_mod)
+        except Exception as e:
+            print(f"Failed to load device objects: {e}")
+            devices_mod = types.SimpleNamespace()
+
+        for name, obj in getattr(devices_mod, "__dict__", {}).items():
+            if not name.startswith("_"):
+                context[name] = obj
+        for section in ("al1342", "al2205"):
+            for port in self.instance_map.get(section, {}):
+                alias = self.instance_map[section][port]
+                base = self.base_map[section][port]
+                if alias != base and base in context:
+                    context[alias] = context[base]
+
+        setup_code = self.setup_code
+        loop_code = self.script_text.get("1.0", "end-1c")
+        if not self.monitor or not self.monitor.winfo_exists():
+            self.monitor = TestMonitor(self)
+        else:
+            self.monitor.deiconify()
+            self.monitor.lift()
+        queue_writer = _QueueWriter(self.monitor_queue)
+
+        def worker():
+            with redirect_stdout(_Tee(queue_writer)):
+                try:
+                    exec(setup_code, context)
+                except Exception as e:
+                    print(f"Setup error: {e}")
+                    return
+                try:
+                    exec(loop_code, context)
+                except Exception as e:
+                    print(f"Loop error: {e}")
+
+        threading.Thread(target=worker, daemon=True).start()
 
     # ----------------------- Test Execution ------------------------
     def start_test(self):

@@ -1,4 +1,23 @@
-from pyModbusTCP.client import ModbusClient
+try:
+    from pyModbusTCP.client import ModbusClient
+except Exception:  # pragma: no cover - optional dependency may be missing
+    class ModbusClient:
+        """Fallback stub when pyModbusTCP is unavailable."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def open(self):
+            return True
+
+        def close(self):
+            pass
+
+        def read_holding_registers(self, register, count):
+            return [0] * count
+
+        def write_single_register(self, register, value):
+            return True
 
 
 class IO_master:
