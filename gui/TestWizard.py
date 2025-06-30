@@ -499,6 +499,10 @@ class TestWizard(tk.Tk):
 
     def open_calibration(self, device):
         """Launch the generic calibration wizard for a device."""
+        if self.test_script_path and os.path.exists(self.test_script_path):
+            os.environ["MRLF_TEST_SCRIPT"] = self.test_script_path
+        else:
+            os.environ["MRLF_TEST_SCRIPT"] = DEVICES_FILE
         try:
             steps = device.__class__.calibration_steps()
         except Exception as e:
@@ -621,6 +625,10 @@ class TestWizard(tk.Tk):
         os.environ["MRLF_CALIBRATION_FILE"] = os.path.join(
             self.tests_dir, "sensor_calibrations.json"
         )
+        if self.test_script_path and os.path.exists(self.test_script_path):
+            os.environ["MRLF_TEST_SCRIPT"] = self.test_script_path
+        else:
+            os.environ["MRLF_TEST_SCRIPT"] = DEVICES_FILE
         os.makedirs(self.log_dir, exist_ok=True)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         name = self.test_name_var.get() or "test"
@@ -704,6 +712,8 @@ class TestWizard(tk.Tk):
 
         if "MRLF_CALIBRATION_FILE" in os.environ:
             del os.environ["MRLF_CALIBRATION_FILE"]
+        if "MRLF_TEST_SCRIPT" in os.environ:
+            del os.environ["MRLF_TEST_SCRIPT"]
 
         # Reset pause state in case the test was stopped while paused
         self.paused = False

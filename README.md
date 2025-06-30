@@ -21,6 +21,12 @@ this variable to `<TestFolder>/sensor_calibrations.json` when a test starts so
 each test keeps its own calibration data. If the variable is not set, the
 default `config/sensor_calibrations.json` path in the repository root is used.
 
+The helpers used by the calibration dialogs load device objects from the path
+given in the `MRLF_TEST_SCRIPT` environment variable. The Test Wizard sets this
+variable to the generated `<TestName>_Script.py` when starting a test or opening
+a calibration wizard. If the variable is not defined the helpers fall back to
+`config/Test_Cell_1_Devices.py`.
+
 Saving the configuration also generates `config/Test_Cell_1_Devices.py`. This
 file contains an `IO_master` instance and device objects created for every
 selected port. The object variable names exactly match those listed in the
