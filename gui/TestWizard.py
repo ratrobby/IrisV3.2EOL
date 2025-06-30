@@ -18,6 +18,7 @@ from tkinter import ttk, messagebox, simpledialog
 from tkinter.scrolledtext import ScrolledText
 
 from .calibration_wizard import CalibrationWizard
+from IO_master import IO_master
 
 # Allow running from repo root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -135,7 +136,7 @@ def build_instance_map(cfg):
     return result
 
 
-def load_device_objects():
+def load_device_objects(cfg, base_map, ip_address):
     """Import configured device instances using ``MRLF_TEST_SCRIPT``."""
     script = os.environ.get("MRLF_TEST_SCRIPT")
     if not script or not os.path.exists(script):
@@ -147,6 +148,13 @@ def load_device_objects():
     except Exception as e:
         print(f"Failed to load device objects: {e}")
         return {}
+
+    try:
+        master = IO_master(ip_address)
+    except Exception as e:
+        print(f"Failed to connect IO_master: {e}")
+        return {}
+
     objects = {}
     classes = {}
 
@@ -178,7 +186,7 @@ def load_device_objects():
         if not cls:
             continue
         port_num = int(port[1:]) if port.startswith("X") else int(port)
-        inst_name = instance_map["al1342"][port]
+        inst_name = base_map["al1342"][port]
         try:
             obj = cls(master, port_number=port_num)
         except Exception as e:
@@ -198,7 +206,7 @@ def load_device_objects():
             if not cls:
                 continue
             index = int(port.split(".")[-1])
-            inst_name = instance_map["al2205"][port]
+            inst_name = base_map["al2205"][port]
             try:
                 obj = cls(hub_obj, x1_index=index)
             except Exception as e:
@@ -262,8 +270,19 @@ class TestWizard(tk.Tk):
         self.instance_map = self.cfg.get("device_names") or {
             s: dict(p) for s, p in self.base_map.items()
         }
+        # Determine associated script and set environment variable
+        self.test_script_path = os.environ.get("MRLF_TEST_SCRIPT")
+        if self.test_script_path and not os.path.exists(self.test_script_path):
+            self.test_script_path = None
+        if self.test_script_path:
+            os.environ["MRLF_TEST_SCRIPT"] = self.test_script_path
+        else:
+            os.environ.pop("MRLF_TEST_SCRIPT", None)
+
         # Holds instantiated device objects for calibration/setup widgets
-        self.device_objects = {}
+        self.device_objects = load_device_objects(
+            self.cfg, self.base_map, self.ip_address
+        )
         self.setup_code = ""
 
         self.running = False
@@ -272,7 +291,6 @@ class TestWizard(tk.Tk):
         self.log_file = None
         self.log_file_path = None
         self.test_file_path = None
-        self.test_script_path = None
         self.monitor = None
         self.monitor_queue = queue.Queue()
         self.initial_test_name = test_name
@@ -1004,6 +1022,13 @@ class TestWizard(tk.Tk):
         self.test_script_path = os.path.join(
             self.tests_dir, data.get("script_file", "")
         )
+        if self.test_script_path and os.path.exists(self.test_script_path):
+            os.environ["MRLF_TEST_SCRIPT"] = self.test_script_path
+        else:
+            os.environ.pop("MRLF_TEST_SCRIPT", None)
+        self.device_objects = load_device_objects(
+            self.cfg, self.base_map, self.ip_address
+        )
         if saved_names:
             self.instance_map = saved_names
         else:
@@ -1028,8 +1053,12 @@ class TestWizard(tk.Tk):
         self.iterations_var.set("")
         # Reset any custom device naming back to defaults
         self.reset_device_names()
-        self.build_setup_widgets()
         self.test_script_path = None
+        os.environ.pop("MRLF_TEST_SCRIPT", None)
+        self.device_objects = load_device_objects(
+            self.cfg, self.base_map, self.ip_address
+        )
+        self.build_setup_widgets()
 
     def reconfigure_cell(self):
         current_filled = (
