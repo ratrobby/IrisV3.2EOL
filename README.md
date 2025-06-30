@@ -21,27 +21,12 @@ this variable to `<TestFolder>/sensor_calibrations.json` when a test starts so
 each test keeps its own calibration data. If the variable is not set, the
 default `config/sensor_calibrations.json` path in the repository root is used.
 
-The helpers used by the calibration dialogs load device objects from the path
-given in the `MRLF_TEST_SCRIPT` environment variable. The Test Wizard sets this
-variable to the generated `<TestName>_Script.py` when starting a test or opening
-a calibration wizard. If the variable is not defined the helpers fall back to
-`config/Test_Cell_1_Devices.py`.
-
-Saving the configuration also generates `config/Test_Cell_1_Devices.py`. This
-file contains an `IO_master` instance and device objects created for every
-selected port. The object variable names exactly match those listed in the
-Test Wizard's **Device Instances** panel so you can reference them directly in
-your test code. The Test Wizard automatically imports this module when a test
-starts so the objects are available without manual `import` statements.
-
 Custom device instance names are saved with each test rather than written back
-to `config/Test_Cell_1_Devices.py`. When device names are updated in the Test
-Wizard a copy of this module is written to the selected test folder as
-`<TestName>_Script.py`.
-The copy includes alias assignments for the customised names along with the
-current setup and loop code so the test configuration can be reproduced later.
-When a test is started the wizard will import this generated script instead of
-`Test_Cell_1_Devices.py` so the customised names are available automatically.
+to the repository. When device names are updated in the Test Wizard the
+generated `<TestName>_Script.py` file is overwritten with alias assignments
+along with the current setup and loop code so the test configuration can be
+reproduced later. When a test is started the wizard will import this generated
+script so the customised names are available automatically.
 
 `gui/TestWizard.py` now supports a generic calibration wizard. Any device
 implementing a `calibration_steps()` class method will show a **Calibrate…**

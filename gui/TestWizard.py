@@ -25,7 +25,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(REPO_ROOT, "config", "Test_Cell_Config.json")
 DEFAULT_LOG_DIR = os.path.join(REPO_ROOT, "logs")
 DEFAULT_TESTS_DIR = os.path.join(REPO_ROOT, "user_tests")
-DEVICES_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
+DEFAULT_DEVICES_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
 
 
 def load_config():
@@ -135,12 +135,12 @@ def build_instance_map(cfg):
     return result
 
 
-def load_device_objects():
-    """Import configured device instances from ``Test_Cell_1_Devices.py``."""
-    if not os.path.exists(DEVICES_FILE):
+def load_device_objects(path):
+    """Import configured device instances from a device setup script."""
+    if not os.path.exists(path):
         return {}
     try:
-        spec = importlib.util.spec_from_file_location("Test_Cell_1_Devices", DEVICES_FILE)
+        spec = importlib.util.spec_from_file_location("Test_Cell_1_Devices", path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
     except Exception as e:
@@ -196,7 +196,7 @@ class _Tee:
 
 
 class TestWizard(tk.Tk):
-    def __init__(self, test_name=None, test_dir=None, load_path=None):
+    def __init__(self, test_name=None, test_dir=None, load_path=None, devices_file=None):
         super().__init__()
         self.title("Test Wizard")
         self.cfg = load_config()
@@ -206,7 +206,8 @@ class TestWizard(tk.Tk):
         self.instance_map = self.cfg.get("device_names") or {
             s: dict(p) for s, p in self.base_map.items()
         }
-        self.device_objects = load_device_objects()
+        self.devices_file = devices_file or os.environ.get("MRLF_DEVICES_FILE", DEFAULT_DEVICES_FILE)
+        self.device_objects = load_device_objects(self.devices_file)
         self.setup_code = ""
 
         self.running = False
@@ -519,7 +520,7 @@ class TestWizard(tk.Tk):
         script_path = os.path.join(self.tests_dir, f"{safe}_Script.py")
 
         try:
-            with open(DEVICES_FILE, "r") as fh:
+            with open(self.devices_file, "r") as fh:
                 base_content = fh.read()
         except Exception:
             return
@@ -851,6 +852,7 @@ if __name__ == "__main__":
     parser.add_argument("--test-name")
     parser.add_argument("--test-dir")
     parser.add_argument("--load-file")
+    parser.add_argument("--devices-file")
     args = parser.parse_args()
-    app = TestWizard(test_name=args.test_name, test_dir=args.test_dir, load_path=args.load_file)
+    app = TestWizard(test_name=args.test_name, test_dir=args.test_dir, load_path=args.load_file, devices_file=args.devices_file)
     app.mainloop()
