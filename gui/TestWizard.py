@@ -1047,4 +1047,10 @@ if __name__ == "__main__":
     parser.add_argument("--test-name")
     parser.add_argument("--test-dir")
     parser.add_argument("--load-file")
+    args = parser.parse_args()
+    app = TestWizard(
+        test_name=args.test_name,
+        test_dir=args.test_dir,
+        load_path=args.load_file,
+    )
     app.mainloop()
