@@ -93,7 +93,8 @@ class TestLauncher(tk.Tk):
         options = get_device_options()
         cfg = load_config(CONFIG_PATH)
         base_map = build_instance_map(cfg)
-        name_map = cfg.get("device_names", {})
+        # Device instance names are not persisted; start with empty values
+        name_map = {}
 
         name_frame = ttk.Frame(self)
         name_frame.pack(fill="x", padx=10, pady=(10, 0))
@@ -206,7 +207,13 @@ class TestLauncher(tk.Tk):
             messagebox.showerror("Error", "Please enter a test name")
             return
         cfg = self.gather_config()
-        save_config(cfg, CONFIG_PATH)
+        # Persist only device selections and IP address, not custom names
+        persistent_cfg = {
+            "ip_address": cfg["ip_address"],
+            "al1342": cfg["al1342"],
+            "al2205": cfg["al2205"],
+        }
+        save_config(persistent_cfg, CONFIG_PATH)
         safe = re.sub(r"\W+", "_", name)
         test_dir = os.path.join(TEST_BASE_DIR, safe)
 

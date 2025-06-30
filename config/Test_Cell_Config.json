@@ -19,27 +19,5 @@
     "X1.5": "LoadCell_LCM300",
     "X1.6": "PositionSensor_SDAT_MHS_M160",
     "X1.7": "LoadCell_LCM300"
-  },
-  "device_names": {
-    "al1342": {
-      "X01": "AL2205_Hub",
-      "X02": "Empty",
-      "X03": "ValveBank_SY3000",
-      "X04": "Empty",
-      "X05": "Empty",
-      "X06": "Empty",
-      "X07": "Empty",
-      "X08": "Empty"
-    },
-    "al2205": {
-      "X1.0": "UI_Button",
-      "X1.1": "Empty",
-      "X1.2": "PositionSensor_SDAT_MHS_M160_1",
-      "X1.3": "LoadCell_LCM300_1",
-      "X1.4": "PositionSensor_SDAT_MHS_M160_2",
-      "X1.5": "LoadCell_LCM300_2",
-      "X1.6": "PositionSensor_SDAT_MHS_M160_3",
-      "X1.7": "LoadCell_LCM300_3"
-    }
   }
 }
