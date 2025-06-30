@@ -14,7 +14,7 @@ import re
 import traceback
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, simpledialog
 from tkinter.scrolledtext import ScrolledText
 
 from .calibration_wizard import CalibrationWizard
@@ -268,6 +268,7 @@ class TestWizard(tk.Tk):
         self.paused = False
         self.worker = None
         self.log_file = None
+        self.log_file_path = None
         self.test_file_path = None
         self.test_script_path = None
         self.monitor = None
@@ -434,15 +435,51 @@ class TestWizard(tk.Tk):
 
         # The lower test editor has been removed to avoid duplication. The
         # primary test loop editor remains in the left column above.
-        # Buttons
-        btn_frame = ttk.Frame(main)
-        btn_frame.pack(fill="x", pady=10)
-        self.start_btn = ttk.Button(btn_frame, text="Start", command=self.start_test)
-        self.stop_btn = ttk.Button(btn_frame, text="Stop", command=self.stop_test, state="disabled")
-        self.pause_btn = ttk.Button(btn_frame, text="Pause", command=self.toggle_pause, state="disabled")
+
+        # Test control buttons under the command library
+        control_frame = ttk.Frame(lib_frame)
+        control_frame.pack(fill="x", pady=(5, 5))
+
+        self.style.configure("Start.TButton", foreground="green")
+        self.style.configure("Stop.TButton", foreground="red")
+        self.style.configure("Pause.TButton", foreground="blue")
+        self.style.configure("Resume.TButton", foreground="blue")
+
+        self.start_btn = ttk.Button(
+            control_frame,
+            text="\u25CF Start Test",
+            command=self.start_test,
+            style="Start.TButton",
+        )
+        self.stop_btn = ttk.Button(
+            control_frame,
+            text="\u25A0 Stop Test",
+            command=lambda: self.stop_test(prompt=True),
+            state="disabled",
+            style="Stop.TButton",
+        )
+        self.pause_btn = ttk.Button(
+            control_frame,
+            text="\u23F8 Pause Test",
+            command=self.pause_test,
+            state="disabled",
+            style="Pause.TButton",
+        )
+        self.resume_btn = ttk.Button(
+            control_frame,
+            text="\u25B6 Resume Test",
+            command=self.resume_test,
+            state="disabled",
+            style="Resume.TButton",
+        )
         self.start_btn.pack(side="left", padx=5)
         self.stop_btn.pack(side="left", padx=5)
         self.pause_btn.pack(side="left", padx=5)
+        self.resume_btn.pack(side="left", padx=5)
+
+        # Buttons related to file handling
+        btn_frame = ttk.Frame(main)
+        btn_frame.pack(fill="x", pady=10)
 
         self.save_btn = ttk.Button(btn_frame, text="Save Test", command=self.save_test)
         self.new_btn = ttk.Button(btn_frame, text="New Test", command=self.new_test)
@@ -682,7 +719,8 @@ class TestWizard(tk.Tk):
         os.makedirs(self.log_dir, exist_ok=True)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         name = self.test_name_var.get() or "test"
-        log_path = os.path.join(self.log_dir, f"{timestamp}_{name}.log")
+        log_path = os.path.join(self.log_dir, f"{timestamp}_{name}.txt")
+        self.log_file_path = log_path
         self.log_file = open(log_path, "w")
         if not self.monitor or not self.monitor.winfo_exists():
             self.monitor = TestMonitor(self)
@@ -693,7 +731,8 @@ class TestWizard(tk.Tk):
         self.paused = False
         self.start_btn.configure(state="disabled")
         self.stop_btn.configure(state="normal")
-        self.pause_btn.configure(state="normal", text="Pause")
+        self.pause_btn.configure(state="normal")
+        self.resume_btn.configure(state="disabled")
         self._set_edit_state("disabled")
         context = {"__name__": "__main__"}
         try:
@@ -747,10 +786,13 @@ class TestWizard(tk.Tk):
                         self.running = False
                         break
             self.log_file.close()
+            should_prompt = self.running
+            self.running = False
+            self.after(0, lambda p=should_prompt: self.stop_test(prompt=p))
         self.worker = threading.Thread(target=worker, daemon=True)
         self.worker.start()
 
-    def stop_test(self):
+    def stop_test(self, prompt=False):
         """Stop the running test and reset UI state."""
         # Even if the test thread has already finished, allow this method to
         # reset the buttons so the user can start a new test.
@@ -773,14 +815,56 @@ class TestWizard(tk.Tk):
 
         self.start_btn.configure(state="normal")
         self.stop_btn.configure(state="disabled")
-        self.pause_btn.configure(state="disabled", text="Pause")
+        self.pause_btn.configure(state="disabled")
+        self.resume_btn.configure(state="disabled")
         self._set_edit_state("normal")
 
-    def toggle_pause(self):
+        if prompt:
+            self._prompt_save_log()
+
+    def pause_test(self):
         if not self.running:
             return
-        self.paused = not self.paused
-        self.pause_btn.configure(text="Resume" if self.paused else "Pause")
+        self.paused = True
+        self.pause_btn.configure(state="disabled")
+        self.resume_btn.configure(state="normal")
+
+    def resume_test(self):
+        if not self.running:
+            return
+        self.paused = False
+        self.pause_btn.configure(state="normal")
+        self.resume_btn.configure(state="disabled")
+
+    def _prompt_save_log(self):
+        """Ask the user for a log file name and move the temporary log."""
+        if not self.log_file_path:
+            return
+        default_name = f"{self.test_name_var.get() or 'Test Name'}_Trial 1"
+        while True:
+            name = simpledialog.askstring(
+                "Test Complete",
+                "Enter a name for the log file:",
+                initialvalue=default_name,
+            )
+            if name is None:
+                break
+            safe = re.sub(r"\W+", "_", name.strip())
+            if not safe:
+                continue
+            target = os.path.join(self.log_dir, f"{safe}.txt")
+            if os.path.exists(target):
+                if not messagebox.askyesno(
+                    "Overwrite File",
+                    f"{target} already exists. Overwrite?",
+                ):
+                    continue
+            try:
+                os.replace(self.log_file_path, target)
+                messagebox.showinfo("Saved", f"Log saved to {target}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save log file: {e}")
+            break
 
     # ----------------------- Test File Handling -------------------
     def _verify_mapping(self, imported_cfg):
