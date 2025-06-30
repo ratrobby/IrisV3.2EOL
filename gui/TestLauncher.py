@@ -48,8 +48,16 @@ class DeviceSelector(ttk.Frame):
         ttk.Label(self, text=label, font=("Arial", 12, "bold")).grid(
             row=0, column=0, columnspan=3, pady=(0, 4)
         )
-        ttk.Label(self, text="Map Devices").grid(row=1, column=1, pady=(0, 4))
-        ttk.Label(self, text="Define Device Name").grid(row=1, column=2, pady=(0, 4))
+        ttk.Label(
+            self,
+            text="Map Devices to Port",
+            font=("Arial", 10, "underline"),
+        ).grid(row=1, column=1, pady=(0, 4))
+        ttk.Label(
+            self,
+            text="Define Device Name",
+            font=("Arial", 10, "underline"),
+        ).grid(row=1, column=2, pady=(0, 4))
         for row, port in enumerate(ports, start=2):
             ttk.Label(self, text=f"{port}:").grid(row=row, column=0, sticky="w", padx=5)
             var = tk.StringVar()
