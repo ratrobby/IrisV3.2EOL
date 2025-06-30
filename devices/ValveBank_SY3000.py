@@ -35,16 +35,16 @@ class ValveBank:
     def test_instructions(cls):
         return [
             {
-                "title": "valve_on(*valve, duration)",
+                "title": "valve_on(valve, duration)",
                 "content": (
                     "Use: Turns on specified valves in SY3000 valve bank\n"
                     "Inputs:\n"
-                    "    - *valve: Valve to turn on (e.g., 1.A, 1.B ... 8.A)\n"
+                    "    - valve: Valve to turn on (e.g., 1.A, 1.B ... 8.A)\n"
                     "    - duration=: Time (sec) valve stays active\n"
                     "            - \"duration=None\" - Turns valve on indefinitely\n"
                     "Example:\n"
-                    "    - valve_on(1.A, duration = 3) - Turns valve 1.A on for 3 sec\n"
-                    "    - valve_on(1.B, duration = None) - Turns valve 1.B on indefinitely"
+                    "    - valve_on(\"1.A\", duration=3) - Turns valve 1.A on for 3 sec\n"
+                    "    - valve_on(\"1.B\", duration=None) - Turns valve 1.B on indefinitely"
                 ),
             },
             {
@@ -54,7 +54,7 @@ class ValveBank:
                     "Inputs:\n"
                     "    - *valves: Valves to shut off, separated by ',' (e.g., 1.A... 8.A)\n"
                     "Example:\n"
-                    "    - valve_off(1.A, 1.B) - Turns valves 1.A & 1.B off"
+                    "    - valve_off(\"1.A\", \"1.B\") - Turns valves 1.A & 1.B off"
                 ),
             },
             {
