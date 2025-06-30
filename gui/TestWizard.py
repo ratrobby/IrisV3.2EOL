@@ -367,7 +367,8 @@ class TestWizard(tk.Tk):
 
         inst_status = ttk.Frame(right)
         inst_status.pack(fill="x", padx=5, pady=(0, 5))
-        inst_status.columnconfigure(0, weight=1)
+        # Give the device mapping display more space than the connection status
+        inst_status.columnconfigure(0, weight=3)
         inst_status.columnconfigure(1, weight=1)
         inst_status.rowconfigure(0, weight=1)
         inst_status.rowconfigure(1, weight=1)
@@ -402,6 +403,8 @@ class TestWizard(tk.Tk):
 
         status_frame = ttk.LabelFrame(inst_status, text="AL1342 Connection Status:")
         status_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
+        # Narrower status frame to emphasize the device mapping table
+        status_frame.configure(width=150)
         self.status_var = tk.StringVar(value="Disconnected")
 
         # Container with a border to make the status more visible
