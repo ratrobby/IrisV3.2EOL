@@ -31,7 +31,9 @@ def export_device_setup(cfg, path=None):
     if path is None:
         path = os.path.join(repo_root, "config", "Test_Cell_1_Devices.py")
 
-    instance_map = build_instance_map(cfg)
+    instance_map = cfg.get("device_names")
+    if not instance_map:
+        instance_map = build_instance_map(cfg)
     ip_addr = cfg.get("ip_address", "192.168.XXX.XXX")
 
     # Collect all selected device modules
