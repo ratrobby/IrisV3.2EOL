@@ -1,0 +1,52 @@
+{
+  "name": "test 1",
+  "setup": "# Setup code\n",
+  "loop": "# Test loop code\nLoadCell_LCM300.read_force(\"N\")",
+  "iterations": "2",
+  "config": {
+    "ip_address": "192.168.1.250",
+    "al1342": {
+      "X01": "AL2205_Hub",
+      "X02": "ValveBank_SY3000",
+      "X03": "PressureRegulator_ITV_1050",
+      "X04": "PressureRegulator_ITV_1050",
+      "X05": "Empty",
+      "X06": "Empty",
+      "X07": "Empty",
+      "X08": "Empty"
+    },
+    "al2205": {
+      "X1.0": "UI_Button",
+      "X1.1": "PositionSensor_SDAT_MHS_M160",
+      "X1.2": "PositionSensor_SDAT_MHS_M160",
+      "X1.3": "LoadCell_LCM300",
+      "X1.4": "Empty",
+      "X1.5": "Empty",
+      "X1.6": "Empty",
+      "X1.7": "Empty"
+    }
+  },
+  "device_names": {
+    "al1342": {
+      "X01": "AL2205_Hub",
+      "X02": "ValveBank_SY3000",
+      "X03": "PressureRegulator_ITV_1050_1",
+      "X04": "PressureRegulator_ITV_1050_2",
+      "X05": "Empty",
+      "X06": "Empty",
+      "X07": "Empty",
+      "X08": "Empty"
+    },
+    "al2205": {
+      "X1.0": "UI_Button",
+      "X1.1": "PositionSensor_SDAT_MHS_M160_1",
+      "X1.2": "PositionSensor_SDAT_MHS_M160_2",
+      "X1.3": "LoadCell_LCM300",
+      "X1.4": "Empty",
+      "X1.5": "Empty",
+      "X1.6": "Empty",
+      "X1.7": "Empty"
+    }
+  },
+  "script_file": "test_1_Script.py"
+}
