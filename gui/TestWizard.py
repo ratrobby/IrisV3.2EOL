@@ -133,16 +133,73 @@ def build_instance_map(cfg):
                 counts[device] = idx
                 result[section][port] = f"{device}_{idx}"
     return result
-
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-    except Exception as e:
-        print(f"Failed to load device objects: {e}")
         return {}
+
+    from IO_master import IO_master
+
+    instance_map = build_instance_map(cfg)
+    ip_addr = cfg.get("ip_address", "192.168.XXX.XXX")
+    master = IO_master(ip_addr)
+
     objects = {}
-    for name, obj in module.__dict__.items():
-        if hasattr(getattr(obj, "__class__", object), "_is_device_class"):
-            objects[name] = obj
+    classes = {}
+
+    # Import required device classes
+    for section in ("al1342", "al2205"):
+        for dev_name in cfg.get(section, {}).values():
+            if dev_name and dev_name != "Empty" and dev_name not in classes:
+                try:
+                    mod = importlib.import_module(f"devices.{dev_name}")
+                except Exception as e:
+                    print(f"Failed to import device module '{dev_name}': {e}")
+                    continue
+                device_cls = None
+                for name, obj in inspect.getmembers(mod, inspect.isclass):
+                    if getattr(obj, "_is_device_class", False):
+                        device_cls = obj
+                        break
+                if device_cls:
+                    classes[dev_name] = device_cls
+
+    hub_obj = None
+
+    # Instantiate AL1342 devices first
+    for port in sorted(cfg.get("al1342", {})):
+        dev_name = cfg["al1342"][port]
+        if dev_name == "Empty":
+            continue
+        cls = classes.get(dev_name)
+        if not cls:
+            continue
+        port_num = int(port[1:]) if port.startswith("X") else int(port)
+        inst_name = instance_map["al1342"][port]
+        try:
+            obj = cls(master, port_number=port_num)
+        except Exception as e:
+            print(f"Failed to instantiate {dev_name}: {e}")
+            continue
+        objects[inst_name] = obj
+        if dev_name == "AL2205_Hub":
+            hub_obj = obj
+
+    # Instantiate AL2205 devices connected to the hub
+    if hub_obj:
+        for port in sorted(cfg.get("al2205", {})):
+            dev_name = cfg["al2205"][port]
+            if dev_name == "Empty":
+                continue
+            cls = classes.get(dev_name)
+            if not cls:
+                continue
+            index = int(port.split(".")[-1])
+            inst_name = instance_map["al2205"][port]
+            try:
+                obj = cls(hub_obj, x1_index=index)
+            except Exception as e:
+                print(f"Failed to instantiate {dev_name}: {e}")
+                continue
+            objects[inst_name] = obj
+
     return objects
 
 
@@ -189,7 +246,6 @@ class _Tee:
 
 
 class TestWizard(tk.Tk):
-    def __init__(self, test_name=None, test_dir=None, load_path=None, devices_file=None):
         super().__init__()
         self.title("Test Wizard")
         self.cfg = load_config()
@@ -199,8 +255,6 @@ class TestWizard(tk.Tk):
         self.instance_map = self.cfg.get("device_names") or {
             s: dict(p) for s, p in self.base_map.items()
         }
-        self.devices_file = devices_file or os.environ.get("MRLF_DEVICES_FILE", DEFAULT_DEVICES_FILE)
-        self.device_objects = load_device_objects(self.devices_file)
         self.setup_code = ""
 
         self.running = False
@@ -493,6 +547,10 @@ class TestWizard(tk.Tk):
 
     def open_calibration(self, device):
         """Launch the generic calibration wizard for a device."""
+        if self.test_script_path and os.path.exists(self.test_script_path):
+            os.environ["MRLF_TEST_SCRIPT"] = self.test_script_path
+        else:
+            os.environ["MRLF_TEST_SCRIPT"] = DEVICES_FILE
         try:
             steps = device.__class__.calibration_steps()
         except Exception as e:
@@ -609,8 +667,6 @@ class TestWizard(tk.Tk):
         os.environ["MRLF_CALIBRATION_FILE"] = os.path.join(
             self.tests_dir, "sensor_calibrations.json"
         )
-        if self.test_script_path:
-            os.environ["MRLF_TEST_SCRIPT"] = self.test_script_path
         os.makedirs(self.log_dir, exist_ok=True)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         name = self.test_name_var.get() or "test"
@@ -635,8 +691,13 @@ class TestWizard(tk.Tk):
                 )
                 devices_mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(devices_mod)
+            elif self.device_file and os.path.exists(self.device_file):
+                spec = importlib.util.spec_from_file_location(
+                    "user_devices", self.device_file
+                )
+                devices_mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(devices_mod)
             else:
-                devices_mod = types.ModuleType("user_devices")
             for name, obj in devices_mod.__dict__.items():
                 if not name.startswith("_"):
                     context[name] = obj
@@ -831,7 +892,4 @@ if __name__ == "__main__":
     parser.add_argument("--test-name")
     parser.add_argument("--test-dir")
     parser.add_argument("--load-file")
-    parser.add_argument("--devices-file")
-    args = parser.parse_args()
-    app = TestWizard(test_name=args.test_name, test_dir=args.test_dir, load_path=args.load_file, devices_file=args.devices_file)
     app.mainloop()

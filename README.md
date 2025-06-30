@@ -21,7 +21,6 @@ this variable to `<TestFolder>/sensor_calibrations.json` when a test starts so
 each test keeps its own calibration data. If the variable is not set, the
 default `config/sensor_calibrations.json` path in the repository root is used.
 
-
 `gui/TestWizard.py` now supports a generic calibration wizard. Any device
 implementing a `calibration_steps()` class method will show a **Calibrate…**
 button in the Test Wizard setup panel. Clicking the button launches a wizard
