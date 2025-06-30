@@ -161,7 +161,6 @@ class TestLauncher(tk.Tk):
     def launch_wizard(self, test_name=None, test_dir=None, load_file=None, script_path=None):
       
         """Start ``gui.TestWizard`` in a separate process."""
-        main
         cmd = [sys.executable, "-m", "gui.TestWizard"]
         if test_name:
             cmd += ["--test-name", test_name]
@@ -174,7 +173,6 @@ class TestLauncher(tk.Tk):
         if script_path:
             env["MRLF_TEST_SCRIPT"] = script_path
         proc = subprocess.Popen(cmd, cwd=REPO_ROOT, env=env)
-        main
         self.wizard_procs.append(proc)
 
     def gather_config(self):
