@@ -14,7 +14,10 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEVICE_FOLDER = os.path.join(REPO_ROOT, "devices")
 CONFIG_PATH = os.path.join(REPO_ROOT, "config", "Test_Cell_Config.json")
 TEST_BASE_DIR = os.path.expanduser(
-    os.environ.get("MRLF_TEST_DIR", "~/MRLF Tests")
+    os.environ.get(
+        "MRLF_TEST_DIR",
+        os.path.join(REPO_ROOT, "user_tests"),
+    )
 )
 
 # Default configuration when no config file exists
