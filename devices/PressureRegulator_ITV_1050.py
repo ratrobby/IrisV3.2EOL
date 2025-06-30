@@ -23,6 +23,8 @@ except Exception:  # pragma: no cover - optional SciPy dependency
 import os
 import sys
 import time
+import tkinter as tk
+from tkinter import ttk, messagebox
 
 # Allow importing project modules when executed directly
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -44,7 +46,14 @@ class PressureRegulatorITV1050:
                     "Example:\n"
                     "    - set_pressure(25) - Sets ITV-1050 to 25psi"
                 ),
-            }
+            },
+            {
+                "title": "Setup Widget",
+                "content": (
+                    "Enter a desired pressure in the Setup panel and click\n"
+                    "Set pressure to program the regulator."
+                ),
+            },
         ]
     @classmethod
     def test_instructions(cls):
@@ -63,6 +72,7 @@ class PressureRegulatorITV1050:
         # Default values for public method
         self.default_tolerance = default_tolerance
         self.default_timeout = default_timeout
+        self.current_pressure = None
 
     def _build_correction_curve(self):
         """Return interpolation from pressure to raw command value."""
@@ -112,6 +122,7 @@ class PressureRegulatorITV1050:
         timeout = self.default_timeout
 
         self._write_pressure(target_psi)
+        self.current_pressure = target_psi
         start_time = time.time()
 
         while time.time() - start_time < timeout:
@@ -125,3 +136,29 @@ class PressureRegulatorITV1050:
 
         print("❌ Did not reach target within timeout")
         return False
+
+    # ---------------------- GUI Integration ----------------------
+    def setup_widget(self, parent, name=None):
+        """Return a Tkinter frame for setting the regulator pressure."""
+        frame = ttk.Frame(parent)
+        ttk.Label(frame, text=name or "ITV-1050").grid(
+            row=0, column=0, columnspan=2, sticky="w"
+        )
+
+        ttk.Label(frame, text="Pressure (psi)").grid(row=1, column=0, padx=2)
+        pressure_var = tk.StringVar(value=str(self.min_psi))
+        entry = ttk.Entry(frame, textvariable=pressure_var, width=6)
+        entry.grid(row=1, column=1, padx=2)
+
+        def apply():
+            try:
+                value = float(pressure_var.get())
+            except ValueError:
+                messagebox.showerror("Input Error", "Invalid pressure value")
+                return
+            self.set_pressure(value)
+
+        ttk.Button(frame, text="Set pressure", command=apply).grid(
+            row=2, column=0, columnspan=2, pady=2
+        )
+        return frame
