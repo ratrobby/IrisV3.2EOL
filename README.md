@@ -21,13 +21,6 @@ this variable to `<TestFolder>/sensor_calibrations.json` when a test starts so
 each test keeps its own calibration data. If the variable is not set, the
 default `config/sensor_calibrations.json` path in the repository root is used.
 
-Custom device instance names are saved with each test rather than written back
-to the repository. When device names are updated in the Test Wizard the
-generated `<TestName>_Script.py` file is overwritten with alias assignments
-along with the current setup and loop code so the test configuration can be
-reproduced later. When a test is started the wizard will import this generated
-script so the customised names are available automatically.
-
 `gui/TestWizard.py` now supports a generic calibration wizard. Any device
 implementing a `calibration_steps()` class method will show a **Calibrate…**
 button in the Test Wizard setup panel. Clicking the button launches a wizard

@@ -227,7 +227,6 @@ class PositionSensorSDATMHS_M160:
 
 
 # ==================== Calibration Wizard Integration ====================
-TEST_CELL_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
 LOG_FILE = os.path.join(REPO_ROOT, "logs", "position_sensor_calibration.log")
 
 
@@ -239,13 +238,7 @@ def _log(message):
 
 
 def _load_position_sensors():
-    path = os.environ.get("MRLF_TEST_SCRIPT", TEST_CELL_FILE)
-    if not os.path.exists(path):
-        return []
-    spec = importlib.util.spec_from_file_location("Test_Cell_1_Devices",
-                                                path)
     module = importlib.util.module_from_spec(spec)
-    sys.modules["Test_Cell_1_Devices"] = module
     spec.loader.exec_module(module)
 
     sensors = []
@@ -345,7 +338,7 @@ def Calibrate_PosSensor():
     sensors = _load_position_sensors()
     if not sensors:
         messagebox.showinfo("No Sensors",
-                            "No position sensors mapped to Test Cell 1.")
+                            "No position sensors mapped to this test.")
         return
     CalibrationWizard(sensors)
 

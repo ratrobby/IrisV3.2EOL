@@ -190,16 +190,10 @@ class LoadCellLCM300:
 
 # ==================== Calibration Helper ====================
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEST_CELL_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
 
 
 def _load_load_cells():
-    path = os.environ.get("MRLF_TEST_SCRIPT", TEST_CELL_FILE)
-    if not os.path.exists(path):
-        return []
-    spec = importlib.util.spec_from_file_location("Test_Cell_1_Devices", path)
     module = importlib.util.module_from_spec(spec)
-    sys.modules["Test_Cell_1_Devices"] = module
     spec.loader.exec_module(module)
 
     cells = []
@@ -219,7 +213,7 @@ def Calibrate_LoadCell_Zero():
         )
     cells = _load_load_cells()
     if not cells:
-        messagebox.showinfo("No Load Cells", "No LoadCell_LCM300 devices mapped to Test Cell 1.")
+        messagebox.showinfo("No Load Cells", "No LoadCell_LCM300 devices mapped to this test.")
         return
     for cell, name, port in cells:
         cell.monitor_force_window()

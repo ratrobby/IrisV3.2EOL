@@ -133,7 +133,6 @@ def build_instance_map(cfg):
                 counts[device] = idx
                 result[section][port] = f"{device}_{idx}"
     return result
-
         return {}
 
     from IO_master import IO_master
@@ -668,10 +667,6 @@ class TestWizard(tk.Tk):
         os.environ["MRLF_CALIBRATION_FILE"] = os.path.join(
             self.tests_dir, "sensor_calibrations.json"
         )
-        if self.test_script_path and os.path.exists(self.test_script_path):
-            os.environ["MRLF_TEST_SCRIPT"] = self.test_script_path
-        else:
-            os.environ["MRLF_TEST_SCRIPT"] = DEVICES_FILE
         os.makedirs(self.log_dir, exist_ok=True)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         name = self.test_name_var.get() or "test"
@@ -703,10 +698,6 @@ class TestWizard(tk.Tk):
                 devices_mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(devices_mod)
             else:
-                devices_mod = types.SimpleNamespace()
-                # Build device instances directly from config
-                for name, obj in load_device_objects(cfg=self.cfg).items():
-                    setattr(devices_mod, name, obj)
             for name, obj in devices_mod.__dict__.items():
                 if not name.startswith("_"):
                     context[name] = obj

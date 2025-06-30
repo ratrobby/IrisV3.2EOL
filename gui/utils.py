@@ -12,19 +12,18 @@ def save_config(data, path="config/Test_Cell_Config.json"):
         json.dump(data, f, indent=2)
 
 
-def export_device_setup(cfg, path):
     """Generate a device setup script from a configuration dict.
 
     Parameters
     ----------
     cfg : dict
         Configuration as returned by ``gather_config()``.
-    path : str
-        Destination file path. The file is always written to this location.
+
     """
     import inspect
     import importlib
     from .TestWizard import build_instance_map
+
 
 
     instance_map = cfg.get("device_names")
@@ -113,7 +112,10 @@ def export_device_setup(cfg, path):
         inst = instance_map["al2205"][port]
         lines.append(f"# AL2205 {port}: {inst} ({dev_name})")
 
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as fh:
-        fh.write("\n".join(lines) + "\n")
+    script = "\n".join(lines) + "\n"
+    if path:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as fh:
+            fh.write(script)
+    return script
 
