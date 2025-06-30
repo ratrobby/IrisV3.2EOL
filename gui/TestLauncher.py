@@ -158,6 +158,20 @@ class TestLauncher(tk.Tk):
         ttk.Button(btn_frame, text="Create New Test", command=self.create_test).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Load Test From File", command=self.load_test).pack(side="left", padx=5)
 
+    def launch_wizard(self, test_name=None, test_dir=None, load_file=None, script_path=None):
+        """Start a TestWizard subprocess and track it."""
+        cmd = [sys.executable, "-m", "gui.TestWizard"]
+        if test_name:
+            cmd += ["--test-name", test_name]
+        if test_dir:
+            cmd += ["--test-dir", test_dir]
+        if load_file:
+            cmd += ["--load-file", load_file]
+        if script_path:
+            cmd += ["--script-path", script_path]
+        proc = subprocess.Popen(cmd, cwd=REPO_ROOT)
+        self.wizard_procs.append(proc)
+
     def gather_config(self):
         cfg = {
             "ip_address": self.ip_var.get(),
