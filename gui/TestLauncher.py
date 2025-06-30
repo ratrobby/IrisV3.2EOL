@@ -112,6 +112,7 @@ class TestLauncher(tk.Tk):
             locked1342,
             names=name_map.get("al1342", {}),
         )
+        self.sel1342.configure(borderwidth=2, relief="groove", padding=5)
         self.sel1342.grid(row=0, column=0, padx=(0, 10), sticky="nsew")
 
         self.sel2205 = DeviceSelector(
@@ -122,6 +123,7 @@ class TestLauncher(tk.Tk):
             locked2205,
             names=name_map.get("al2205", {}),
         )
+        self.sel2205.configure(borderwidth=2, relief="groove", padding=5)
         self.sel2205.grid(row=0, column=1, sticky="nsew")
 
         selector_frame.columnconfigure(0, weight=1)
