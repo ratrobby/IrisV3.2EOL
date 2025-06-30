@@ -391,33 +391,11 @@ class TestWizard(tk.Tk):
         inst_status.rowconfigure(0, weight=1)
         inst_status.rowconfigure(1, weight=1)
 
-        map_frame = None
+        self.map_frame = None
         if self.instance_map:
-            map_frame = ttk.LabelFrame(inst_status, text="Device Instances")
-            map_frame.grid(row=0, column=0, sticky="nsew")
-            map_frame.columnconfigure(0, weight=1)
-            map_frame.columnconfigure(1, weight=1)
-
-            label1 = ttk.Label(map_frame, text="AL1342", font=("Arial", 10, "underline"))
-            label2 = ttk.Label(map_frame, text="AL2205", font=("Arial", 10, "underline"))
-
-            col1 = ttk.LabelFrame(map_frame, labelwidget=label1)
-            col2 = ttk.LabelFrame(map_frame, labelwidget=label2)
-            col1.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=2)
-            col2.grid(row=0, column=1, sticky="nsew", padx=(5, 0), pady=2)
-
-            col1.columnconfigure(1, weight=1)
-            col2.columnconfigure(1, weight=1)
-
-            for r, port in enumerate(sorted(self.instance_map["al1342"]), start=1):
-                ttk.Label(col1, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
-                val = self.instance_map["al1342"][port]
-                ttk.Label(col1, text=val).grid(row=r, column=1, sticky="w")
-
-            for r, port in enumerate(sorted(self.instance_map["al2205"]), start=1):
-                ttk.Label(col2, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
-                val = self.instance_map["al2205"][port]
-                ttk.Label(col2, text=val).grid(row=r, column=1, sticky="w")
+            self.map_frame = ttk.LabelFrame(inst_status, text="Device Instances")
+            self.map_frame.grid(row=0, column=0, sticky="nsew")
+            self.refresh_instance_table()
 
         status_frame = ttk.LabelFrame(inst_status, text="AL1342 Connection Status:")
         status_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
@@ -621,6 +599,37 @@ class TestWizard(tk.Tk):
                     except Exception as e:
                         print(f"Failed to build setup widget for {alias}: {e}")
 
+    def refresh_instance_table(self):
+        """Update the Device Instances table with current names."""
+        if not getattr(self, "map_frame", None):
+            return
+        for child in self.map_frame.winfo_children():
+            child.destroy()
+
+        self.map_frame.columnconfigure(0, weight=1)
+        self.map_frame.columnconfigure(1, weight=1)
+
+        label1 = ttk.Label(self.map_frame, text="AL1342", font=("Arial", 10, "underline"))
+        label2 = ttk.Label(self.map_frame, text="AL2205", font=("Arial", 10, "underline"))
+
+        col1 = ttk.LabelFrame(self.map_frame, labelwidget=label1)
+        col2 = ttk.LabelFrame(self.map_frame, labelwidget=label2)
+        col1.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=2)
+        col2.grid(row=0, column=1, sticky="nsew", padx=(5, 0), pady=2)
+
+        col1.columnconfigure(1, weight=1)
+        col2.columnconfigure(1, weight=1)
+
+        for r, port in enumerate(sorted(self.instance_map.get("al1342", {})), start=1):
+            ttk.Label(col1, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
+            val = self.instance_map["al1342"][port]
+            ttk.Label(col1, text=val).grid(row=r, column=1, sticky="w")
+
+        for r, port in enumerate(sorted(self.instance_map.get("al2205", {})), start=1):
+            ttk.Label(col2, text=f"{port}:").grid(row=r, column=0, sticky="e", pady=1)
+            val = self.instance_map["al2205"][port]
+            ttk.Label(col2, text=val).grid(row=r, column=1, sticky="w")
+
     def open_calibration(self, device):
         """Launch the generic calibration wizard for a device."""
         if self.test_script_path and os.path.exists(self.test_script_path):
@@ -678,6 +687,7 @@ class TestWizard(tk.Tk):
     def reset_device_names(self):
         """Revert device instance names to defaults from the configuration."""
         self.instance_map = {s: dict(p) for s, p in self.base_map.items()}
+        self.refresh_instance_table()
 
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
@@ -1039,6 +1049,7 @@ class TestWizard(tk.Tk):
             self.reset_device_names()
 
         self.build_setup_widgets()
+        self.refresh_instance_table()
 
     def new_test(self):
         current_filled = (
@@ -1063,6 +1074,7 @@ class TestWizard(tk.Tk):
             self.cfg, self.base_map, self.ip_address
         )
         self.build_setup_widgets()
+        self.refresh_instance_table()
 
     def reconfigure_cell(self):
         current_filled = (
