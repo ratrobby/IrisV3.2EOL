@@ -442,13 +442,13 @@ class TestWizard(tk.Tk):
         # primary test loop editor remains in the left column above.
 
         # Test control buttons under the command library
-        control_frame = ttk.Frame(lib_frame)
+        control_frame = ttk.LabelFrame(lib_frame, text="Test Control Panel")
         control_frame.pack(fill="x", pady=(5, 5))
 
-        self.style.configure("Start.TButton", foreground="green")
-        self.style.configure("Stop.TButton", foreground="red")
-        self.style.configure("Pause.TButton", foreground="blue")
-        self.style.configure("Resume.TButton", foreground="blue")
+        self.style.configure("Start.TButton", foreground="green", font=("Arial", 20))
+        self.style.configure("Stop.TButton", foreground="red", font=("Arial", 20))
+        self.style.configure("Pause.TButton", foreground="blue", font=("Arial", 20))
+        self.style.configure("Resume.TButton", foreground="blue", font=("Arial", 20))
 
         self.start_btn = ttk.Button(
             control_frame,
