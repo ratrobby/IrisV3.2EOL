@@ -33,6 +33,22 @@ The standalone PySimpleGUI tool for calibrating all
 python -m gui.sensor_calibration_psg
 ```
 
+## Python Dependencies
+
+The GUI and device modules rely on a few external packages. Install the core
+dependencies with:
+
+```bash
+pip install PySimpleGUI pyModbusTCP
+```
+
+Some features, such as interpolation in the calibration tools, require the
+optional `scipy` package:
+
+```bash
+pip install scipy
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
