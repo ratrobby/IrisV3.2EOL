@@ -37,7 +37,6 @@ python -m gui.sensor_calibration_psg
 
 The GUI and device modules rely on a few external packages. Install the core
 dependencies with:
-main
 
 ```bash
 pip install PySimpleGUI pyModbusTCP
@@ -49,7 +48,6 @@ optional `scipy` package:
 
 ```bash
 pip install scipy
-main
 ```
 
 ## License
