@@ -49,8 +49,8 @@ class LoadCellLCM300:
                     "          - lbf: pounds-force\n"
                     "          - N: Newtons\n"
                     "Example:\n"
-                    "  - read_force(N) - Reads force in newtons\n"
-                    "  - read_force(lbf) - Reads force in pounds-force"
+                    "  - read_force(\"N\") - Reads force in newtons\n"
+                    "  - read_force(\"lbf\") - Reads force in pounds-force"
                 ),
             },
             {
@@ -61,7 +61,7 @@ class LoadCellLCM300:
                     "  - unit: Force units (lbf or N)\n"
                     "  - interval=: Time between readings in seconds (default 0.5)\n"
                     "Example:\n"
-                    "  - monitor_force(lbf, interval=1) - Print lbf every second"
+                    "  - monitor_force(\"lbf\", interval=1) - Print lbf every second"
                 ),
             },
         ]
