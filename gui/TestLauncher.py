@@ -38,12 +38,13 @@ def get_device_options():
 
 
 class DeviceSelector(ttk.Frame):
-    def __init__(self, parent, label, ports, options, locked=None, names=None):
+    def __init__(self, parent, label, ports, options, locked=None, names=None, base_names=None):
         super().__init__(parent)
         self.vars = {}
         self.name_vars = {}
         locked = locked or {}
         names = names or {}
+        base_names = base_names or {}
 
         ttk.Label(self, text=label, font=("Arial", 12, "bold")).grid(
             row=0, column=0, columnspan=3, pady=(0, 4)
@@ -63,7 +64,13 @@ class DeviceSelector(ttk.Frame):
             var = tk.StringVar()
             cmb = ttk.Combobox(self, textvariable=var, values=options, state="readonly", width=28)
             cmb.grid(row=row, column=1, sticky="ew", padx=5, pady=1)
-            name_var = tk.StringVar(value=names.get(port, ""))
+            if port in names:
+                default_name = names[port]
+            elif port in locked:
+                default_name = base_names.get(port, "")
+            else:
+                default_name = "Enter Name"
+            name_var = tk.StringVar(value=default_name)
             ent = ttk.Entry(self, textvariable=name_var, width=20)
             ent.grid(row=row, column=2, sticky="ew", padx=5, pady=1)
             if port in locked:
@@ -85,7 +92,7 @@ class TestLauncher(tk.Tk):
         options = get_device_options()
         cfg = load_config(CONFIG_PATH)
         base_map = build_instance_map(cfg)
-        name_map = cfg.get("device_names", base_map)
+        name_map = cfg.get("device_names", {})
 
         name_frame = ttk.Frame(self)
         name_frame.pack(fill="x", padx=10, pady=(10, 0))
@@ -119,6 +126,7 @@ class TestLauncher(tk.Tk):
             options,
             locked1342,
             names=name_map.get("al1342", {}),
+            base_names=base_map.get("al1342", {}),
         )
         self.sel1342.configure(borderwidth=2, relief="groove", padding=5)
         self.sel1342.grid(row=0, column=0, padx=(0, 10), sticky="nsew")
@@ -130,6 +138,7 @@ class TestLauncher(tk.Tk):
             options,
             locked2205,
             names=name_map.get("al2205", {}),
+            base_names=base_map.get("al2205", {}),
         )
         self.sel2205.configure(borderwidth=2, relief="groove", padding=5)
         self.sel2205.grid(row=0, column=1, sticky="nsew")
@@ -157,10 +166,18 @@ class TestLauncher(tk.Tk):
         base_map = build_instance_map(cfg)
         names = {"al1342": {}, "al2205": {}}
         for port, var in self.sel1342.name_vars.items():
-            alias = var.get().strip() or base_map["al1342"][port]
+            val = var.get().strip()
+            if not val or val == "Enter Name":
+                alias = base_map["al1342"][port]
+            else:
+                alias = val
             names["al1342"][port] = alias
         for port, var in self.sel2205.name_vars.items():
-            alias = var.get().strip() or base_map["al2205"][port]
+            val = var.get().strip()
+            if not val or val == "Enter Name":
+                alias = base_map["al2205"][port]
+            else:
+                alias = val
             names["al2205"][port] = alias
         cfg["device_names"] = names
         return cfg
