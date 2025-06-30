@@ -1087,8 +1087,19 @@ class TestWizard(tk.Tk):
                 "Save Test",
                 "Save current test before reconfiguring the test cell?",
             ):
-                self.save_test()
-        subprocess.Popen([sys.executable, "-m", "gui.TestLauncher"], cwd=REPO_ROOT)
+                if not self.save_test():
+                    return
+        if self.test_file_path and os.path.exists(self.test_file_path):
+            cmd = [
+                sys.executable,
+                "-m",
+                "gui.TestLauncher",
+                "--reconfigure",
+                self.test_file_path,
+            ]
+        else:
+            cmd = [sys.executable, "-m", "gui.TestLauncher"]
+        subprocess.Popen(cmd, cwd=REPO_ROOT)
         self.destroy()
 
 

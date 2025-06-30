@@ -88,22 +88,38 @@ class DeviceSelector(ttk.Frame):
 
 
 class TestLauncher(tk.Tk):
-    def __init__(self):
+    def __init__(self, reconfigure_path=None):
         super().__init__()
+        self.reconfigure_path = reconfigure_path
         self.title("Test Launcher")
         self.wizard_procs = []
 
         options = get_device_options()
         cfg = load_config(CONFIG_PATH)
-        base_map = build_instance_map(cfg)
-        # Device instance names are not persisted; start with empty values
         name_map = {}
+        test_name = ""
+
+        if reconfigure_path:
+            try:
+                with open(reconfigure_path, "r") as fh:
+                    data = json.load(fh)
+                cfg = data.get("config", cfg)
+                name_map = data.get("device_names", {})
+                test_name = data.get("name", "")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to load test file: {e}")
+
+        base_map = build_instance_map(cfg)
 
         name_frame = ttk.Frame(self)
         name_frame.pack(fill="x", padx=10, pady=(10, 0))
-        ttk.Label(name_frame, text="Test Name:").pack(side="left")
-        self.test_name_var = tk.StringVar()
-        ttk.Entry(name_frame, textvariable=self.test_name_var, width=30).pack(side="left", padx=5)
+        if self.reconfigure_path:
+            ttk.Label(name_frame, text="Reconfiguring:").pack(side="left")
+            ttk.Label(name_frame, text=test_name or "<Unnamed>").pack(side="left", padx=5)
+        else:
+            ttk.Label(name_frame, text="Test Name:").pack(side="left")
+            self.test_name_var = tk.StringVar()
+            ttk.Entry(name_frame, textvariable=self.test_name_var, width=30).pack(side="left", padx=5)
 
         # IP entry
         ip_frame = ttk.Frame(self)
@@ -159,8 +175,19 @@ class TestLauncher(tk.Tk):
 
         btn_frame = ttk.Frame(self)
         btn_frame.pack(pady=10)
-        ttk.Button(btn_frame, text="Create New Test", command=self.create_test).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Load Test From File", command=self.load_test).pack(side="left", padx=5)
+        if self.reconfigure_path:
+            ttk.Button(
+                btn_frame,
+                text="Reconfigure Test",
+                command=self.reconfigure_test,
+            ).pack(side="left", padx=5)
+        else:
+            ttk.Button(
+                btn_frame, text="Create New Test", command=self.create_test
+            ).pack(side="left", padx=5)
+            ttk.Button(
+                btn_frame, text="Load Test From File", command=self.load_test
+            ).pack(side="left", padx=5)
 
     def launch_wizard(self, test_name=None, test_dir=None, load_file=None, script_path=None):
       
@@ -257,6 +284,38 @@ class TestLauncher(tk.Tk):
             script_path=script_path,
         )
 
+    def reconfigure_test(self):
+        """Update an existing test with new device mapping and names."""
+        if not self.reconfigure_path:
+            return
+        cfg = self.gather_config()
+        try:
+            with open(self.reconfigure_path, "r") as fh:
+                data = json.load(fh)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to read test file: {e}")
+            return
+
+        test_dir = os.path.dirname(self.reconfigure_path)
+        safe = re.sub(r"\W+", "_", data.get("name", "test"))
+        script_path = os.path.join(test_dir, f"{safe}_Script.py")
+        export_device_setup(cfg, path=script_path)
+
+        data["config"] = cfg
+        data["device_names"] = cfg.get("device_names")
+        data["script_file"] = os.path.basename(script_path)
+        try:
+            with open(self.reconfigure_path, "w") as fh:
+                json.dump(data, fh, indent=2)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save test: {e}")
+            return
+
+        self.launch_wizard(
+            load_file=self.reconfigure_path,
+            script_path=script_path,
+        )
+
     def load_test(self):
         path = filedialog.askopenfilename(initialdir=TEST_BASE_DIR,
                                           filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")])
@@ -284,5 +343,11 @@ class TestLauncher(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = TestLauncher()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--reconfigure", help="Path to test JSON to reconfigure")
+    args = parser.parse_args()
+
+    app = TestLauncher(reconfigure_path=args.reconfigure)
     app.mainloop()
