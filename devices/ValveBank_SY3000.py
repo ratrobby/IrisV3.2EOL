@@ -79,6 +79,19 @@ class ValveBank:
         "8.A": 0x0040, "8.B": 0x0080,
     }
 
+    # Map each valve to its paired valve. Only one valve in a pair can be
+    # active at a time.
+    PAIRED_VALVES = {
+        "1.A": "1.B", "1.B": "1.A",
+        "2.A": "2.B", "2.B": "2.A",
+        "3.A": "3.B", "3.B": "3.A",
+        "4.A": "4.B", "4.B": "4.A",
+        "5.A": "5.B", "5.B": "5.A",
+        "6.A": "6.B", "6.B": "6.A",
+        "7.A": "7.B", "7.B": "7.A",
+        "8.A": "8.B", "8.B": "8.A",
+    }
+
     def __init__(self, io_master, port_number):
         self.io_master = io_master
         self.port_number = port_number
@@ -93,9 +106,14 @@ class ValveBank:
         if valve not in self.VALVE_BITMASKS:
             raise ValueError(f"Invalid valve name: {valve}")
 
+        paired = self.PAIRED_VALVES.get(valve)
+
         def _turn_on_and_off():
             print(f"Valve {valve} ON")
             with self._lock:
+                if paired and paired in self.active_valves:
+                    self.active_valves.remove(paired)
+                    print(f"Valve {paired} OFF (auto)")
                 self.active_valves.add(valve)
                 self._write_state()
             time.sleep(duration)
@@ -105,6 +123,9 @@ class ValveBank:
             threading.Thread(target=_turn_on_and_off, daemon=True).start()
         else:
             with self._lock:
+                if paired and paired in self.active_valves:
+                    self.active_valves.remove(paired)
+                    print(f"Valve {paired} OFF (auto)")
                 self.active_valves.add(valve)
                 self._write_state()
             print(f"Valve {valve} ON indefinitely")
