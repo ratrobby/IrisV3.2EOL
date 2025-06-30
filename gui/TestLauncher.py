@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import shutil
+import json
 from .utils import load_config, save_config, export_device_setup
 from .TestWizard import build_instance_map
 import subprocess
@@ -170,9 +171,10 @@ class TestLauncher(tk.Tk):
             return
         cfg = self.gather_config()
         save_config(cfg, CONFIG_PATH)
-        export_device_setup(cfg)
         safe = re.sub(r"\W+", "_", name)
         test_dir = os.path.join(TEST_BASE_DIR, safe)
+        script_path = os.path.join(test_dir, f"{safe}_Script.py")
+        export_device_setup(cfg, path=script_path)
 
         if os.path.exists(test_dir):
             overwrite = messagebox.askyesno(
@@ -191,10 +193,10 @@ class TestLauncher(tk.Tk):
                 return
 
         os.makedirs(test_dir, exist_ok=True)
-        self.launch_wizard(test_name=name, test_dir=test_dir)
+        self.launch_wizard(test_name=name, test_dir=test_dir, script_path=script_path)
         self.destroy()
 
-    def launch_wizard(self, test_name=None, test_dir=None, load_file=None):
+    def launch_wizard(self, test_name=None, test_dir=None, load_file=None, script_path=None):
         cmd = [sys.executable, "-m", "gui.TestWizard"]
         if test_name:
             cmd += ["--test-name", test_name]
@@ -202,14 +204,23 @@ class TestLauncher(tk.Tk):
             cmd += ["--test-dir", test_dir]
         if load_file:
             cmd += ["--load-file", load_file]
-        proc = subprocess.Popen(cmd, cwd=REPO_ROOT)
+        env = os.environ.copy()
+        if script_path:
+            env["MRLF_TEST_SCRIPT"] = script_path
+        proc = subprocess.Popen(cmd, cwd=REPO_ROOT, env=env)
         self.wizard_procs.append(proc)
 
     def load_test(self):
         path = filedialog.askopenfilename(initialdir=TEST_BASE_DIR,
                                           filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")])
         if path:
-            self.launch_wizard(load_file=path)
+            try:
+                with open(path, "r") as fh:
+                    data = json.load(fh)
+                script_path = os.path.join(os.path.dirname(path), data.get("script_file", ""))
+            except Exception:
+                script_path = None
+            self.launch_wizard(load_file=path, script_path=script_path)
             self.destroy()
 
     def close_wizards(self):

@@ -13,23 +13,20 @@ def save_config(data, path="config/Test_Cell_Config.json"):
 
 
 def export_device_setup(cfg, path=None):
-    """Generate ``Test_Cell_1_Devices.py`` from a configuration dict.
+    """Generate a device setup script from a configuration dict.
 
     Parameters
     ----------
     cfg : dict
         Configuration as returned by ``gather_config()``.
     path : str, optional
-        Destination file path. Defaults to ``config/Test_Cell_1_Devices.py``
-        inside the repository root.
+        Destination file path. When omitted the script is returned as a string.
     """
     import inspect
     import importlib
     from .TestWizard import build_instance_map
 
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if path is None:
-        path = os.path.join(repo_root, "config", "Test_Cell_1_Devices.py")
 
     instance_map = cfg.get("device_names")
     if not instance_map:
@@ -117,7 +114,10 @@ def export_device_setup(cfg, path=None):
         inst = instance_map["al2205"][port]
         lines.append(f"# AL2205 {port}: {inst} ({dev_name})")
 
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as fh:
-        fh.write("\n".join(lines) + "\n")
+    script = "\n".join(lines) + "\n"
+    if path:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as fh:
+            fh.write(script)
+    return script
 
