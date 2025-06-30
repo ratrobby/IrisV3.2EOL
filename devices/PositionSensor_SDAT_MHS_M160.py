@@ -239,10 +239,11 @@ def _log(message):
 
 
 def _load_position_sensors():
-    if not os.path.exists(TEST_CELL_FILE):
+    path = os.environ.get("MRLF_TEST_SCRIPT", TEST_CELL_FILE)
+    if not os.path.exists(path):
         return []
     spec = importlib.util.spec_from_file_location("Test_Cell_1_Devices",
-                                                TEST_CELL_FILE)
+                                                path)
     module = importlib.util.module_from_spec(spec)
     sys.modules["Test_Cell_1_Devices"] = module
     spec.loader.exec_module(module)
@@ -336,6 +337,11 @@ class CalibrationWizard:
 
 def Calibrate_PosSensor():
     """Launch the calibration wizard for all mapped position sensors."""
+    if "MRLF_TEST_SCRIPT" not in os.environ:
+        messagebox.showwarning(
+            "MRLF_TEST_SCRIPT Missing",
+            "MRLF_TEST_SCRIPT environment variable not set. Using default configuration."
+        )
     sensors = _load_position_sensors()
     if not sensors:
         messagebox.showinfo("No Sensors",

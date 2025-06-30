@@ -21,14 +21,6 @@ this variable to `<TestFolder>/sensor_calibrations.json` when a test starts so
 each test keeps its own calibration data. If the variable is not set, the
 default `config/sensor_calibrations.json` path in the repository root is used.
 
-When a new test is created the device setup is exported to
-`<TestName>_Script.py` inside the chosen test folder. The generated script
-contains an `IO_master` instance and device objects for every selected port.
-Object variable names match those shown in the Test Wizard's **Device
-Instances** panel so you can reference them directly in your test code. The
-Test Wizard automatically imports this file when a test starts so the objects
-are available without manual `import` statements.
-
 Custom device instance names are saved with each test rather than written back
 to the repository. When device names are updated in the Test Wizard the
 generated `<TestName>_Script.py` file is overwritten with alias assignments

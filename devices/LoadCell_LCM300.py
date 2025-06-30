@@ -194,9 +194,10 @@ TEST_CELL_FILE = os.path.join(REPO_ROOT, "config", "Test_Cell_1_Devices.py")
 
 
 def _load_load_cells():
-    if not os.path.exists(TEST_CELL_FILE):
+    path = os.environ.get("MRLF_TEST_SCRIPT", TEST_CELL_FILE)
+    if not os.path.exists(path):
         return []
-    spec = importlib.util.spec_from_file_location("Test_Cell_1_Devices", TEST_CELL_FILE)
+    spec = importlib.util.spec_from_file_location("Test_Cell_1_Devices", path)
     module = importlib.util.module_from_spec(spec)
     sys.modules["Test_Cell_1_Devices"] = module
     spec.loader.exec_module(module)
@@ -211,6 +212,11 @@ def _load_load_cells():
 
 def Calibrate_LoadCell_Zero():
     """Launch monitor windows for all mapped load cells."""
+    if "MRLF_TEST_SCRIPT" not in os.environ:
+        messagebox.showwarning(
+            "MRLF_TEST_SCRIPT Missing",
+            "MRLF_TEST_SCRIPT environment variable not set. Using default configuration."
+        )
     cells = _load_load_cells()
     if not cells:
         messagebox.showinfo("No Load Cells", "No LoadCell_LCM300 devices mapped to Test Cell 1.")
