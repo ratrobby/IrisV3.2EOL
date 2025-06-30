@@ -12,6 +12,8 @@ def save_config(data, path="config/Test_Cell_Config.json"):
         json.dump(data, f, indent=2)
 
 
+
+def export_device_setup(cfg, path=None):
     """Generate a device setup script from a configuration dict.
 
     Parameters

@@ -238,6 +238,10 @@ def _log(message):
 
 
 def _load_position_sensors():
+    script = os.environ.get("MRLF_TEST_SCRIPT")
+    if not script or not os.path.exists(script):
+        return []
+    spec = importlib.util.spec_from_file_location("user_devices", script)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 

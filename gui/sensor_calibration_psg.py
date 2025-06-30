@@ -6,7 +6,7 @@ def Calibrate_PosSensor_PSG():
     """Launch PySimpleGUI calibration GUI for all mapped position sensors."""
     sensors = _load_position_sensors()
     if not sensors:
-        sg.popup("No position sensors mapped to Test Cell 1.")
+        sg.popup("No position sensors mapped to this test.")
         return
 
     layout = []

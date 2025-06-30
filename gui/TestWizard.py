@@ -133,14 +133,20 @@ def build_instance_map(cfg):
                 counts[device] = idx
                 result[section][port] = f"{device}_{idx}"
     return result
+
+
+def load_device_objects():
+    """Import configured device instances using ``MRLF_TEST_SCRIPT``."""
+    script = os.environ.get("MRLF_TEST_SCRIPT")
+    if not script or not os.path.exists(script):
         return {}
-
-    from IO_master import IO_master
-
-    instance_map = build_instance_map(cfg)
-    ip_addr = cfg.get("ip_address", "192.168.XXX.XXX")
-    master = IO_master(ip_addr)
-
+    try:
+        spec = importlib.util.spec_from_file_location("user_devices", script)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    except Exception as e:
+        print(f"Failed to load device objects: {e}")
+        return {}
     objects = {}
     classes = {}
 
@@ -246,6 +252,7 @@ class _Tee:
 
 
 class TestWizard(tk.Tk):
+    def __init__(self, test_name=None, test_dir=None, load_path=None):
         super().__init__()
         self.title("Test Wizard")
         self.cfg = load_config()
@@ -698,16 +705,16 @@ class TestWizard(tk.Tk):
                 devices_mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(devices_mod)
             else:
-            for name, obj in devices_mod.__dict__.items():
-                if not name.startswith("_"):
-                    context[name] = obj
-            # Add any custom aliases for this test
-            for section in ("al1342", "al2205"):
-                for port in self.instance_map.get(section, {}):
-                    alias = self.instance_map[section][port]
-                    base = self.base_map[section][port]
-                    if alias != base and base in context:
-                        context[alias] = context[base]
+                for name, obj in devices_mod.__dict__.items():
+                    if not name.startswith("_"):
+                        context[name] = obj
+                # Add any custom aliases for this test
+                for section in ("al1342", "al2205"):
+                    for port in self.instance_map.get(section, {}):
+                        alias = self.instance_map[section][port]
+                        base = self.base_map[section][port]
+                        if alias != base and base in context:
+                            context[alias] = context[base]
         except Exception as e:
             print(f"Failed to load device objects: {e}")
         setup_code = self.setup_code
