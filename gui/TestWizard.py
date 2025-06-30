@@ -1013,7 +1013,13 @@ class TestWizard(tk.Tk):
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", data.get("loop", ""))
         self.iterations_var.set(data.get("iterations", ""))
-        self._verify_mapping(data.get("config"))
+
+        imported_cfg = data.get("config", {})
+        self.cfg = imported_cfg
+        self.ip_address = self.cfg.get("ip_address", "192.168.XXX.XXX")
+        self.library = gather_library(self.cfg)
+        self.base_map = build_instance_map(self.cfg)
+
         saved_names = data.get("device_names")
         self.test_script_path = os.path.join(
             self.tests_dir, data.get("script_file", "")
@@ -1022,14 +1028,16 @@ class TestWizard(tk.Tk):
             os.environ["MRLF_TEST_SCRIPT"] = self.test_script_path
         else:
             os.environ.pop("MRLF_TEST_SCRIPT", None)
+
         self.device_objects = load_device_objects(
             self.cfg, self.base_map, self.ip_address
         )
+
         if saved_names:
             self.instance_map = saved_names
         else:
-            # revert to defaults if test has no naming info
             self.reset_device_names()
+
         self.build_setup_widgets()
 
     def new_test(self):

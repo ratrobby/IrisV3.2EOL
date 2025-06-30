@@ -3,7 +3,7 @@ import re
 import sys
 import shutil
 import json
-from .utils import load_config, save_config, export_device_setup
+from .utils import load_config, export_device_setup
 from .TestWizard import build_instance_map
 import subprocess
 import tkinter as tk
@@ -210,13 +210,6 @@ class TestLauncher(tk.Tk):
             messagebox.showerror("Error", "Please enter a test name")
             return
         cfg = self.gather_config()
-        # Persist only device selections and IP address, not custom names
-        persistent_cfg = {
-            "ip_address": cfg["ip_address"],
-            "al1342": cfg["al1342"],
-            "al2205": cfg["al2205"],
-        }
-        save_config(persistent_cfg, CONFIG_PATH)
         safe = re.sub(r"\W+", "_", name)
         test_dir = os.path.join(TEST_BASE_DIR, safe)
 
@@ -238,7 +231,29 @@ class TestLauncher(tk.Tk):
         os.makedirs(test_dir, exist_ok=True)
         script_path = os.path.join(test_dir, f"{safe}_Script.py")
         export_device_setup(cfg, path=script_path)
-        self.launch_wizard(test_name=name, test_dir=test_dir, script_path=script_path)
+
+        meta = {
+            "name": name,
+            "setup": "",
+            "loop": "# Test loop code",
+            "iterations": "",
+            "config": cfg,
+            "device_names": cfg.get("device_names"),
+            "script_file": os.path.basename(script_path),
+        }
+        meta_path = os.path.join(test_dir, f"{safe}.json")
+        with open(meta_path, "w") as fh:
+            json.dump(meta, fh, indent=2)
+
+        log_path = os.path.join(test_dir, f"{safe}_log.txt")
+        open(log_path, "w").close()
+
+        self.launch_wizard(
+            test_name=name,
+            test_dir=test_dir,
+            load_file=meta_path,
+            script_path=script_path,
+        )
 
     def load_test(self):
         path = filedialog.askopenfilename(initialdir=TEST_BASE_DIR,
