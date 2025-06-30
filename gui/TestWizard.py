@@ -262,6 +262,8 @@ class TestWizard(tk.Tk):
         self.instance_map = self.cfg.get("device_names") or {
             s: dict(p) for s, p in self.base_map.items()
         }
+        # Holds instantiated device objects for calibration/setup widgets
+        self.device_objects = {}
         self.setup_code = ""
 
         self.running = False
@@ -579,7 +581,8 @@ class TestWizard(tk.Tk):
             for port in sorted(self.instance_map.get(section, {})):
                 alias = self.instance_map[section][port]
                 base = self.base_map[section][port]
-                obj = self.device_objects.get(base)
+                # Safely look up any instantiated device object by base name
+                obj = getattr(self, "device_objects", {}).get(base)
                 if not obj:
                     continue
                 if hasattr(obj.__class__, "calibration_steps"):
