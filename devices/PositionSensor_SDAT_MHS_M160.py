@@ -159,7 +159,11 @@ class PositionSensorSDATMHS_M160:
     def setup_widget(self, parent, name=None):
         """Return a Tkinter frame with calibration controls."""
         frame = ttk.Frame(parent)
-        label = ttk.Label(frame, text=name or f"Sensor X1.{self.x1_index}")
+        label = ttk.Label(
+            frame,
+            text=name or f"Sensor X1.{self.x1_index}",
+            font=("Arial", 10, "bold"),
+        )
         label.grid(row=0, column=0, columnspan=4, sticky="w")
 
         ttk.Label(frame, text="Min").grid(row=1, column=0)
