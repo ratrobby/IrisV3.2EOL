@@ -12,6 +12,8 @@ import types
 from contextlib import redirect_stdout
 import re
 import traceback
+import tempfile
+import atexit
 
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
@@ -28,6 +30,46 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(REPO_ROOT, "config", "Test_Cell_Config.json")
 DEFAULT_LOG_DIR = os.path.join(REPO_ROOT, "logs")
 DEFAULT_TESTS_DIR = os.path.join(REPO_ROOT, "user_tests")
+
+# Lock file used to ensure only one Test Wizard is running
+LOCK_PATH = os.path.join(tempfile.gettempdir(), "mrlf_testwizard.lock")
+
+
+def _acquire_lock():
+    """Attempt to acquire the single instance lock."""
+    lock_file = open(LOCK_PATH, "w")
+    try:
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except Exception:
+        lock_file.close()
+        raise RuntimeError("Another Test Wizard is already running")
+    return lock_file
+
+
+def _release_lock(lock_file):
+    """Release the single instance lock."""
+    if not lock_file:
+        return
+    try:
+        if os.name == "nt":
+            import msvcrt
+            lock_file.seek(0)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
+    except Exception:
+        pass
+    try:
+        lock_file.close()
+        os.unlink(LOCK_PATH)
+    except Exception:
+        pass
 
 
 def load_config():
@@ -1227,6 +1269,21 @@ class TestWizard(tk.Tk):
 
 if __name__ == "__main__":
     import argparse
+
+    try:
+        _lock_handle = _acquire_lock()
+    except RuntimeError:
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror(
+            "Test Wizard",
+            "Another Test Wizard is already running.",
+        )
+        root.destroy()
+        sys.exit(1)
+
+    atexit.register(_release_lock, _lock_handle)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--test-name")
     parser.add_argument("--test-dir")
