@@ -47,15 +47,15 @@ class UIButton:
         Interpret the digital signal and return a corresponding button state.
 
         Returns:
-        - 'START', 'STOP', 'HOLD', or None
+        - 'PAUSE', 'RESUME', 'HOLD', or None
         """
         value = self.read_button()
 
         if value == 257:
-            return 'START'
+            return 'RESUME'
         elif value == 1:
             return 'HOLD'
         elif value == 0:
-            return 'STOP'
+            return 'PAUSE'
         else:
             return None
