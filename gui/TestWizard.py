@@ -319,6 +319,8 @@ class TestWizard(tk.Tk):
 
         self.running = False
         self.paused = False
+        self.connection_lost = False
+        self._last_connection_ok = True
         self.worker = None
         self.log_file = None
         self.log_file_path = None
@@ -770,10 +772,11 @@ class TestWizard(tk.Tk):
             ok = False
         self.status_var.set("Connected" if ok else "Disconnected")
         self.status_label.configure(foreground="green" if ok else "red")
-
         if not ok and self.running and not self.paused:
             # Automatically pause the test on connection loss
             self.pause_test()
+            self.connection_lost = True
+        self._last_connection_ok = ok
         self.after(1000, self.check_connection)
 
     def poll_monitor_queue(self):
@@ -1010,9 +1013,25 @@ class TestWizard(tk.Tk):
     def resume_test(self):
         if not self.running:
             return
+        if self.connection_lost and self.status_var.get() == "Connected":
+            self._rewrite_itv_pressures()
+            self.connection_lost = False
         self.paused = False
         self.pause_btn.configure(state="normal")
         self.resume_btn.configure(state="disabled")
+
+    def _rewrite_itv_pressures(self):
+        for obj in getattr(self, "device_objects", {}).values():
+            if hasattr(obj, "set_pressure") and hasattr(obj, "current_pressure"):
+                try:
+                    val = obj.current_pressure
+                except Exception:
+                    val = None
+                if val is not None:
+                    try:
+                        obj.set_pressure(val)
+                    except Exception as e:
+                        print(f"Failed to rewrite pressure for {obj}: {e}")
 
     def _prompt_save_log(self):
         """Ask the user for a log file name and move the temporary log."""
