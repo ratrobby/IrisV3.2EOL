@@ -126,7 +126,11 @@ class PressureRegulatorITV1050:
                 self.setup_pressure = self.min_psi
 
         frame = ttk.Frame(parent)
-        ttk.Label(frame, text=name or "ITV-1050").grid(
+        ttk.Label(
+            frame,
+            text=name or "ITV-1050",
+            font=("Arial", 10, "bold"),
+        ).grid(
             row=0, column=0, columnspan=3, sticky="w"
         )
 
