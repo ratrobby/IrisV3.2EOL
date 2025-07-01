@@ -449,6 +449,13 @@ class TestWizard(tk.Tk):
         )
         self.status_label.pack(expand=True, fill="both")
 
+        # Refresh button allows the user to reload device objects if the wizard
+        # was launched while the AL1342 was disconnected.
+        self.refresh_btn = ttk.Button(
+            status_frame, text="Refresh", command=self.refresh_wizard
+        )
+        self.refresh_btn.pack(fill="x", padx=5, pady=(0, 5))
+
         # Collapsible command library below the device instances
         lib_label = ttk.Label(
             right, text="Command Library", font=("Arial", 12, "bold")
@@ -704,6 +711,14 @@ class TestWizard(tk.Tk):
     def reset_device_names(self):
         """Revert device instance names to defaults from the configuration."""
         self.instance_map = {s: dict(p) for s, p in self.base_map.items()}
+        self.refresh_instance_table()
+
+    def refresh_wizard(self):
+        """Reload device objects and rebuild setup widgets."""
+        self.device_objects = load_device_objects(
+            self.cfg, self.base_map, self.ip_address
+        )
+        self.build_setup_widgets()
         self.refresh_instance_table()
 
     # ----------------------- Connection Status ---------------------
