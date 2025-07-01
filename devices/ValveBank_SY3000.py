@@ -97,6 +97,7 @@ class ValveBank:
         self.port_number = port_number
         self.register = self.io_master.id_write_register(self.port_number)
         self.active_valves = set()
+        self._timers = {}
         self._lock = threading.Lock()
 
     def valve_on(self, valve, duration=None):
@@ -108,26 +109,34 @@ class ValveBank:
 
         paired = self.PAIRED_VALVES.get(valve)
 
-        def _turn_on_and_off():
+        def _activate():
             print(f"Valve {valve} ON")
             with self._lock:
                 if paired and paired in self.active_valves:
                     self.active_valves.remove(paired)
+                    timer = self._timers.pop(paired, None)
+                    if timer:
+                        timer.cancel()
                     print(f"Valve {paired} OFF (auto)")
                 self.active_valves.add(valve)
                 self._write_state()
-            time.sleep(duration)
-            self.valve_off(valve)
+
+        def _auto_off():
+            with self._lock:
+                self.active_valves.discard(valve)
+                self._write_state()
+                self._timers.pop(valve, None)
+            print(f"Valve {valve} OFF (auto)")
 
         if duration is not None:
-            threading.Thread(target=_turn_on_and_off, daemon=True).start()
+            _activate()
+            timer = threading.Timer(duration, _auto_off)
+            timer.daemon = True
+            self._timers[valve] = timer
+            timer.start()
+            print(f"Valve {valve} ON for {duration} sec")
         else:
-            with self._lock:
-                if paired and paired in self.active_valves:
-                    self.active_valves.remove(paired)
-                    print(f"Valve {paired} OFF (auto)")
-                self.active_valves.add(valve)
-                self._write_state()
+            _activate()
             print(f"Valve {valve} ON indefinitely")
 
     def valve_off(self, *valves):
@@ -138,6 +147,9 @@ class ValveBank:
             for valve in valves:
                 if valve in self.active_valves:
                     self.active_valves.remove(valve)
+                    timer = self._timers.pop(valve, None)
+                    if timer:
+                        timer.cancel()
                     print(f"Valve {valve} OFF")
                 else:
                     print(f"Valve {valve} was not active")
@@ -148,6 +160,9 @@ class ValveBank:
         Turn off all valves.
         """
         with self._lock:
+            for timer in self._timers.values():
+                timer.cancel()
+            self._timers.clear()
             self.active_valves.clear()
             self._write_state()
         print("All valves OFF")
