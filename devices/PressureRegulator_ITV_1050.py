@@ -73,6 +73,7 @@ class PressureRegulatorITV1050:
         self.default_tolerance = default_tolerance
         self.default_timeout = default_timeout
         self.current_pressure = None
+        self.setup_pressure = self.min_psi
 
     def _build_correction_curve(self):
         """Return interpolation from pressure to raw command value."""
@@ -138,15 +139,22 @@ class PressureRegulatorITV1050:
         return False
 
     # ---------------------- GUI Integration ----------------------
-    def setup_widget(self, parent, name=None):
+    def setup_widget(self, parent, name=None, initial_psi=None, on_update=None):
         """Return a Tkinter frame for setting the regulator pressure."""
+        if initial_psi is not None:
+            try:
+                self.setup_pressure = float(initial_psi)
+            except Exception:
+                self.setup_pressure = self.min_psi
+
         frame = ttk.Frame(parent)
         ttk.Label(frame, text=name or "ITV-1050").grid(
             row=0, column=0, columnspan=3, sticky="w"
         )
 
         ttk.Label(frame, text="Pressure (psi)").grid(row=1, column=0, padx=2)
-        pressure_var = tk.StringVar(value=str(self.min_psi))
+        pressure_var = tk.StringVar(value=str(getattr(self, "setup_pressure", self.min_psi)))
+        self._setup_pressure_var = pressure_var
         entry = ttk.Entry(frame, textvariable=pressure_var, width=6)
         entry.grid(row=1, column=1, padx=2)
 
@@ -157,8 +165,24 @@ class PressureRegulatorITV1050:
                 messagebox.showerror("Input Error", "Invalid pressure value")
                 return
             self.set_pressure(value)
+            self.setup_pressure = value
+            if callable(on_update):
+                on_update(value)
 
         ttk.Button(frame, text="Set pressure", command=apply).grid(
             row=1, column=2, padx=2
         )
         return frame
+
+    def get_setup_state(self):
+        """Return the current setup pressure value."""
+        return getattr(self, "setup_pressure", None)
+
+    def load_setup_state(self, value):
+        """Apply a saved setup pressure value."""
+        try:
+            self.setup_pressure = float(value)
+        except Exception:
+            return
+        if hasattr(self, "_setup_pressure_var"):
+            self._setup_pressure_var.set(str(self.setup_pressure))
