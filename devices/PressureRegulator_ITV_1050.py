@@ -142,7 +142,7 @@ class PressureRegulatorITV1050:
         """Return a Tkinter frame for setting the regulator pressure."""
         frame = ttk.Frame(parent)
         ttk.Label(frame, text=name or "ITV-1050").grid(
-            row=0, column=0, columnspan=2, sticky="w"
+            row=0, column=0, columnspan=3, sticky="w"
         )
 
         ttk.Label(frame, text="Pressure (psi)").grid(row=1, column=0, padx=2)
@@ -159,6 +159,6 @@ class PressureRegulatorITV1050:
             self.set_pressure(value)
 
         ttk.Button(frame, text="Set pressure", command=apply).grid(
-            row=2, column=0, columnspan=2, pady=2
+            row=1, column=2, padx=2
         )
         return frame
