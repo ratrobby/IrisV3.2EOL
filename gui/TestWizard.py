@@ -963,6 +963,7 @@ class TestWizard(tk.Tk):
                     return
                 for i in range(iterations):
                     print(f"Iteration: {i + 1}")
+                    self._rewrite_itv_pressures()
                     if not self.running:
                         break
                     while self.paused and self.running:
