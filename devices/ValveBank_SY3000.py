@@ -117,7 +117,7 @@ class ValveBank:
                     timer = self._timers.pop(paired, None)
                     if timer:
                         timer.cancel()
-                    print(f"Valve {paired} OFF (auto)")
+                    print(f"Valve {paired} OFF")
                 self.active_valves.add(valve)
                 self._write_state()
 
@@ -126,7 +126,7 @@ class ValveBank:
                 self.active_valves.discard(valve)
                 self._write_state()
                 self._timers.pop(valve, None)
-            print(f"Valve {valve} OFF (auto)")
+            print(f"Valve {valve} OFF")
 
         if duration is not None:
             _activate()
@@ -137,7 +137,7 @@ class ValveBank:
             print(f"Valve {valve} ON for {duration} sec")
         else:
             _activate()
-            print(f"Valve {valve} ON indefinitely")
+            # Indefinite activation just logs the initial ON message
 
     def valve_off(self, *valves):
         """
