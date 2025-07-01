@@ -656,7 +656,7 @@ class TestWizard(tk.Tk):
 
 
     def _export_device_alias_script(self, test_name):
-        """Write ``<test_name>_Script.py`` with device aliases and code."""
+        """Write ``<test_name>_Script.py`` containing only device aliases."""
         safe = re.sub(r"\W+", "_", test_name)
         script_path = os.path.join(self.tests_dir, f"{safe}_Script.py")
 
@@ -667,20 +667,9 @@ class TestWizard(tk.Tk):
 
         alias_lines = []
 
-        setup_code = self.setup_code
-        loop_code = self.script_text.get("1.0", "end-1c")
-        iter_str = self.iterations_var.get().strip() or "1"
-
         script_parts = [
             base_content,
             "\n".join(alias_lines),
-            "",
-            "# ---------------- Setup Code ----------------",
-            setup_code,
-            "",
-            "# ---------------- Test Loop ----------------",
-            f"for _ in range({iter_str}):",
-            *["    " + line for line in loop_code.splitlines()],
             "",
         ]
 
