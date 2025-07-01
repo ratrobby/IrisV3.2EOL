@@ -34,6 +34,10 @@ DEFAULT_TESTS_DIR = os.path.join(REPO_ROOT, "user_tests")
 # Lock file used to ensure only one Test Wizard is running
 LOCK_PATH = os.path.join(tempfile.gettempdir(), "mrlf_testwizard.lock")
 
+# Ping timeout in seconds and interval for connection checks (ms)
+PING_TIMEOUT = 0.25
+CHECK_INTERVAL = 300
+
 
 def _acquire_lock():
     """Attempt to acquire the single instance lock."""
@@ -814,9 +818,10 @@ class TestWizard(tk.Tk):
         def ping():
             try:
                 if os.name == "nt":
-                    cmd = ["ping", "-n", "1", "-w", "1000", self.ip_address]
+                    timeout_ms = str(int(PING_TIMEOUT * 1000))
+                    cmd = ["ping", "-n", "1", "-w", timeout_ms, self.ip_address]
                 else:
-                    cmd = ["ping", "-c", "1", "-W", "1", self.ip_address]
+                    cmd = ["ping", "-c", "1", "-W", str(PING_TIMEOUT), self.ip_address]
                 result = subprocess.run(
                     cmd,
                     stdout=subprocess.DEVNULL,
@@ -835,7 +840,7 @@ class TestWizard(tk.Tk):
                     self.connection_lost = True
                 self._last_connection_ok = ok
                 if not self._stop_connection_monitor.is_set():
-                    self._connection_after_id = self.after(1000, self.check_connection)
+                    self._connection_after_id = self.after(CHECK_INTERVAL, self.check_connection)
 
             self.after(0, update)
 
