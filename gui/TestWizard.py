@@ -254,6 +254,10 @@ class TestMonitor(tk.Toplevel):
         if msg.startswith("[ValveBank] Wrote"):
             return
 
+        # Ignore lines about devices that are already off
+        if "was not active" in msg:
+            return
+
         timestamp = time.strftime("[%H:%M:%S] ")
 
         self.text.configure(state="normal")
