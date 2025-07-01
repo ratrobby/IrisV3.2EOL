@@ -337,6 +337,7 @@ class TestWizard(tk.Tk):
         self.geometry("1600x950+150+20")
         self.check_connection()
         self.after(100, self.poll_monitor_queue)
+        self.after(100, self.poll_ui_button)
         if load_path:
             self.load_test(load_path)
 
@@ -734,6 +735,22 @@ class TestWizard(tk.Tk):
             if self.monitor and self.monitor.winfo_exists():
                 self.monitor.append(msg)
         self.after(100, self.poll_monitor_queue)
+
+    def poll_ui_button(self):
+        """Check the hardware UI button and pause/resume if needed."""
+        button = self.device_objects.get("UI_Button")
+        if button:
+            try:
+                val = button.read_button()
+            except Exception:
+                val = None
+
+            if val == 0 and self.running and not self.paused:
+                self.pause_test()
+            elif val == 257 and self.running and self.paused:
+                self.resume_test()
+
+        self.after(100, self.poll_ui_button)
 
     def _set_edit_state(self, state):
         """Enable or disable editing widgets based on state."""
