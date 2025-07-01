@@ -162,7 +162,7 @@ class PositionSensorSDATMHS_M160:
         label = ttk.Label(
             frame,
             text=name or f"Sensor X1.{self.x1_index}",
-            font=("Arial", 10, "bold"),
+            font=("Arial", 10, "bold underline"),
         )
         label.grid(row=0, column=0, columnspan=4, sticky="w")
 
