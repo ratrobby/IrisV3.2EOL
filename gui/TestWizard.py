@@ -387,6 +387,9 @@ class TestWizard(tk.Tk):
         self.update_idletasks()
         # Position the window at x=100, y=50
         self.geometry("1600x950+150+20")
+        self._stop_connection_monitor = threading.Event()
+        self._connection_after_id = None
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.check_connection()
         self.after(100, self.poll_monitor_queue)
         self.after(100, self.poll_ui_button)
@@ -806,27 +809,38 @@ class TestWizard(tk.Tk):
 
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
-        try:
-            if os.name == "nt":
-                cmd = ["ping", "-n", "1", "-w", "1000", self.ip_address]
-            else:
-                cmd = ["ping", "-c", "1", "-W", "1", self.ip_address]
-            result = subprocess.run(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            ok = result.returncode == 0
-        except Exception:
-            ok = False
-        self.status_var.set("Connected" if ok else "Disconnected")
-        self.status_label.configure(foreground="green" if ok else "red")
-        if not ok and self.running and not self.paused:
-            # Automatically pause the test on connection loss
-            self.pause_test()
-            self.connection_lost = True
-        self._last_connection_ok = ok
-        self.after(1000, self.check_connection)
+        """Ping the AL1342 in a background thread and update the UI."""
+
+        def ping():
+            try:
+                if os.name == "nt":
+                    cmd = ["ping", "-n", "1", "-w", "1000", self.ip_address]
+                else:
+                    cmd = ["ping", "-c", "1", "-W", "1", self.ip_address]
+                result = subprocess.run(
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                ok = result.returncode == 0
+            except Exception:
+                ok = False
+
+            def update():
+                self.status_var.set("Connected" if ok else "Disconnected")
+                self.status_label.configure(foreground="green" if ok else "red")
+                if not ok and self.running and not self.paused:
+                    # Automatically pause the test on connection loss
+                    self.pause_test()
+                    self.connection_lost = True
+                self._last_connection_ok = ok
+                if not self._stop_connection_monitor.is_set():
+                    self._connection_after_id = self.after(1000, self.check_connection)
+
+            self.after(0, update)
+
+        if not self._stop_connection_monitor.is_set():
+            threading.Thread(target=ping, daemon=True).start()
 
     def poll_monitor_queue(self):
         while not self.monitor_queue.empty():
@@ -1115,6 +1129,17 @@ class TestWizard(tk.Tk):
                 messagebox.showerror("Error", f"Failed to save log file: {e}")
             break
 
+    def _on_close(self):
+        """Handle window closing and stop background tasks."""
+        self._stop_connection_monitor.set()
+        if self._connection_after_id:
+            try:
+                self.after_cancel(self._connection_after_id)
+            except Exception:
+                pass
+        self.stop_test()
+        self.destroy()
+
     # ----------------------- Test File Handling -------------------
     def _verify_mapping(self, imported_cfg):
         """Warn if the imported test's device mapping differs from current config."""
@@ -1264,7 +1289,7 @@ class TestWizard(tk.Tk):
         else:
             cmd = [sys.executable, "-m", "gui.TestLauncher"]
         subprocess.Popen(cmd, cwd=REPO_ROOT)
-        self.destroy()
+        self._on_close()
 
 
 if __name__ == "__main__":
