@@ -129,7 +129,7 @@ class PressureRegulatorITV1050:
         ttk.Label(
             frame,
             text=name or "ITV-1050",
-            font=("Arial", 10, "bold"),
+            font=("Arial", 10, "bold underline"),
         ).grid(
             row=0, column=0, columnspan=3, sticky="w"
         )
