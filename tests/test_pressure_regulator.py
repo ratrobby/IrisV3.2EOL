@@ -47,3 +47,20 @@ def test_setup_state_roundtrip():
     assert pr.get_setup_state() == pr.min_psi
     pr.load_setup_state(25)
     assert pr.get_setup_state() == 25
+
+
+def test_rewrite_itv_pressure_uses_setup_value():
+    io = FakeIOMaster()
+    pr = PressureRegulatorITV1050(io, port_number=1)
+    pr.load_setup_state(30)
+    # current_pressure is None until set_pressure is called
+    assert pr.current_pressure is None
+
+    from gui.TestWizard import TestWizard
+
+    wiz = TestWizard.__new__(TestWizard)
+    wiz.device_objects = {"itv": pr}
+    wiz._rewrite_itv_pressures()
+
+    expected_raw = int(pr.command_correction(30))
+    assert io.writes[-1] == (1102, expected_raw)

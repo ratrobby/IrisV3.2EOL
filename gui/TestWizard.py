@@ -982,6 +982,9 @@ class TestWizard(tk.Tk):
         self.pause_btn.configure(state="normal")
         self.resume_btn.configure(state="disabled")
         self._set_edit_state("disabled")
+        # Ensure any configured ITV pressures are written before executing
+        # setup code or the first test iteration.
+        self._rewrite_itv_pressures()
         context = {"__name__": "__main__"}
         try:
             if self.test_script_path and os.path.exists(self.test_script_path):
@@ -1088,11 +1091,17 @@ class TestWizard(tk.Tk):
 
     def _rewrite_itv_pressures(self):
         for obj in getattr(self, "device_objects", {}).values():
-            if hasattr(obj, "set_pressure") and hasattr(obj, "current_pressure"):
-                try:
-                    val = obj.current_pressure
-                except Exception:
-                    val = None
+            if hasattr(obj, "set_pressure"):
+                if hasattr(obj, "get_setup_state"):
+                    try:
+                        val = obj.get_setup_state()
+                    except Exception:
+                        val = None
+                else:
+                    try:
+                        val = obj.current_pressure
+                    except Exception:
+                        val = None
                 if val is not None:
                     try:
                         obj.set_pressure(val)
