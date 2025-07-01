@@ -110,33 +110,11 @@ class PressureRegulatorITV1050:
 
 
     def set_pressure(self, target_psi):
-        """
-        Set the regulator to the target pressure and wait until it's within default tolerance.
-
-        Parameters:
-        - target_psi: desired output pressure
-
-        Returns:
-        - True if pressure reached within tolerance, else False
-        """
-        tolerance = self.default_tolerance
-        timeout = self.default_timeout
+        """Set the regulator to the target pressure without waiting for feedback."""
 
         self._write_pressure(target_psi)
         self.current_pressure = target_psi
-        start_time = time.time()
-
-        while time.time() - start_time < timeout:
-            feedback_psi, raw = self._read_feedback_psi()
-            error = abs(feedback_psi - target_psi)
-            print(f"📈 Feedback: {feedback_psi:.2f} psi (raw: {raw}) | Error: {error:.2f}")
-            if error <= tolerance:
-                print(f"✅ Within tolerance: {feedback_psi:.2f} psi")
-                return True
-            time.sleep(0.2)
-
-        print("❌ Did not reach target within timeout")
-        return False
+        return True
 
     # ---------------------- GUI Integration ----------------------
     def setup_widget(self, parent, name=None, initial_psi=None, on_update=None):
