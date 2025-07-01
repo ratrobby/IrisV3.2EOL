@@ -21,10 +21,13 @@ except Exception:  # pragma: no cover - optional dependency may be missing
 
 
 class IO_master:
-    def __init__(self, IP_ADDR, SERVER_PORT=502):
+    def __init__(self, IP_ADDR, SERVER_PORT=502, timeout=1.0):
         self._IP_ADDR = IP_ADDR
         self.SERVER_PORT = SERVER_PORT
-        self.client = ModbusClient(host=self._IP_ADDR, port=self.SERVER_PORT)
+        self.timeout = timeout
+        self.client = ModbusClient(
+            host=self._IP_ADDR, port=self.SERVER_PORT, timeout=self.timeout
+        )
 
         if not self.client.open():
             raise ConnectionError(f"Unable to connect to Modbus server at {self._IP_ADDR}:{self.SERVER_PORT}")
@@ -41,6 +44,7 @@ class IO_master:
         self.client.close()
 
     def reopen_client(self):
+        self.client.timeout = self.timeout
         if not self.client.open():
             raise ConnectionError("Failed to re-open Modbus client.")
 
