@@ -4,6 +4,7 @@ import json
 import time
 import threading
 import queue
+import socket
 import subprocess
 import importlib
 import importlib.util
@@ -813,21 +814,15 @@ class TestWizard(tk.Tk):
 
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
-        """Ping the AL1342 in a background thread and update the UI."""
+        """Check AL1342 connectivity in a background thread and update the UI."""
 
         def ping():
             try:
-                if os.name == "nt":
-                    timeout_ms = str(int(PING_TIMEOUT * 1000))
-                    cmd = ["ping", "-n", "1", "-w", timeout_ms, self.ip_address]
-                else:
-                    cmd = ["ping", "-c", "1", "-W", str(PING_TIMEOUT), self.ip_address]
-                result = subprocess.run(
-                    cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
+                sock = socket.create_connection(
+                    (self.ip_address, 502), timeout=PING_TIMEOUT
                 )
-                ok = result.returncode == 0
+                sock.close()
+                ok = True
             except Exception:
                 ok = False
 
