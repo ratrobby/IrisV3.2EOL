@@ -23,11 +23,27 @@ TEST_BASE_DIR = os.path.expanduser(
 # Default configuration when no config file exists
 DEFAULT_CONFIG = {
     "ip_address": "192.168.XXX.XXX",
-    "al1342": {f"X{i:02d}": "Empty" for i in range(1, 9)},
-    "al2205": {f"X1.{i}": "Empty" for i in range(8)},
+    "al1342": {
+        "X01": "AL2205_Hub",
+        "X02": "PressureRegulator_ITV_1050",
+        "X03": "ValveBank_SY3000",
+        "X04": "PressureRegulator_ITV_1050",
+        "X05": "Empty",
+        "X06": "PressureRegulator_ITV_1050",
+        "X07": "Empty",
+        "X08": "PressureRegulator_ITV_1050",
+    },
+    "al2205": {
+        "X1.0": "UI_Button",
+        "X1.1": "Empty",
+        "X1.2": "Empty",
+        "X1.3": "Empty",
+        "X1.4": "Empty",
+        "X1.5": "Empty",
+        "X1.6": "Empty",
+        "X1.7": "Empty",
+    },
 }
-DEFAULT_CONFIG["al1342"]["X01"] = "AL2205_Hub"
-DEFAULT_CONFIG["al2205"]["X1.0"] = "UI_Button"
 
 
 def get_device_options():
