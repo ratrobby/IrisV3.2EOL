@@ -264,7 +264,10 @@ class TestMonitor(tk.Toplevel):
         for line in msg.splitlines():
             if line.startswith("[ValveBank] Wrote") or not line.strip():
                 continue
-            self.text.insert("end", f"{timestamp}{line}\n")
+            if line.startswith("Iteration:"):
+                self.text.insert("end", f"{line}\n")
+            else:
+                self.text.insert("end", f"{timestamp}{line}\n")
         self.text.see("end")
         self.text.configure(state="disabled")
 
@@ -868,6 +871,7 @@ class TestWizard(tk.Tk):
                     print(f"Setup error: {e}")
                     return
                 try:
+                    print("Iteration: 1")
                     exec(loop_code, context)
                 except Exception as e:
                     print(f"Loop error: {e}")
@@ -957,7 +961,8 @@ class TestWizard(tk.Tk):
                     print(f"Setup error: {e}")
                     self.running = False
                     return
-                for _ in range(iterations):
+                for i in range(iterations):
+                    print(f"Iteration: {i + 1}")
                     if not self.running:
                         break
                     while self.paused and self.running:
