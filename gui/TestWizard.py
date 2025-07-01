@@ -700,6 +700,10 @@ class TestWizard(tk.Tk):
             ok = False
         self.status_var.set("Connected" if ok else "Disconnected")
         self.status_label.configure(foreground="green" if ok else "red")
+
+        if not ok and self.running and not self.paused:
+            # Automatically pause the test on connection loss
+            self.pause_test()
         self.after(1000, self.check_connection)
 
     def poll_monitor_queue(self):
