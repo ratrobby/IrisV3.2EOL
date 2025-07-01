@@ -237,8 +237,30 @@ class TestMonitor(tk.Toplevel):
         self.text.pack(fill="both", expand=True)
 
     def append(self, message):
+        """Add a line of output with a timestamp.
+
+        The monitor receives raw stdout data from the running test. This
+        method prepends a ``HH:MM:SS`` timestamp to each non-empty line and
+        filters out low level messages such as the register writes from the
+        ``ValveBank`` class.
+        """
+
+        # Ignore purely whitespace updates
+        msg = message.rstrip()
+        if not msg:
+            return
+
+        # Skip verbose register write messages from ValveBank
+        if msg.startswith("[ValveBank] Wrote"):
+            return
+
+        timestamp = time.strftime("[%H:%M:%S] ")
+
         self.text.configure(state="normal")
-        self.text.insert("end", message)
+        for line in msg.splitlines():
+            if line.startswith("[ValveBank] Wrote") or not line.strip():
+                continue
+            self.text.insert("end", f"{timestamp}{line}\n")
         self.text.see("end")
         self.text.configure(state="disabled")
 
