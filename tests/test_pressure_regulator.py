@@ -38,3 +38,12 @@ def test_set_pressure_simple():
     expected_raw = int(pr.command_correction(50))
     assert io.writes[-1] == (1102, expected_raw)
     assert result is True
+
+
+def test_setup_state_roundtrip():
+    io = FakeIOMaster()
+    pr = PressureRegulatorITV1050(io, port_number=1)
+    # default starts at min_psi
+    assert pr.get_setup_state() == pr.min_psi
+    pr.load_setup_state(25)
+    assert pr.get_setup_state() == 25

@@ -315,6 +315,7 @@ class TestWizard(tk.Tk):
             self.cfg, self.base_map, self.ip_address
         )
         self.setup_code = ""
+        self.setup_values = {}
 
         self.running = False
         self.paused = False
@@ -616,6 +617,12 @@ class TestWizard(tk.Tk):
                 obj = getattr(self, "device_objects", {}).get(base)
                 if not obj:
                     continue
+                saved = self.setup_values.get(alias)
+                if saved is not None and hasattr(obj, "load_setup_state"):
+                    try:
+                        obj.load_setup_state(saved)
+                    except Exception as e:
+                        print(f"Failed to apply setup state for {alias}: {e}")
                 if hasattr(obj.__class__, "calibration_steps"):
                     btn = ttk.Button(
                         self.setup_frame,
@@ -625,11 +632,36 @@ class TestWizard(tk.Tk):
                     btn.pack(fill="x", padx=5, pady=2)
                 elif hasattr(obj, "setup_widget"):
                     try:
-                        widget = obj.setup_widget(self.setup_frame, name=alias)
+                        widget = obj.setup_widget(
+                            self.setup_frame,
+                            name=alias,
+                            on_update=lambda v, a=alias: self._update_setup_value(a, v),
+                        )
                         if widget:
                             widget.pack(fill="x", padx=5, pady=2)
                     except Exception as e:
                         print(f"Failed to build setup widget for {alias}: {e}")
+
+    def _update_setup_value(self, alias, value):
+        """Store the latest setup value for a device alias."""
+        self.setup_values[alias] = value
+
+    def _collect_setup_values(self):
+        """Gather current setup values from all devices."""
+        values = {}
+        for section in ("al1342", "al2205"):
+            for port in self.instance_map.get(section, {}):
+                alias = self.instance_map[section][port]
+                base = self.base_map[section][port]
+                obj = getattr(self, "device_objects", {}).get(base)
+                if obj and hasattr(obj, "get_setup_state"):
+                    try:
+                        val = obj.get_setup_state()
+                    except Exception:
+                        val = None
+                    if val is not None:
+                        values[alias] = val
+        return values
 
     def refresh_instance_table(self):
         """Update the Device Instances table with current names."""
@@ -1027,6 +1059,7 @@ class TestWizard(tk.Tk):
         os.makedirs(self.tests_dir, exist_ok=True)
         fname = re.sub(r"\W+", "_", name)
         path = os.path.join(self.tests_dir, f"{fname}.json")
+        self.setup_values = self._collect_setup_values()
         data = {
             "name": name,
             "setup": self.setup_code,
@@ -1034,7 +1067,8 @@ class TestWizard(tk.Tk):
             "iterations": self.iterations_var.get().strip(),
             "config": self.cfg,
             "device_names": self.instance_map,
-            "script_file": os.path.basename(self.test_script_path)
+            "script_file": os.path.basename(self.test_script_path),
+            "setup_values": self.setup_values,
         }
         try:
             with open(path, "w") as fh:
@@ -1073,6 +1107,7 @@ class TestWizard(tk.Tk):
         self.base_map = build_instance_map(self.cfg)
 
         saved_names = data.get("device_names")
+        self.setup_values = data.get("setup_values", {})
         self.test_script_path = os.path.join(
             self.tests_dir, data.get("script_file", "")
         )
@@ -1105,6 +1140,7 @@ class TestWizard(tk.Tk):
         self.test_file_path = None
         self.test_name_var.set("")
         self.setup_code = ""
+        self.setup_values = {}
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n")
         self.iterations_var.set("")
