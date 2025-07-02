@@ -48,7 +48,7 @@ def test_setup_widget_invokes_controller(monkeypatch):
     monkeypatch.setattr(vb_mod, "ttk", dummy_ttk)
     monkeypatch.setattr(vb_mod, "tk", dummy_tk)
 
-    frame = vb.setup_widget(None, name="VB")
+    frame = vb.setup_widget(None, name="VB", on_update=None)
     assert isinstance(frame, DummyFrame)
     assert created, "button not created"
     created[0].invoke()

@@ -214,7 +214,7 @@ class ValveBank:
         ttk.Button(win, text="Close", command=win.destroy).grid(row=8, column=1, pady=5)
         win.protocol("WM_DELETE_WINDOW", win.destroy)
 
-    def setup_widget(self, parent, name=None):
+    def setup_widget(self, parent, name=None, on_update=None):
         """Return a Tkinter frame with a button to open the controller window."""
         frame = ttk.Frame(parent)
         ttk.Label(
