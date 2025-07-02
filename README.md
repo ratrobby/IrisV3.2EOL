@@ -62,6 +62,20 @@ Hold(3)  # wait 3 seconds
 
 The `Hold` function is available automatically when running scripts in the Test Wizard.
 
+### Valve Bank Control
+
+When a `ValveBank_SY3000` device is mapped, the Test Wizard setup panel shows an
+**Open Valve Controller** button. This opens a small window with toggle buttons
+for each valve so they can be switched on and off during setup.
+
+The same controller is provided on the command line and can be launched as:
+
+```bash
+python valve_bank_cli.py --ip 192.168.1.250 --device-port 1
+```
+
+Commands at the prompt include `on VALVE [DURATION]`, `off VALVE`, `alloff` and `exit`. A duration turns the valve off automatically after the specified seconds while omitting it keeps the valve on until commanded otherwise.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

@@ -2,6 +2,8 @@ import time
 import threading
 import os
 import sys
+import tkinter as tk
+from tkinter import ttk
 
 # Allow importing project modules when executed directly
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -65,7 +67,15 @@ class ValveBank:
 
     @classmethod
     def setup_instructions(cls):
-        return []
+        return [
+            {
+                "title": "Manual Valve Control",
+                "content": (
+                    "A button in the Test Wizard setup panel opens a window to\n"
+                    "toggle valves on and off while preparing a test."
+                ),
+            }
+        ]
 
 
     VALVE_BITMASKS = {
@@ -166,6 +176,54 @@ class ValveBank:
             self.active_valves.clear()
             self._write_state()
         print("All valves OFF")
+
+    # ---------------------- GUI Integration ----------------------
+    def open_controller_window(self):
+        """Launch a small window with toggle buttons for each valve."""
+        win = tk.Toplevel()
+        win.title("Valve Bank Controller")
+
+        vars = {}
+
+        def refresh():
+            for valve, var in vars.items():
+                var.set(1 if valve in self.active_valves else 0)
+
+        def make_toggle(valve):
+            var = tk.IntVar(value=1 if valve in self.active_valves else 0)
+            vars[valve] = var
+
+            def toggle():
+                if var.get():
+                    self.valve_on(valve)
+                else:
+                    self.valve_off(valve)
+                refresh()
+
+            return ttk.Checkbutton(win, text=valve, variable=var, command=toggle)
+
+        for i in range(8):
+            for j, letter in enumerate(["A", "B"]):
+                valve = f"{i + 1}.{letter}"
+                btn = make_toggle(valve)
+                btn.grid(row=i, column=j, sticky="w", padx=5, pady=2)
+
+        ttk.Button(win, text="All Off", command=lambda: (self.all_off(), refresh())).grid(
+            row=8, column=0, pady=5
+        )
+        ttk.Button(win, text="Close", command=win.destroy).grid(row=8, column=1, pady=5)
+        win.protocol("WM_DELETE_WINDOW", win.destroy)
+
+    def setup_widget(self, parent, name=None):
+        """Return a Tkinter frame with a button to open the controller window."""
+        frame = ttk.Frame(parent)
+        ttk.Label(
+            frame, text=name or "Valve Bank", font=("Arial", 10, "bold underline")
+        ).pack(side="left", padx=2)
+        ttk.Button(frame, text="Open Valve Controller", command=self.open_controller_window).pack(
+            side="left", padx=5
+        )
+        return frame
 
     # ---------- Internal-only below ----------
 
