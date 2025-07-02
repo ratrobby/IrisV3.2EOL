@@ -967,7 +967,7 @@ class TestWizard(tk.Tk):
         os.makedirs(self.log_dir, exist_ok=True)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         name = self.test_name_var.get() or "test"
-        log_path = os.path.join(self.log_dir, f"{timestamp}_{name}.txt")
+        log_path = os.path.join(self.log_dir, f"{timestamp}_{name}.csv")
         self.log_file_path = log_path
         self.log_file = open(log_path, "w")
         if not self.monitor or not self.monitor.winfo_exists():
@@ -1124,7 +1124,7 @@ class TestWizard(tk.Tk):
             safe = re.sub(r"\W+", "_", name.strip())
             if not safe:
                 continue
-            target = os.path.join(self.log_dir, f"{safe}.txt")
+            target = os.path.join(self.log_dir, f"{safe}.csv")
             if os.path.exists(target):
                 if not messagebox.askyesno(
                     "Overwrite File",

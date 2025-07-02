@@ -290,7 +290,7 @@ class TestLauncher(tk.Tk):
         with open(meta_path, "w") as fh:
             json.dump(meta, fh, indent=2)
 
-        log_path = os.path.join(test_dir, f"{safe}_log.txt")
+        log_path = os.path.join(test_dir, f"{safe}_log.csv")
         open(log_path, "w").close()
 
         self.launch_wizard(
