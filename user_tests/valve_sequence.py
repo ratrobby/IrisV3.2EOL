@@ -23,8 +23,14 @@ from commands import Hold
 
 # ------------------------------ Helpers ------------------------------
 
-def log_sensors(stop_event, writer, start_ts, lc1, lc2, lc3, ps1, ps2, ps3, interval=0.25):
-    """Poll sensors and write readings to ``writer`` until ``stop_event`` is set."""
+def log_sensors(stop_event, writer, fh, start_ts, lc1, lc2, lc3, ps1, ps2, ps3, interval=0.25):
+    """Poll sensors and write readings to ``writer`` until ``stop_event`` is set.
+
+    The ``csv.writer`` object itself does not expose a ``flush`` method, so the
+    underlying file handle ``fh`` is also passed in and flushed after each row is
+    written. This ensures data is written to disk even if the test is
+    interrupted.
+    """
     while not stop_event.is_set():
         timestamp = time.time() - start_ts
         try:
@@ -40,7 +46,7 @@ def log_sensors(stop_event, writer, start_ts, lc1, lc2, lc3, ps1, ps2, ps3, inte
         except Exception:
             row = [f"{timestamp:.2f}"] + ["err"] * 6
         writer.writerow(row)
-        writer.flush()
+        fh.flush()
         time.sleep(interval)
 
 
@@ -93,6 +99,7 @@ def main() -> None:
             log_sensors,
             stop_event,
             writer,
+            fh,
             start_time,
             lc1,
             lc2,
