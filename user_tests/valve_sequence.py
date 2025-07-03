@@ -22,41 +22,21 @@ from devices.PositionSensor_SDAT_MHS_M160 import PositionSensorSDATMHS_M160
 from thread_utils import start_thread
 from commands import Hold
 
+# Event logging helpers
+event_lock = threading.Lock()
+event_message = ""
+
+
+def record_event(msg: str) -> None:
+    """Print ``msg`` and store it for the logger thread."""
+    global event_message
+    print(msg)
+    with event_lock:
+        event_message = msg
+
 
 # ------------------------------ Helpers ------------------------------
 
-def start_loadcell_monitor(stop_event, *cells, interval=0.1):
-    """Open a small window displaying live load cell readings in Newtons."""
-
-    def _run():
-        root = tk.Tk()
-        root.title("Load Cell Monitor")
-
-        vars = []
-        for col, cell in enumerate(cells):
-            ttk.Label(root, text=f"Load Cell {col + 1} (N)").grid(row=0, column=col, padx=5, pady=5)
-            var = tk.StringVar(value="0")
-            ttk.Label(root, textvariable=var, width=8).grid(row=1, column=col, padx=5)
-            vars.append((cell, var))
-
-        def update():
-            if stop_event.is_set():
-                root.quit()
-                return
-            for cell, var in vars:
-                val = cell._get_force_value("N")
-                if val is None:
-                    var.set("N/A")
-                else:
-                    var.set(f"{val:.2f}")
-            root.after(int(interval * 1000), update)
-
-        update()
-        root.mainloop()
-
-    return start_thread(_run)
-
-def log_sensors(stop_event, writer, fh, start_ts, lc1, lc2, lc3, ps1, ps2, ps3, interval=0.1):
     """Poll sensors and write readings to ``writer`` until ``stop_event`` is set.
 
     The ``csv.writer`` object itself does not expose a ``flush`` method, so the
@@ -75,9 +55,19 @@ def log_sensors(stop_event, writer, fh, start_ts, lc1, lc2, lc3, ps1, ps2, ps3, 
                 f"{ps1.read_position():.2f}",
                 f"{ps2.read_position():.2f}",
                 f"{ps3.read_position():.2f}",
+                ",".join(sorted(valve_bank.active_valves)) or "-",
             ]
         except Exception:
-            row = [f"{timestamp:.2f}"] + ["err"] * 6
+            row = [f"{timestamp:.2f}"] + ["err"] * 6 + ["-"]
+
+        with event_lock:
+            global event_message
+            msg = event_message
+            # Reset after reading so event only logged once
+            if event_message:
+                event_message = ""
+
+        row.append(msg or "-")
         writer.writerow(row)
         fh.flush()
         time.sleep(interval)
@@ -126,6 +116,8 @@ def main() -> None:
             "position_1_mm",
             "position_2_mm",
             "position_3_mm",
+            "active_valves",
+            "event",
         ])
 
         log_thread = start_thread(
@@ -140,6 +132,7 @@ def main() -> None:
             ps1,
             ps2,
             ps3,
+            valve_bank,
         )
         monitor_thread = start_loadcell_monitor(stop_event, lc1, lc2, lc3)
 
@@ -155,11 +148,15 @@ def main() -> None:
             Hold(1)
 
             valve_bank.valve_on("3.B", duration=2)
+            record_event("Pull")
             Hold(2)
+            record_event("Pull Stop")
             Hold(2.25)
 
             valve_bank.valve_on("4.A", duration=2)
+            record_event("Push")
             Hold(2)
+            record_event("Push Stop")
             Hold(2.25)
 
             valve_bank.all_off()
