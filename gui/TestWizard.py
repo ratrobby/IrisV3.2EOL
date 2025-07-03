@@ -392,6 +392,13 @@ class TestWizard(tk.Tk):
         self.update_idletasks()
         # Position the window at x=100, y=50
         self.geometry("1600x950+150+20")
+        # Ensure the wizard window is visible when launched
+        self.deiconify()
+        self.lift()
+        try:
+            self.focus_force()
+        except Exception:
+            pass
         self._stop_connection_monitor = threading.Event()
         self._connection_after_id = None
         self.protocol("WM_DELETE_WINDOW", self._on_close)
