@@ -257,17 +257,25 @@ def _load_position_sensors():
     return sensors
 
 
+_wizard_win = None
+
+
 class CalibrationWizard:
     def __init__(self, sensors):
+        global _wizard_win
+        if _wizard_win and _wizard_win.winfo_exists():
+            _wizard_win.lift()
+            return
+
         self.sensors = sensors  # list of (sensor, name, port)
         self.current_step = 0
         self.entries = []
 
         self.win = tk.Toplevel()
         self.win.title("Position Sensor Calibration")
+        _wizard_win = self.win
 
-        self.label = ttk.Label(self.win, text="", font=("Arial", 12),
-                               wraplength=380)
+        self.label = ttk.Label(self.win, text="", font=("Arial", 12), wraplength=380)
         self.label.pack(pady=10)
 
         self.body = ttk.Frame(self.win)
@@ -277,13 +285,10 @@ class CalibrationWizard:
         self.button.pack(pady=10)
 
         self.steps = [
-            ("Move all position sensors to fully retracted position",
-             "Calibrate Min", self.calibrate_min),
-            ("Move all position sensors to their fully extended position",
-             "Calibrate Max", self.calibrate_max),
-            ("Enter stroke length for each cylinder",
-             "Save Strokes", self.save_strokes),
-            ("✅ Sensors Calibrated!", "Close", self.win.destroy),
+            ("Move sensors to fully retracted position then calibrate each", "Next", None),
+            ("Move sensors to fully extended position then calibrate each", "Next", None),
+            ("Enter stroke length for each cylinder", "Save Strokes", self.save_strokes),
+            ("✅ Sensors Calibrated!", "Close", self.finish),
         ]
 
         self.show_step()
@@ -294,47 +299,63 @@ class CalibrationWizard:
 
     def show_step(self):
         self.clear_body()
-        if self.current_step < len(self.steps):
-            msg, btn_text, _ = self.steps[self.current_step]
-            self.label.config(text=msg)
-            self.button.config(text=btn_text)
-            if self.current_step == 2:
-                self.entries = []
-                for sensor, name, port in self.sensors:
-                    frame = ttk.Frame(self.body)
-                    frame.pack(pady=2)
-                    ttk.Label(frame, text=f"{name} ({port})").pack(side="left")
-                    entry = ttk.Entry(frame, width=8)
-                    entry.insert(0, str(sensor.stroke_mm))
-                    entry.pack(side="left", padx=5)
-                    self.entries.append((sensor, name, port, entry))
+        if self.current_step >= len(self.steps):
+            return
+        msg, btn_text, _ = self.steps[self.current_step]
+        self.label.config(text=msg)
+        self.button.config(text=btn_text)
+        if self.current_step == 0:
+            for sensor, name, port in self.sensors:
+                frame = ttk.Frame(self.body)
+                frame.pack(pady=2)
+                ttk.Label(frame, text=f"{name} ({port})").pack(side="left")
+                ttk.Button(frame, text="Calibrate Min", command=lambda s=sensor, n=name, p=port: self._cal_min(s, n, p)).pack(side="left", padx=5)
+        elif self.current_step == 1:
+            for sensor, name, port in self.sensors:
+                frame = ttk.Frame(self.body)
+                frame.pack(pady=2)
+                ttk.Label(frame, text=f"{name} ({port})").pack(side="left")
+                ttk.Button(frame, text="Calibrate Max", command=lambda s=sensor, n=name, p=port: self._cal_max(s, n, p)).pack(side="left", padx=5)
+        elif self.current_step == 2:
+            self.entries = []
+            for sensor, name, port in self.sensors:
+                frame = ttk.Frame(self.body)
+                frame.pack(pady=2)
+                ttk.Label(frame, text=f"{name} ({port})").pack(side="left")
+                entry = ttk.Entry(frame, width=8)
+                entry.insert(0, str(sensor.stroke_mm))
+                entry.pack(side="left", padx=5)
+                self.entries.append((sensor, name, port, entry))
 
     def next_step(self):
         _, _, action = self.steps[self.current_step]
-        action()
+        if callable(action):
+            action()
         self.current_step += 1
         self.show_step()
 
-    def calibrate_min(self):
-        for sensor, name, port in self.sensors:
-            value = sensor.calibrate_min()
-            _log(f"{name} {port} MIN: {value}")
+    def _cal_min(self, sensor, name, port):
+        value = sensor.calibrate_min()
+        _log(f"{name} {port} MIN: {value}")
 
-    def calibrate_max(self):
-        for sensor, name, port in self.sensors:
-            value = sensor.calibrate_max()
-            _log(f"{name} {port} MAX: {value}")
+    def _cal_max(self, sensor, name, port):
+        value = sensor.calibrate_max()
+        _log(f"{name} {port} MAX: {value}")
 
     def save_strokes(self):
         for sensor, name, port, entry in self.entries:
             try:
                 length = float(entry.get())
             except ValueError:
-                messagebox.showerror("Input Error",
-                                     f"Invalid stroke for {name}")
+                messagebox.showerror("Input Error", f"Invalid stroke for {name}")
                 return
             sensor.set_stroke_length(length)
             _log(f"{name} {port} STROKE: {length}")
+
+    def finish(self):
+        global _wizard_win
+        _wizard_win = None
+        self.win.destroy()
 
 def Calibrate_PosSensor():
     """Launch the calibration wizard for all mapped position sensors."""

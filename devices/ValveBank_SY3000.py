@@ -109,6 +109,7 @@ class ValveBank:
         self.active_valves = set()
         self._timers = {}
         self._lock = threading.Lock()
+        self._controller_win = None
 
     def valve_on(self, valve, duration=None):
         """
@@ -180,8 +181,13 @@ class ValveBank:
     # ---------------------- GUI Integration ----------------------
     def open_controller_window(self):
         """Launch a small window with toggle buttons for each valve."""
+        if self._controller_win and self._controller_win.winfo_exists():
+            self._controller_win.lift()
+            return
+
         win = tk.Toplevel()
         win.title("Valve Bank Controller")
+        self._controller_win = win
 
         vars = {}
 
@@ -211,8 +217,13 @@ class ValveBank:
         ttk.Button(win, text="All Off", command=lambda: (self.all_off(), refresh())).grid(
             row=8, column=0, pady=5
         )
-        ttk.Button(win, text="Close", command=win.destroy).grid(row=8, column=1, pady=5)
-        win.protocol("WM_DELETE_WINDOW", win.destroy)
+
+        def close():
+            self._controller_win = None
+            win.destroy()
+
+        ttk.Button(win, text="Close", command=close).grid(row=8, column=1, pady=5)
+        win.protocol("WM_DELETE_WINDOW", close)
 
     def setup_widget(self, parent, name=None, on_update=None):
         """Return a Tkinter frame with a button to open the controller window."""

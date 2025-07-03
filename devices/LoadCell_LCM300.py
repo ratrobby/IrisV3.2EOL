@@ -208,8 +208,10 @@ def _load_load_cells():
     return cells
 
 
-def Calibrate_LoadCell_Zero():
-    """Launch monitor windows for all mapped load cells."""
+_monitor_win = None
+
+def Calibrate_LoadCell_Zero(interval=0.2):
+    """Launch a single monitor window for all mapped load cells."""
     if "MRLF_TEST_SCRIPT" not in os.environ:
         messagebox.showwarning(
             "MRLF_TEST_SCRIPT Missing",
@@ -219,5 +221,42 @@ def Calibrate_LoadCell_Zero():
     if not cells:
         messagebox.showinfo("No Load Cells", "No LoadCell_LCM300 devices mapped to this test.")
         return
+
+    global _monitor_win
+    if _monitor_win and _monitor_win.winfo_exists():
+        _monitor_win.lift()
+        return
+
+    win = tk.Toplevel()
+    win.title("Load Cell Calibration")
+    _monitor_win = win
+
+    rows = []
     for cell, name, port in cells:
-        cell.monitor_force_window()
+        frame = ttk.Frame(win)
+        frame.pack(padx=5, pady=2)
+        ttk.Label(frame, text=f"{name} ({port})").pack(side="left")
+        var = tk.StringVar(value="0")
+        ttk.Label(frame, textvariable=var).pack(side="left", padx=5)
+        rows.append((cell, var))
+
+    def update():
+        if not _monitor_win or not _monitor_win.winfo_exists():
+            return
+        for cell, var in rows:
+            lbf = cell._get_force_value("lbf")
+            n = cell._get_force_value("n")
+            if lbf is None or n is None:
+                var.set("N/A")
+            else:
+                var.set(f"{lbf:.2f} lbf / {n:.2f} N")
+        win.after(int(interval * 1000), update)
+
+    def close():
+        global _monitor_win
+        _monitor_win = None
+        win.destroy()
+
+    ttk.Button(win, text="Close", command=close).pack(pady=5)
+    win.protocol("WM_DELETE_WINDOW", close)
+    update()
