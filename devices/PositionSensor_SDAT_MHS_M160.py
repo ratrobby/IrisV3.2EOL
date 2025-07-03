@@ -32,6 +32,7 @@ from tkinter import ttk, messagebox
 import importlib.util
 import sys
 import datetime
+from thread_utils import start_thread
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -148,6 +149,10 @@ class PositionSensorSDATMHS_M160:
 
         position = ((raw - min_val) / span) * self.stroke_mm
         return round(max(0.0, min(position, self.stroke_mm)), 2)
+
+    def read_position_thread(self):
+        """Run :meth:`read_position` in a background thread."""
+        return start_thread(self.read_position)
 
     def set_stroke_length(self, length_mm):
         """Persist and apply a new stroke length for this sensor."""
