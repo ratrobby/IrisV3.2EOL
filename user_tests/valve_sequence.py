@@ -37,6 +37,52 @@ def record_event(msg: str) -> None:
 
 # ------------------------------ Helpers ------------------------------
 
+def start_loadcell_monitor(stop_event, *cells, interval=0.1):
+    """Open a small window displaying live load cell readings in Newtons."""
+
+    def _run() -> None:
+        root = tk.Tk()
+        root.title("Load Cell Monitor")
+
+        vars = []
+        for col, cell in enumerate(cells):
+            ttk.Label(root, text=f"Load Cell {col + 1} (N)").grid(row=0, column=col, padx=5, pady=5)
+            var = tk.StringVar(value="0")
+            ttk.Label(root, textvariable=var, width=8).grid(row=1, column=col, padx=5)
+            vars.append((cell, var))
+
+        def update() -> None:
+            if stop_event.is_set():
+                root.quit()
+                return
+            for cell, var in vars:
+                val = cell._get_force_value("N")
+                if val is None:
+                    var.set("N/A")
+                else:
+                    var.set(f"{val:.2f}")
+            root.after(int(interval * 1000), update)
+
+        update()
+        root.mainloop()
+
+    return start_thread(_run)
+
+
+def log_sensors(
+    stop_event,
+    writer,
+    fh,
+    start_ts,
+    lc1,
+    lc2,
+    lc3,
+    ps1,
+    ps2,
+    ps3,
+    valve_bank,
+    interval=0.1,
+):
     """Poll sensors and write readings to ``writer`` until ``stop_event`` is set.
 
     The ``csv.writer`` object itself does not expose a ``flush`` method, so the
