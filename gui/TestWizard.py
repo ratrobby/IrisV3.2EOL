@@ -921,16 +921,52 @@ class TestWizard(tk.Tk):
                 cmds[name] = params
         return cmds
 
+    def _get_all_devices(self):
+        names = []
+        for section in ("al1342", "al2205"):
+            for port in self.instance_map.get(section, {}):
+                alias = self.instance_map[section][port]
+                if alias and alias != "Empty" and alias not in names:
+                    names.append(alias)
+        return names
+
     def add_loop_row(self):
         commands = list(self._get_all_commands().keys())
         row = ttk.Frame(self.rows_container)
         row.pack(fill="x", pady=2)
+
+        devices = ["General"] + self._get_all_devices()
+
+        row.device_var = tk.StringVar()
+        dev_cb = ttk.Combobox(
+            row,
+            textvariable=row.device_var,
+            values=devices,
+            state="readonly",
+            width=18,
+        )
+        dev_cb.pack(side="left", padx=5)
+        dev_cb.bind("<<ComboboxSelected>>", lambda e: self.update_loop_script())
+        row.device_var.set(devices[0] if devices else "")
+
         row.command_var = tk.StringVar()
-        cb = ttk.Combobox(row, textvariable=row.command_var, values=commands, state="readonly", width=20)
+        cb = ttk.Combobox(
+            row,
+            textvariable=row.command_var,
+            values=commands,
+            state="readonly",
+            width=20,
+        )
         cb.pack(side="left", padx=5)
+
         row.param_frame = ttk.Frame(row)
         row.param_frame.pack(side="left", fill="x", expand=True)
-        del_btn = ttk.Button(row, text="Remove", command=lambda r=row: self._remove_loop_row(r))
+
+        del_btn = ttk.Button(
+            row,
+            text="Remove",
+            command=lambda r=row: self._remove_loop_row(r),
+        )
         del_btn.pack(side="right", padx=5)
 
         def on_select(event=None, r=row):
@@ -982,7 +1018,12 @@ class TestWizard(tk.Tk):
                     args.append(f"{name}={default}")
                 else:
                     args.append("None")
-            lines.append(f"{cmd}({', '.join(args)})")
+            device = getattr(row, "device_var", None)
+            dev = device.get().strip() if device else ""
+            if dev and dev != "General":
+                lines.append(f"{dev}.{cmd}({', '.join(args)})")
+            else:
+                lines.append(f"{cmd}({', '.join(args)})")
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n" + "\n".join(lines))
 
