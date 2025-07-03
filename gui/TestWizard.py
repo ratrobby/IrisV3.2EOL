@@ -548,14 +548,9 @@ class TestWizard(tk.Tk):
         test_label = ttk.Label(
             lib_frame, text="Test Commands", font=("Arial", 11, "underline")
         )
-        test_container = ttk.LabelFrame(lib_frame, labelwidget=test_label)
-        test_container.pack(fill="both", expand=True, padx=5, pady=(0, 5))
-        for device, cmds in self.library["test"].items():
-            ttk.Label(test_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
-            dev_frame = ttk.Frame(test_container)
-            dev_frame.pack(fill="x", padx=10, pady=(0, 2))  # <- updated
-            for cmd in cmds:
-                self._create_collapsible_text(dev_frame, cmd["title"], cmd["content"])
+        self.test_container = ttk.LabelFrame(lib_frame, labelwidget=test_label)
+        self.test_container.pack(fill="both", expand=True, padx=5, pady=(0, 5))
+        self.populate_command_library()
 
         # The lower test editor has been removed to avoid duplication. The
         # primary test loop editor remains in the left column above.
@@ -691,6 +686,19 @@ class TestWizard(tk.Tk):
         header.bind("<Button-1>", lambda e: toggle())
         title_label.bind("<Button-1>", lambda e: toggle())
         arrow_label.bind("<Button-1>", lambda e: toggle())
+
+    def populate_command_library(self):
+        """Rebuild the command library UI from ``self.library``."""
+        if not getattr(self, "test_container", None):
+            return
+        for child in self.test_container.winfo_children():
+            child.destroy()
+        for device, cmds in self.library.get("test", {}).items():
+            ttk.Label(self.test_container, text=device, font=("Arial", 10, "bold")).pack(anchor="w", pady=0)
+            dev_frame = ttk.Frame(self.test_container)
+            dev_frame.pack(fill="x", padx=10, pady=(0, 2))
+            for cmd in cmds:
+                self._create_collapsible_text(dev_frame, cmd.get("title"), cmd.get("content"))
 
     def build_setup_widgets(self):
         """Populate the setup frame with device-specific widgets."""
@@ -1265,6 +1273,7 @@ class TestWizard(tk.Tk):
         self.ip_address = self.cfg.get("ip_address", "192.168.XXX.XXX")
         self.library = gather_library(self.cfg)
         self.base_map = build_instance_map(self.cfg)
+        self.populate_command_library()
 
         saved_names = data.get("device_names")
         self.setup_values = data.get("setup_values", {})
