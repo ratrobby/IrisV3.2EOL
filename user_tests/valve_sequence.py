@@ -10,6 +10,8 @@ import argparse
 import csv
 import threading
 import time
+import tkinter as tk
+from tkinter import ttk
 
 from IO_master import IO_master
 from devices.ValveBank_SY3000 import ValveBank
@@ -23,7 +25,38 @@ from commands import Hold
 
 # ------------------------------ Helpers ------------------------------
 
-def log_sensors(stop_event, writer, fh, start_ts, lc1, lc2, lc3, ps1, ps2, ps3, interval=0.25):
+def start_loadcell_monitor(stop_event, *cells, interval=0.1):
+    """Open a small window displaying live load cell readings in Newtons."""
+
+    def _run():
+        root = tk.Tk()
+        root.title("Load Cell Monitor")
+
+        vars = []
+        for col, cell in enumerate(cells):
+            ttk.Label(root, text=f"Load Cell {col + 1} (N)").grid(row=0, column=col, padx=5, pady=5)
+            var = tk.StringVar(value="0")
+            ttk.Label(root, textvariable=var, width=8).grid(row=1, column=col, padx=5)
+            vars.append((cell, var))
+
+        def update():
+            if stop_event.is_set():
+                root.quit()
+                return
+            for cell, var in vars:
+                val = cell._get_force_value("N")
+                if val is None:
+                    var.set("N/A")
+                else:
+                    var.set(f"{val:.2f}")
+            root.after(int(interval * 1000), update)
+
+        update()
+        root.mainloop()
+
+    return start_thread(_run)
+
+def log_sensors(stop_event, writer, fh, start_ts, lc1, lc2, lc3, ps1, ps2, ps3, interval=0.1):
     """Poll sensors and write readings to ``writer`` until ``stop_event`` is set.
 
     The ``csv.writer`` object itself does not expose a ``flush`` method, so the
@@ -108,6 +141,7 @@ def main() -> None:
             ps2,
             ps3,
         )
+        monitor_thread = start_loadcell_monitor(stop_event, lc1, lc2, lc3)
 
         try:
             # -------------------- Test Sequence --------------------
@@ -137,6 +171,7 @@ def main() -> None:
         finally:
             stop_event.set()
             log_thread.join()
+            monitor_thread.join()
             valve_bank.all_off()
             master.close_client()
 
