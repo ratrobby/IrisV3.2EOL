@@ -596,10 +596,23 @@ class TestWizard(tk.Tk):
             state="disabled",
             style="Resume.TButton",
         )
+        self.step_btn = ttk.Button(
+            control_frame,
+            text="\u23E5 Step",
+            command=self.step_once,
+            state="disabled",
+        )
+        self.step_mode_var = tk.BooleanVar()
+        self.step_mode_check = ttk.Checkbutton(
+            control_frame, text="Step Mode", variable=self.step_mode_var
+        )
+        self.step_event = None
         self.start_btn.pack(side="left", padx=5)
         self.stop_btn.pack(side="left", padx=5)
         self.pause_btn.pack(side="left", padx=5)
         self.resume_btn.pack(side="left", padx=5)
+        self.step_btn.pack(side="left", padx=5)
+        self.step_mode_check.pack(side="left", padx=5)
 
         # Buttons related to file handling
         btn_frame = ttk.Frame(main)
@@ -958,6 +971,12 @@ class TestWizard(tk.Tk):
             self.monitor.deiconify()
             self.monitor.lift()
         queue_writer = _QueueWriter(self.monitor_queue)
+        if self.step_mode_var.get():
+            self.step_event = threading.Event()
+            self.step_btn.configure(state="normal")
+        else:
+            self.step_event = None
+            self.step_btn.configure(state="disabled")
 
         def worker():
             with redirect_stdout(_Tee(queue_writer)):
@@ -968,9 +987,20 @@ class TestWizard(tk.Tk):
                     return
                 try:
                     print("Iteration: 1")
-                    exec(loop_code, context)
+                    lines = [ln for ln in loop_code.splitlines() if ln.strip()]
+                    for ln in lines:
+                        if self.step_event:
+                            self.step_event.clear()
+                            while not self.step_event.is_set():
+                                time.sleep(0.1)
+                            self.step_event.clear()
+                        exec(ln, context)
                 except Exception as e:
                     print(f"Loop error: {e}")
+                finally:
+                    if self.step_mode_var.get():
+                        self.after(0, lambda: self.step_btn.configure(state="disabled"))
+                        self.step_event = None
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -1021,6 +1051,12 @@ class TestWizard(tk.Tk):
         self.stop_btn.configure(state="normal")
         self.pause_btn.configure(state="normal")
         self.resume_btn.configure(state="disabled")
+        if self.step_mode_var.get():
+            self.step_btn.configure(state="normal")
+            self.step_event = threading.Event()
+        else:
+            self.step_btn.configure(state="disabled")
+            self.step_event = None
         self._set_edit_state("disabled")
         # Ensure any configured ITV pressures are written before executing
         # setup code or the first test iteration.
@@ -1069,12 +1105,24 @@ class TestWizard(tk.Tk):
                         time.sleep(0.1)
                     if not self.running:
                         break
-                    try:
-                        exec(loop_code, context)
-                    except Exception as e:
-                        print(f"Loop error: {e}")
-                        self.running = False
-                        break
+                    lines = [ln for ln in loop_code.splitlines() if ln.strip()]
+                    for ln in lines:
+                        while self.paused and self.running:
+                            time.sleep(0.1)
+                        if not self.running:
+                            break
+                        if self.step_event:
+                            self.step_event.clear()
+                            while not self.step_event.is_set() and self.running:
+                                time.sleep(0.1)
+                            if not self.running:
+                                break
+                        try:
+                            exec(ln, context)
+                        except Exception as e:
+                            print(f"Loop error: {e}")
+                            self.running = False
+                            break
             self.log_file.close()
             should_prompt = self.running
             self.running = False
@@ -1107,6 +1155,8 @@ class TestWizard(tk.Tk):
         self.stop_btn.configure(state="disabled")
         self.pause_btn.configure(state="disabled")
         self.resume_btn.configure(state="disabled")
+        self.step_btn.configure(state="disabled")
+        self.step_event = None
         self._set_edit_state("normal")
 
         if prompt:
@@ -1128,6 +1178,10 @@ class TestWizard(tk.Tk):
         self.paused = False
         self.pause_btn.configure(state="normal")
         self.resume_btn.configure(state="disabled")
+
+    def step_once(self):
+        if self.step_event:
+            self.step_event.set()
 
     def _rewrite_itv_pressures(self):
         for obj in getattr(self, "device_objects", {}).values():
