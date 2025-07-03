@@ -23,7 +23,20 @@ from commands import Hold
 
 # ------------------------------ Helpers ------------------------------
 
-def log_sensors(stop_event, writer, fh, start_ts, lc1, lc2, lc3, ps1, ps2, ps3, interval=0.25):
+def log_sensors(
+    stop_event,
+    writer,
+    fh,
+    start_ts,
+    lc1,
+    lc2,
+    lc3,
+    ps1,
+    ps2,
+    ps3,
+    valve_bank,
+    interval=0.25,
+):
     """Poll sensors and write readings to ``writer`` until ``stop_event`` is set.
 
     The ``csv.writer`` object itself does not expose a ``flush`` method, so the
@@ -42,9 +55,10 @@ def log_sensors(stop_event, writer, fh, start_ts, lc1, lc2, lc3, ps1, ps2, ps3, 
                 f"{ps1.read_position():.2f}",
                 f"{ps2.read_position():.2f}",
                 f"{ps3.read_position():.2f}",
+                ",".join(sorted(valve_bank.active_valves)) or "-",
             ]
         except Exception:
-            row = [f"{timestamp:.2f}"] + ["err"] * 6
+            row = [f"{timestamp:.2f}"] + ["err"] * 6 + ["-"]
         writer.writerow(row)
         fh.flush()
         time.sleep(interval)
@@ -93,6 +107,7 @@ def main() -> None:
             "position_1_mm",
             "position_2_mm",
             "position_3_mm",
+            "active_valves",
         ])
 
         log_thread = start_thread(
@@ -107,6 +122,7 @@ def main() -> None:
             ps1,
             ps2,
             ps3,
+            valve_bank,
         )
 
         try:
