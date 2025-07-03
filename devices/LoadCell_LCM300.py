@@ -146,14 +146,32 @@ class LoadCellLCM300:
         print(f"Force = {result:.2f}{unit_label}")
         return result
 
-    def monitor_force(self, unit="lbf", interval=0.5):
-        """Continuously print force readings until interrupted."""
+    def monitor_force(self, unit="lbf", interval=0.25, duration=None):
+        """Continuously print force readings.
+
+        Parameters
+        ----------
+        unit : str, optional
+            Force units (``"lbf"`` or ``"N"``).
+        interval : float, optional
+            Time between readings in seconds (default ``0.25``).
+        duration : float or None, optional
+            Total time in seconds to run the monitor. ``None`` runs until
+            interrupted.
+        """
+
+        start = time.time()
         try:
             while True:
                 self.read_force(unit=unit)
+                if duration is not None and (time.time() - start) >= duration:
+                    break
                 time.sleep(interval)
         except KeyboardInterrupt:
             print("Stopped force monitoring")
+        finally:
+            if duration is not None:
+                print("Force monitoring complete")
 
     # ------------------------------------------------------------------
     def monitor_force_window(self, interval=0.2):
