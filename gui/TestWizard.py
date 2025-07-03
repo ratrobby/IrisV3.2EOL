@@ -675,28 +675,39 @@ class TestWizard(tk.Tk):
         """Populate the setup frame with device-specific widgets."""
         for w in self.setup_frame.winfo_children():
             w.destroy()
+        class_seen = set()
         for section in ("al1342", "al2205"):
             for port in sorted(self.instance_map.get(section, {})):
                 alias = self.instance_map[section][port]
                 base = self.base_map[section][port]
-                # Safely look up any instantiated device object by base name
                 obj = getattr(self, "device_objects", {}).get(base)
                 if not obj:
                     continue
+
+                cls = obj.__class__
+                if cls.__name__ == "LoadCellLCM300" and cls not in class_seen:
+                    ttk.Button(
+                        self.setup_frame,
+                        text="Calibrate Load Cells",
+                        command=self.open_loadcell_calibration,
+                    ).pack(fill="x", padx=5, pady=2)
+                    class_seen.add(cls)
+                elif cls.__name__ == "PositionSensorSDATMHS_M160" and cls not in class_seen:
+                    ttk.Button(
+                        self.setup_frame,
+                        text="Calibrate Position Sensors",
+                        command=self.open_position_sensor_calibration,
+                    ).pack(fill="x", padx=5, pady=2)
+                    class_seen.add(cls)
+
                 saved = self.setup_values.get(alias)
                 if saved is not None and hasattr(obj, "load_setup_state"):
                     try:
                         obj.load_setup_state(saved)
                     except Exception as e:
                         print(f"Failed to apply setup state for {alias}: {e}")
-                if hasattr(obj.__class__, "calibration_steps"):
-                    btn = ttk.Button(
-                        self.setup_frame,
-                        text=f"Calibrate {alias}",
-                        command=lambda o=obj: self.open_calibration(o),
-                    )
-                    btn.pack(fill="x", padx=5, pady=2)
-                elif hasattr(obj, "setup_widget"):
+
+                if hasattr(obj, "setup_widget"):
                     try:
                         widget = obj.setup_widget(
                             self.setup_frame,
@@ -774,6 +785,14 @@ class TestWizard(tk.Tk):
         if not steps:
             return
         CalibrationWizard(device, steps)
+
+    def open_loadcell_calibration(self):
+        from devices.LoadCell_LCM300 import Calibrate_LoadCell_Zero
+        Calibrate_LoadCell_Zero()
+
+    def open_position_sensor_calibration(self):
+        from devices.PositionSensor_SDAT_MHS_M160 import Calibrate_PosSensor
+        Calibrate_PosSensor()
 
 
     def _export_device_alias_script(self, test_name):
