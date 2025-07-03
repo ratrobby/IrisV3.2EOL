@@ -106,8 +106,16 @@ def gather_library(cfg):
     """
     library = {"test": {}}
     modules = set()
-    modules.update(v for v in cfg.get("al1342", {}).values() if v != "Empty")
-    modules.update(v for v in cfg.get("al2205", {}).values() if v != "Empty")
+    def _collect_modules(section):
+        for mod in cfg.get(section, {}).values():
+            if not mod:
+                continue
+            if str(mod).strip().lower() == "empty":
+                continue
+            yield str(mod).strip()
+
+    modules.update(_collect_modules("al1342"))
+    modules.update(_collect_modules("al2205"))
 
     import_errors = []
 
@@ -168,7 +176,8 @@ def build_instance_map(cfg):
     for section in ("al1342", "al2205"):
         for port in cfg.get(section, {}):
             device = cfg.get(section, {}).get(port, "Empty")
-            if str(device).lower() == "empty":
+            device = str(device).strip()
+            if device.lower() == "empty":
                 continue
             device_totals[device] = device_totals.get(device, 0) + 1
 
@@ -178,7 +187,8 @@ def build_instance_map(cfg):
     for section in ("al1342", "al2205"):
         for port in sorted(cfg.get(section, {})):
             device = cfg.get(section, {}).get(port, "Empty")
-            if str(device).lower() == "empty":
+            device = str(device).strip()
+            if device.lower() == "empty":
                 result[section][port] = "Empty"
                 continue
 
@@ -217,26 +227,30 @@ def load_device_objects(cfg, base_map, ip_address):
     # Import required device classes
     for section in ("al1342", "al2205"):
         for dev_name in cfg.get(section, {}).values():
-            if dev_name and dev_name != "Empty" and dev_name not in classes:
-                try:
-                    mod = importlib.import_module(f"devices.{dev_name}")
-                except Exception as e:
-                    print(f"Failed to import device module '{dev_name}': {e}")
-                    continue
-                device_cls = None
-                for name, obj in inspect.getmembers(mod, inspect.isclass):
-                    if getattr(obj, "_is_device_class", False):
-                        device_cls = obj
-                        break
-                if device_cls:
-                    classes[dev_name] = device_cls
+            if not dev_name:
+                continue
+            dev_name = str(dev_name).strip()
+            if dev_name.lower() == "empty" or dev_name in classes:
+                continue
+            try:
+                mod = importlib.import_module(f"devices.{dev_name}")
+            except Exception as e:
+                print(f"Failed to import device module '{dev_name}': {e}")
+                continue
+            device_cls = None
+            for name, obj in inspect.getmembers(mod, inspect.isclass):
+                if getattr(obj, "_is_device_class", False):
+                    device_cls = obj
+                    break
+            if device_cls:
+                classes[dev_name] = device_cls
 
     hub_obj = None
 
     # Instantiate AL1342 devices first
     for port in sorted(cfg.get("al1342", {})):
-        dev_name = cfg["al1342"][port]
-        if dev_name == "Empty":
+        dev_name = str(cfg["al1342"][port]).strip()
+        if dev_name.lower() == "empty":
             continue
         cls = classes.get(dev_name)
         if not cls:
@@ -255,8 +269,8 @@ def load_device_objects(cfg, base_map, ip_address):
     # Instantiate AL2205 devices connected to the hub
     if hub_obj:
         for port in sorted(cfg.get("al2205", {})):
-            dev_name = cfg["al2205"][port]
-            if dev_name == "Empty":
+            dev_name = str(cfg["al2205"][port]).strip()
+            if dev_name.lower() == "empty":
                 continue
             cls = classes.get(dev_name)
             if not cls:
