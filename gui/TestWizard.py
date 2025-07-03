@@ -488,8 +488,14 @@ class TestWizard(tk.Tk):
         self.iterations_entry = ttk.Entry(left, textvariable=self.iterations_var)
         self.iterations_entry.grid(row=6, column=0, sticky="w", padx=5, pady=(0, 10))
 
-        self.run_btn = ttk.Button(left, text="Run Script", command=self.run_script)
-        self.run_btn.grid(row=7, column=0, sticky="w", padx=5, pady=(0, 10))
+        btn_frame = ttk.Frame(left)
+        btn_frame.grid(row=7, column=0, sticky="w", padx=5, pady=(0, 10))
+        self.run_btn = ttk.Button(btn_frame, text="Run Script", command=self.run_script)
+        self.run_btn.pack(side="left")
+        self.step_btn = ttk.Button(
+            btn_frame, text="\u23E5 Step", command=self.step_script, state="disabled"
+        )
+        self.step_btn.pack(side="left", padx=5)
 
         # ----------------------- Right Column ----------------------
         right = ttk.Frame(content)
@@ -591,12 +597,6 @@ class TestWizard(tk.Tk):
             state="disabled",
             style="Resume.TButton",
         )
-        self.step_btn = ttk.Button(
-            control_frame,
-            text="\u23E5 Step",
-            command=self.step_once,
-            state="disabled",
-        )
         self.step_mode_var = tk.BooleanVar()
         self.step_mode_check = ttk.Checkbutton(
             control_frame, text="Step Mode", variable=self.step_mode_var
@@ -606,7 +606,6 @@ class TestWizard(tk.Tk):
         self.stop_btn.pack(side="left", padx=5)
         self.pause_btn.pack(side="left", padx=5)
         self.resume_btn.pack(side="left", padx=5)
-        self.step_btn.pack(side="left", padx=5)
         self.step_mode_check.pack(side="left", padx=5)
 
         # Buttons related to file handling
@@ -942,7 +941,7 @@ class TestWizard(tk.Tk):
         self.reconfig_btn.configure(state=state)
 
     # ----------------------- Test Execution ------------------------
-    def run_script(self):
+    def run_script(self, step=False):
         """Execute the test loop once without logging results."""
         context = {"__name__": "__main__"}
         try:
@@ -979,9 +978,10 @@ class TestWizard(tk.Tk):
             self.monitor.deiconify()
             self.monitor.lift()
         queue_writer = _QueueWriter(self.monitor_queue)
-        if self.step_mode_var.get():
+        if step:
             self.step_event = threading.Event()
             self.step_btn.configure(state="normal")
+            self._step_script_active = True
         else:
             self.step_event = None
             self.step_btn.configure(state="disabled")
@@ -1006,9 +1006,10 @@ class TestWizard(tk.Tk):
                 except Exception as e:
                     print(f"Loop error: {e}")
                 finally:
-                    if self.step_mode_var.get():
+                    if step:
                         self.after(0, lambda: self.step_btn.configure(state="disabled"))
                         self.step_event = None
+                        self._step_script_active = False
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -1190,6 +1191,12 @@ class TestWizard(tk.Tk):
     def step_once(self):
         if self.step_event:
             self.step_event.set()
+
+    def step_script(self):
+        """Run the current script one line at a time."""
+        if not getattr(self, "_step_script_active", False):
+            self.run_script(step=True)
+        self.step_once()
 
     def _rewrite_itv_pressures(self):
         for obj in getattr(self, "device_objects", {}).values():
