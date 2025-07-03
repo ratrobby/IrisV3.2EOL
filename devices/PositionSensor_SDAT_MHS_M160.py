@@ -15,7 +15,8 @@
     ---------------
     - calibrate_min(): Save current raw reading as 0mm.
     - calibrate_max(): Save current raw reading as full stroke (e.g., 150mm).
-    - read_position_mm(): Return live position in mm.
+    - read_position(): Return live position in mm.
+    - monitor_position(duration=None): Continuously print position every 0.25s.
 
     Notes:
     ------
@@ -32,6 +33,7 @@ from tkinter import ttk, messagebox
 import importlib.util
 import sys
 import datetime
+import time
 from thread_utils import start_thread
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -69,6 +71,16 @@ class PositionSensorSDATMHS_M160:
                     "Use: Reads current position of cylinder in mm\n"
                     "Inputs:\n"
                     "    - none"
+                ),
+            },
+            {
+                "title": "monitor_position(duration=None)",
+                "content": (
+                    "Use: Continuously prints position until stopped\n"
+                    "Inputs:\n"
+                    "    - duration: Total monitor time in seconds (None runs until interrupted)\n"
+                    "Example:\n"
+                    "    - monitor_position(3) - Print position every 0.25 s for 3 seconds"
                 ),
             }
         ]
@@ -153,6 +165,38 @@ class PositionSensorSDATMHS_M160:
     def read_position_thread(self):
         """Run :meth:`read_position` in a background thread."""
         return start_thread(self.read_position)
+
+    def monitor_position(self, duration=None):
+        """Continuously print position readings.
+
+        Parameters
+        ----------
+        duration : float or None, optional
+            Total time in seconds to run the monitor. ``None`` runs until
+            interrupted.
+
+        Notes
+        -----
+        The reading interval is fixed at ``0.25`` seconds.
+        """
+        interval = 0.25
+        start = time.time()
+        try:
+            while True:
+                pos = self.read_position()
+                print(f"Position = {pos:.2f} mm")
+                if duration is not None and (time.time() - start) >= duration:
+                    break
+                time.sleep(interval)
+        except KeyboardInterrupt:
+            print("Stopped position monitoring")
+        finally:
+            if duration is not None:
+                print("Position monitoring complete")
+
+    def monitor_position_thread(self, duration=None):
+        """Run :meth:`monitor_position` in a background thread."""
+        return start_thread(self.monitor_position, duration=duration)
 
     def set_stroke_length(self, length_mm):
         """Persist and apply a new stroke length for this sensor."""

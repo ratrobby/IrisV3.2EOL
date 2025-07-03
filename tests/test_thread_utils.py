@@ -37,6 +37,9 @@ def test_position_thread_method():
     sensor = PositionSensorSDATMHS_M160(DummyAL2205PS(), 0)
     sensor.calibration_data = {"min": 0, "max": 1000}
     t = sensor.read_position_thread()
+    m = sensor.monitor_position_thread(duration=0)
     assert isinstance(t, threading.Thread)
+    assert isinstance(m, threading.Thread)
     t.join(timeout=1)
+    m.join(timeout=1)
 

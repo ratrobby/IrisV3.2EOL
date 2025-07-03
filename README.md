@@ -77,6 +77,9 @@ LC_2.monitor_force_thread("N", duration=3)
 
 # Read a position sensor in the background
 PS_1.read_position_thread()
+
+# Monitor a position sensor for 2 seconds
+PS_1.monitor_position_thread(duration=2)
 ```
 
 Each helper returns the ``Thread`` object for optional joining or inspection.
