@@ -40,6 +40,27 @@ PING_TIMEOUT = 0.25
 CHECK_INTERVAL = 300
 
 
+def _parse_command_title(title):
+    """Return (name, [(param, default_or_None), ...]) from an instruction title."""
+    match = re.match(r"\s*(\w+)\s*\((.*)\)", str(title))
+    if not match:
+        return title.strip(), []
+    name = match.group(1)
+    params = []
+    inner = match.group(2).strip()
+    if inner:
+        for part in inner.split(','):
+            part = part.strip()
+            if not part:
+                continue
+            if '=' in part:
+                p, default = part.split('=', 1)
+                params.append((p.strip(), default.strip()))
+            else:
+                params.append((part, None))
+    return name, params
+
+
 def _acquire_lock():
     """Attempt to acquire the single instance lock."""
     lock_file = open(LOCK_PATH, "w")
@@ -476,10 +497,26 @@ class TestWizard(tk.Tk):
         ttk.Label(left, text="Test Loop:", style="TestName.TLabel").grid(
             row=3, column=0, sticky="w"
         )
-        self.script_text = ScrolledText(left, height=12)
-        self.script_text.grid(row=4, column=0, sticky="nsew", pady=(5, 0))
-        self.script_text.insert("end", "# Test loop code\n")
+        self.loop_frame = ttk.Frame(left)
+        self.loop_frame.grid(row=4, column=0, sticky="nsew", pady=(5, 0))
         left.rowconfigure(4, weight=1)
+
+        btn_row = ttk.Frame(self.loop_frame)
+        btn_row.pack(anchor="w")
+        ttk.Button(btn_row, text="Add Step", command=self.add_loop_row).pack(
+            side="left", padx=5, pady=2
+        )
+
+        self.rows_container = ttk.Frame(self.loop_frame)
+        self.rows_container.pack(fill="both", expand=True)
+        self.loop_rows = []
+
+        # Start with one empty row
+        self.after(10, self.add_loop_row)
+
+        self.script_text = ScrolledText(self.loop_frame, height=6)
+        self.script_text.pack(fill="both", expand=True, pady=(5, 0))
+        self.script_text.insert("end", "# Test loop code\n")
 
         ttk.Label(left, text="Iterations:", style="TestName.TLabel").grid(
             row=5, column=0, sticky="w", pady=(10, 0)
@@ -872,6 +909,83 @@ class TestWizard(tk.Tk):
         self.build_setup_widgets()
         self.refresh_instance_table()
 
+    # ----------------------- Loop Builder ------------------------
+    def _get_all_commands(self):
+        cmds = {}
+        for dev_cmds in self.library.get("test", {}).values():
+            for item in dev_cmds:
+                title = item.get("title")
+                if not title or "(" not in title:
+                    continue
+                name, params = _parse_command_title(title)
+                cmds[name] = params
+        return cmds
+
+    def add_loop_row(self):
+        commands = list(self._get_all_commands().keys())
+        row = ttk.Frame(self.rows_container)
+        row.pack(fill="x", pady=2)
+        row.command_var = tk.StringVar()
+        cb = ttk.Combobox(row, textvariable=row.command_var, values=commands, state="readonly", width=20)
+        cb.pack(side="left", padx=5)
+        row.param_frame = ttk.Frame(row)
+        row.param_frame.pack(side="left", fill="x", expand=True)
+        del_btn = ttk.Button(row, text="Remove", command=lambda r=row: self._remove_loop_row(r))
+        del_btn.pack(side="right", padx=5)
+
+        def on_select(event=None, r=row):
+            self._build_param_fields(r)
+            self.update_loop_script()
+
+        cb.bind("<<ComboboxSelected>>", on_select)
+        row.command_var.set(commands[0] if commands else "")
+        self.loop_rows.append(row)
+        on_select()
+
+    def _remove_loop_row(self, row):
+        if row in self.loop_rows:
+            self.loop_rows.remove(row)
+        row.destroy()
+        self.update_loop_script()
+
+    def _build_param_fields(self, row):
+        for child in row.param_frame.winfo_children():
+            child.destroy()
+        cmd = row.command_var.get()
+        params = self._get_all_commands().get(cmd, [])
+        row.param_vars = []
+        for name, default in params:
+            frm = ttk.Frame(row.param_frame)
+            frm.pack(side="left", padx=2)
+            ttk.Label(frm, text=f"{name}:").pack(side="left")
+            var = tk.StringVar()
+            if default is not None:
+                var.set(default)
+            ent = ttk.Entry(frm, textvariable=var, width=10)
+            ent.pack(side="left")
+            ent.bind("<KeyRelease>", lambda e: self.update_loop_script())
+            row.param_vars.append((name, var, default))
+
+    def update_loop_script(self):
+        lines = []
+        for row in getattr(self, "loop_rows", []):
+            cmd = row.command_var.get()
+            args = []
+            for name, var, default in getattr(row, "param_vars", []):
+                val = var.get().strip()
+                if val:
+                    if default is not None:
+                        args.append(f"{name}={val}")
+                    else:
+                        args.append(val)
+                elif default is not None:
+                    args.append(f"{name}={default}")
+                else:
+                    args.append("None")
+            lines.append(f"{cmd}({', '.join(args)})")
+        self.script_text.delete("1.0", "end")
+        self.script_text.insert("1.0", "# Test loop code\n" + "\n".join(lines))
+
     # ----------------------- Connection Status ---------------------
     def check_connection(self):
         """Check AL1342 connectivity in a background thread and update the UI."""
@@ -935,6 +1049,12 @@ class TestWizard(tk.Tk):
             except Exception:
                 pass
         self.script_text.configure(state=state)
+        for row in getattr(self, "loop_rows", []):
+            for widget in row.winfo_children():
+                try:
+                    widget.configure(state=state)
+                except Exception:
+                    pass
         self.iterations_entry.configure(state=state)
         self.save_btn.configure(state=state)
         self.new_btn.configure(state=state)
@@ -1326,7 +1446,29 @@ class TestWizard(tk.Tk):
         self.test_name_var.set(data.get("name", ""))
         self.setup_code = data.get("setup", "")
         self.script_text.delete("1.0", "end")
-        self.script_text.insert("1.0", data.get("loop", ""))
+        loop_code = data.get("loop", "")
+        self.script_text.insert("1.0", loop_code)
+        for row in getattr(self, "loop_rows", []):
+            row.destroy()
+        self.loop_rows = []
+        for line in loop_code.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            name, params = _parse_command_title(line)
+            self.add_loop_row()
+            row = self.loop_rows[-1]
+            row.command_var.set(name)
+            self._build_param_fields(row)
+            args = line[line.find("(")+1 : line.rfind(")")]
+            arg_vals = [a.strip() for a in args.split(',')] if args.strip() else []
+            for i, (pname, var, default) in enumerate(row.param_vars):
+                if i < len(arg_vals):
+                    val = arg_vals[i]
+                    if '=' in val:
+                        val = val.split('=',1)[1].strip()
+                    var.set(val)
+        self.update_loop_script()
         self.iterations_var.set(data.get("iterations", ""))
 
         imported_cfg = data.get("config", {})
@@ -1374,6 +1516,10 @@ class TestWizard(tk.Tk):
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n")
         self.iterations_var.set("")
+        for row in getattr(self, "loop_rows", []):
+            row.destroy()
+        self.loop_rows = []
+        self.add_loop_row()
         # Reset any custom device naming back to defaults
         self.reset_device_names()
         self.test_script_path = None
