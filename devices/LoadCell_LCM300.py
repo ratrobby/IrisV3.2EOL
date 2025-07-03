@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from thread_utils import start_thread
 
 # Allow importing project modules when executed directly
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -204,6 +205,17 @@ class LoadCellLCM300:
         win.protocol("WM_DELETE_WINDOW", close)
 
         update()
+
+    # ------------------------------------------------------------------
+    def read_force_thread(self, unit="lbf"):
+        """Run :meth:`read_force` in a background thread."""
+        return start_thread(self.read_force, unit)
+
+    def monitor_force_thread(self, unit="lbf", interval=0.25, duration=None):
+        """Run :meth:`monitor_force` in a background thread."""
+        return start_thread(
+            self.monitor_force, unit=unit, interval=interval, duration=duration
+        )
 
 
 # ==================== Calibration Helper ====================

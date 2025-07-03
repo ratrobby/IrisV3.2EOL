@@ -62,6 +62,25 @@ Hold(3)  # wait 3 seconds
 
 The `Hold` function is available automatically when running scripts in the Test Wizard.
 
+### Running Sensor Calls in Parallel
+
+The repository includes a ``thread_utils`` module with a convenient
+``start_thread`` helper. Device classes also provide ``*_thread`` methods so
+reads or monitoring loops can run concurrently:
+
+```python
+from thread_utils import start_thread
+
+# Monitor multiple load cells at the same time
+LC_1.monitor_force_thread("N", interval=0.5)
+LC_2.monitor_force_thread("N", interval=0.5)
+
+# Read a position sensor in the background
+PS_1.read_position_thread()
+```
+
+Each helper returns the ``Thread`` object for optional joining or inspection.
+
 ### Valve Bank Control
 
 When a `ValveBank_SY3000` device is mapped, the Test Wizard setup panel shows an
