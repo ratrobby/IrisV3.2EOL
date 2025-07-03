@@ -10,6 +10,8 @@ import argparse
 import csv
 import threading
 import time
+import tkinter as tk
+from tkinter import ttk
 
 from IO_master import IO_master
 from devices.ValveBank_SY3000 import ValveBank
@@ -35,20 +37,6 @@ def record_event(msg: str) -> None:
 
 # ------------------------------ Helpers ------------------------------
 
-def log_sensors(
-    stop_event,
-    writer,
-    fh,
-    start_ts,
-    lc1,
-    lc2,
-    lc3,
-    ps1,
-    ps2,
-    ps3,
-    valve_bank,
-    interval=0.25,
-):
     """Poll sensors and write readings to ``writer`` until ``stop_event`` is set.
 
     The ``csv.writer`` object itself does not expose a ``flush`` method, so the
@@ -146,6 +134,7 @@ def main() -> None:
             ps3,
             valve_bank,
         )
+        monitor_thread = start_loadcell_monitor(stop_event, lc1, lc2, lc3)
 
         try:
             # -------------------- Test Sequence --------------------
@@ -179,6 +168,7 @@ def main() -> None:
         finally:
             stop_event.set()
             log_thread.join()
+            monitor_thread.join()
             valve_bank.all_off()
             master.close_client()
 
