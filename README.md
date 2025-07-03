@@ -72,8 +72,8 @@ reads or monitoring loops can run concurrently:
 from thread_utils import start_thread
 
 # Monitor multiple load cells at the same time
-LC_1.monitor_force_thread("N", interval=0.5)
-LC_2.monitor_force_thread("N", interval=0.5)
+LC_1.monitor_force_thread("N", duration=3)
+LC_2.monitor_force_thread("N", duration=3)
 
 # Read a position sensor in the background
 PS_1.read_position_thread()

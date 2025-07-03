@@ -26,7 +26,8 @@ from tkinter import messagebox, ttk
     Public Methods:
     ---------------
     - read_force(unit="lbf"): Return a single force reading.
-    - monitor_force(unit="lbf", interval=0.5): Continuously print force readings.
+    - monitor_force(unit="lbf", duration=None): Continuously print force readings
+      every 0.25 seconds.
     - monitor_force_window(interval=0.2): Show live force in both lbf and N.
 
     Notes:
@@ -55,14 +56,14 @@ class LoadCellLCM300:
                 ),
             },
             {
-                "title": "monitor_force(unit, interval)",
+                "title": "monitor_force(unit, duration=None)",
                 "content": (
                     "Use: Continuously prints force readings until stopped\n"
                     "Inputs:\n"
                     "  - unit: Force units (lbf or N)\n"
-                    "  - interval=: Time between readings in seconds (default 0.5)\n"
+                    "  - duration: Total monitor time in seconds (None runs until interrupted)\n"
                     "Example:\n"
-                    "  - monitor_force(\"lbf\", interval=1) - Print lbf every second"
+                    "  - monitor_force(\"lbf\", 3) - Print lbf every 0.25 s for 3 seconds"
                 ),
             },
         ]
@@ -147,19 +148,22 @@ class LoadCellLCM300:
         print(f"Force = {result:.2f}{unit_label}")
         return result
 
-    def monitor_force(self, unit="lbf", interval=0.25, duration=None):
+    def monitor_force(self, unit="lbf", duration=None):
         """Continuously print force readings.
 
         Parameters
         ----------
         unit : str, optional
             Force units (``"lbf"`` or ``"N"``).
-        interval : float, optional
-            Time between readings in seconds (default ``0.25``).
         duration : float or None, optional
             Total time in seconds to run the monitor. ``None`` runs until
             interrupted.
+
+        Notes
+        -----
+        The reading interval is fixed at ``0.25`` seconds.
         """
+        interval = 0.25
 
         start = time.time()
         try:
@@ -211,10 +215,10 @@ class LoadCellLCM300:
         """Run :meth:`read_force` in a background thread."""
         return start_thread(self.read_force, unit)
 
-    def monitor_force_thread(self, unit="lbf", interval=0.25, duration=None):
+    def monitor_force_thread(self, unit="lbf", duration=None):
         """Run :meth:`monitor_force` in a background thread."""
         return start_thread(
-            self.monitor_force, unit=unit, interval=interval, duration=duration
+            self.monitor_force, unit=unit, duration=duration
         )
 
 
