@@ -20,6 +20,18 @@ from devices.PositionSensor_SDAT_MHS_M160 import PositionSensorSDATMHS_M160
 from thread_utils import start_thread
 from commands import Hold
 
+# Event logging helpers
+event_lock = threading.Lock()
+event_message = ""
+
+
+def record_event(msg: str) -> None:
+    """Print ``msg`` and store it for the logger thread."""
+    global event_message
+    print(msg)
+    with event_lock:
+        event_message = msg
+
 
 # ------------------------------ Helpers ------------------------------
 
@@ -59,6 +71,15 @@ def log_sensors(
             ]
         except Exception:
             row = [f"{timestamp:.2f}"] + ["err"] * 6 + ["-"]
+
+        with event_lock:
+            global event_message
+            msg = event_message
+            # Reset after reading so event only logged once
+            if event_message:
+                event_message = ""
+
+        row.append(msg or "-")
         writer.writerow(row)
         fh.flush()
         time.sleep(interval)
@@ -108,6 +129,7 @@ def main() -> None:
             "position_2_mm",
             "position_3_mm",
             "active_valves",
+            "event",
         ])
 
         log_thread = start_thread(
@@ -137,11 +159,15 @@ def main() -> None:
             Hold(1)
 
             valve_bank.valve_on("3.B", duration=2)
+            record_event("Pull")
             Hold(2)
+            record_event("Pull Stop")
             Hold(2.25)
 
             valve_bank.valve_on("4.A", duration=2)
+            record_event("Push")
             Hold(2)
+            record_event("Push Stop")
             Hold(2.25)
 
             valve_bank.all_off()
