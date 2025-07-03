@@ -108,6 +108,13 @@ class TestLauncher(tk.Tk):
         super().__init__()
         self.reconfigure_path = reconfigure_path
         self.title("Test Launcher")
+        # Ensure the launcher window appears on screen
+        self.deiconify()
+        self.lift()
+        try:
+            self.focus_force()
+        except Exception:
+            pass
         self.wizard_procs = []
 
         options = get_device_options()
