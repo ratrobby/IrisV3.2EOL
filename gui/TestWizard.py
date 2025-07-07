@@ -1328,7 +1328,8 @@ class TestWizard(tk.Tk):
         if target:
             row.pack(before=target, fill="x", pady=2)
         else:
-            row.pack(after=row.section.loop_rows[-1], fill="x", pady=2)
+            # If row was last or no target found, pack at the end
+            row.pack(fill="x", pady=2)
 
     def _end_row_drag(self, event, row):
         """Finalize row drag and update internal ordering."""
