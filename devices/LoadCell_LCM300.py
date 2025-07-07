@@ -172,7 +172,16 @@ class LoadCellLCM300:
         start = time.time()
         try:
             while True:
-                self.read_force(unit=unit)
+                result = self._get_force_value(unit)
+                if result is None:
+                    print("Force = N/A")
+                else:
+                    unit_label = "lbf" if unit.lower() == "lbf" else "N"
+                    print(f"Force = {result:.2f}{unit_label}")
+                    if hasattr(self, "_logger_alias"):
+                        from logger import record_value
+
+                        record_value(self._logger_alias, f"{result:.2f}")
                 if duration is not None and (time.time() - start) >= duration:
                     break
                 time.sleep(interval)
