@@ -28,6 +28,7 @@ def test_thread_checkbox_generates_start_thread():
         device_var=DummyVar('General'),
         param_vars=[('seconds', DummyVar('1'), None)],
         thread_var=DummyVar(True),
+        hold_var=DummyVar('0'),
     )
     class DummySection:
         def __init__(self, rows):
