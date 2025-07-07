@@ -539,9 +539,6 @@ class TestWizard(tk.Tk):
         # Start with one empty row
         self.after(10, self.add_loop_row)
 
-        self.script_text = ScrolledText(self.loop_frame, height=6)
-        self.script_text.pack(fill="both", expand=True, pady=(5, 0))
-        self.script_text.insert("end", "# Test loop code\n")
 
         ttk.Label(left, text="Iterations:", style="TestName.TLabel").grid(
             row=5, column=0, sticky="w", pady=(10, 0)
@@ -606,11 +603,10 @@ class TestWizard(tk.Tk):
         self.refresh_btn.pack(fill="x", padx=5, pady=(0, 5))
 
         # Collapsible command library below the device instances
-        lib_label = ttk.Label(
-            right, text="Command Library", font=("Arial", 12, "bold")
+        lib_container, lib_frame = self._create_collapsible_section(
+            right, "Command Library"
         )
-        lib_frame = ttk.LabelFrame(right, labelwidget=lib_label)
-        lib_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        lib_container.pack(fill="both", expand=True, padx=5, pady=5)
         lib_frame.columnconfigure(0, weight=1)
 
         test_label = ttk.Label(
@@ -669,6 +665,11 @@ class TestWizard(tk.Tk):
         self.pause_btn.pack(side="left", padx=5)
         self.resume_btn.pack(side="left", padx=5)
         self.step_mode_check.pack(side="left", padx=5)
+
+        # Editor showing the generated test script
+        self.script_text = ScrolledText(right, height=6)
+        self.script_text.pack(fill="both", expand=True, padx=5, pady=(0, 5))
+        self.script_text.insert("end", "# Test loop code\n")
 
         # Buttons related to file handling
         btn_frame = ttk.Frame(main)
@@ -760,6 +761,35 @@ class TestWizard(tk.Tk):
         header.bind("<Button-1>", lambda e: toggle())
         title_label.bind("<Button-1>", lambda e: toggle())
         arrow_label.bind("<Button-1>", lambda e: toggle())
+
+    def _create_collapsible_section(self, parent, title):
+        """Return (container, content_frame) for a collapsible section."""
+        container = ttk.Frame(parent)
+
+        header = ttk.Frame(container)
+        header.pack(fill="x")
+
+        arrow = ttk.Label(header, text="\u25BC")
+        arrow.pack(side="left", padx=5)
+
+        label = ttk.Label(header, text=title, font=("Arial", 12, "bold"))
+        label.pack(side="left")
+
+        content = ttk.Frame(container)
+        content.pack(fill="both", expand=True)
+
+        def toggle():
+            if content.winfo_viewable():
+                content.forget()
+                arrow.configure(text="\u25B6")
+            else:
+                content.pack(fill="both", expand=True)
+                arrow.configure(text="\u25BC")
+
+        for w in (header, label, arrow):
+            w.bind("<Button-1>", lambda e: toggle())
+
+        return container, content
 
     def populate_command_library(self):
         """Rebuild the command library UI from ``self.library``."""
