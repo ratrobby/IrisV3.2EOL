@@ -223,6 +223,28 @@ def build_instance_map(cfg):
     return result
 
 
+def build_alias_class_map(cfg, instance_map):
+    """Return mapping of device alias names to their class names."""
+    alias_map = {"General": "General"}
+    for section in ("al1342", "al2205"):
+        for port, alias in instance_map.get(section, {}).items():
+            dev_mod = str(cfg.get(section, {}).get(port, "")).strip()
+            if not dev_mod or dev_mod.lower() == "empty":
+                continue
+            try:
+                mod = importlib.import_module(f"devices.{dev_mod}")
+            except Exception:
+                continue
+            device_cls = None
+            for name, obj in inspect.getmembers(mod, inspect.isclass):
+                if getattr(obj, "_is_device_class", False):
+                    device_cls = obj
+                    break
+            if device_cls:
+                alias_map[alias] = device_cls.__name__
+    return alias_map
+
+
 def load_device_objects(cfg, base_map, ip_address):
     """Import configured device instances using ``MRLF_TEST_SCRIPT``."""
     script = os.environ.get("MRLF_TEST_SCRIPT")
@@ -390,6 +412,7 @@ class TestWizard(tk.Tk):
         self.instance_map = self.cfg.get("device_names") or {
             s: dict(p) for s, p in self.base_map.items()
         }
+        self.alias_class_map = build_alias_class_map(self.cfg, self.instance_map)
         # Determine associated script and set environment variable
         self.test_script_path = os.environ.get("MRLF_TEST_SCRIPT")
         if self.test_script_path and not os.path.exists(self.test_script_path):
@@ -957,6 +980,7 @@ class TestWizard(tk.Tk):
     def reset_device_names(self):
         """Revert device instance names to defaults from the configuration."""
         self.instance_map = {s: dict(p) for s, p in self.base_map.items()}
+        self.alias_class_map = build_alias_class_map(self.cfg, self.instance_map)
         self.refresh_instance_table()
 
     def refresh_wizard(self):
@@ -965,6 +989,7 @@ class TestWizard(tk.Tk):
             self.cfg, self.base_map, self.ip_address
         )
         self.build_setup_widgets()
+        self.alias_class_map = build_alias_class_map(self.cfg, self.instance_map)
         self.refresh_instance_table()
 
     # ----------------------- Loop Builder ------------------------
@@ -988,8 +1013,28 @@ class TestWizard(tk.Tk):
                     names.append(alias)
         return names
 
+    def _get_device_commands(self, alias):
+        class_name = self.alias_class_map.get(alias)
+        if not class_name:
+            return {}
+        cmds = {}
+        for item in self.library.get("test", {}).get(class_name, []):
+            title = item.get("title")
+            if not title or "(" not in title:
+                continue
+            name, params = _parse_command_title(title)
+            cmds[name] = params
+        return cmds
+
+    def _update_row_commands(self, row):
+        cmds = list(self._get_device_commands(row.device_var.get()).keys())
+        row.command_cb.configure(values=cmds)
+        if row.command_var.get() not in cmds:
+            row.command_var.set(cmds[0] if cmds else "")
+        self._build_param_fields(row)
+
     def add_loop_row(self):
-        commands = list(self._get_all_commands().keys())
+        commands = list(self._get_device_commands("General").keys())
         row = ttk.Frame(self.rows_container)
         row.pack(fill="x", pady=2)
 
@@ -1009,7 +1054,10 @@ class TestWizard(tk.Tk):
             width=18,
         )
         dev_cb.pack(side="left", padx=5)
-        dev_cb.bind("<<ComboboxSelected>>", lambda e: self.update_loop_script())
+        dev_cb.bind(
+            "<<ComboboxSelected>>",
+            lambda e, r=row: (self._update_row_commands(r), self.update_loop_script()),
+        )
         row.device_var.set(devices[0] if devices else "")
 
         row.command_var = tk.StringVar()
@@ -1021,6 +1069,7 @@ class TestWizard(tk.Tk):
             width=20,
         )
         cb.pack(side="left", padx=5)
+        row.command_cb = cb
 
         row.param_frame = ttk.Frame(row)
         row.param_frame.pack(side="left", fill="x", expand=True)
@@ -1039,6 +1088,7 @@ class TestWizard(tk.Tk):
         cb.bind("<<ComboboxSelected>>", on_select)
         row.command_var.set(commands[0] if commands else "")
         self.loop_rows.append(row)
+        self._update_row_commands(row)
         on_select()
 
         # Bind drag events to children so dragging works from widgets
@@ -1097,7 +1147,7 @@ class TestWizard(tk.Tk):
         for child in row.param_frame.winfo_children():
             child.destroy()
         cmd = row.command_var.get()
-        params = self._get_all_commands().get(cmd, [])
+        params = self._get_device_commands(row.device_var.get()).get(cmd, [])
         row.param_vars = []
         for name, default in params:
             frm = ttk.Frame(row.param_frame)
@@ -1605,10 +1655,19 @@ class TestWizard(tk.Tk):
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
-            name, params = _parse_command_title(line)
+            cmd_part = line.split("(", 1)[0].strip()
+            if "." in cmd_part:
+                alias, cmd_name = cmd_part.split(".", 1)
+            else:
+                alias, cmd_name = "General", cmd_part
             self.add_loop_row()
             row = self.loop_rows[-1]
-            row.command_var.set(name)
+            if alias in ["General"] + self._get_all_devices():
+                row.device_var.set(alias)
+            else:
+                row.device_var.set("General")
+            self._update_row_commands(row)
+            row.command_var.set(cmd_name)
             self._build_param_fields(row)
             args = line[line.find("(")+1 : line.rfind(")")]
             arg_vals = [a.strip() for a in args.split(',')] if args.strip() else []
@@ -1646,7 +1705,7 @@ class TestWizard(tk.Tk):
             self.instance_map = saved_names
         else:
             self.reset_device_names()
-
+        self.alias_class_map = build_alias_class_map(self.cfg, self.instance_map)
         self.build_setup_widgets()
         self.refresh_instance_table()
 
