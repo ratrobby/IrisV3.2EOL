@@ -39,9 +39,9 @@ class CSVLogger:
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._fh = open(path, "w", newline="")
         self._writer = csv.writer(self._fh)
-        header = ["timestamp", "time_s"] + list(devices.keys()) + ["event"]
+        # Log a single timestamp with millisecond precision
+        header = ["timestamp"] + list(devices.keys()) + ["event"]
         self._writer.writerow(header)
-        self._start_time = time.time()
 
         # Expose the alias on each device so methods can report values
         for alias, obj in devices.items():
@@ -71,9 +71,9 @@ class CSVLogger:
 
     def _run(self):
         while not self._stop.is_set():
-            ts = time.time() - self._start_time
-            timestamp = datetime.now().isoformat(sep=" ", timespec="seconds")
-            row = [timestamp, f"{ts:.2f}"]
+            # Timestamp includes milliseconds for higher resolution
+            timestamp = datetime.now().isoformat(sep=" ", timespec="milliseconds")
+            row = [timestamp]
             for alias, obj in self.devices.items():
                 if hasattr(obj, "active_valves") or hasattr(obj, "current_pressure"):
                     row.append(self._read_value(obj))
