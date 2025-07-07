@@ -477,6 +477,7 @@ class TestWizard(tk.Tk):
         self.style.configure("Open.TFrame", background="#e8f0fe")
         self.style.configure("Drag.TFrame", background="#ffeeba")
         self.style.configure("TestName.TLabel", font=("Segoe UI Variable Display Semib", 12,))
+        self.style.configure("DragHandle.TLabel", padding=3)
 
         # Main content split into left and right columns
         content = ttk.Frame(main)
@@ -1179,10 +1180,13 @@ class TestWizard(tk.Tk):
         row.top_frame = ttk.Frame(row)
         row.top_frame.pack(fill="x")
 
-        # Bind drag-and-drop events for reordering
-        row.bind("<ButtonPress-1>", lambda e, r=row: self._start_row_drag(e, r))
-        row.bind("<B1-Motion>", lambda e, r=row: self._on_row_drag(e, r))
-        row.bind("<ButtonRelease-1>", lambda e, r=row: self._end_row_drag(e, r))
+        # Drag handle for reordering rows
+        handle = ttk.Label(row.top_frame, text="\u2630", cursor="hand2", style="DragHandle.TLabel")
+        handle.pack(side="left", padx=(0, 5))
+        handle.bind("<ButtonPress-1>", lambda e, r=row: self._start_row_drag(e, r))
+        handle.bind("<B1-Motion>", lambda e, r=row: self._on_row_drag(e, r))
+        handle.bind("<ButtonRelease-1>", lambda e, r=row: self._end_row_drag(e, r))
+        row.drag_handle = handle
 
         devices = ["General"] + self._get_all_devices()
 
@@ -1258,8 +1262,7 @@ class TestWizard(tk.Tk):
         self._update_row_commands(row)
         on_select()
 
-        # Bind drag events to children so dragging works from widgets
-        self._bind_drag_events(row, row)
+
 
     def _remove_loop_row(self, row):
         if hasattr(row, "section") and row in row.section.loop_rows:
