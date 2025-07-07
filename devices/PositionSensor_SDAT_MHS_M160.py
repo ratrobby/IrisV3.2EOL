@@ -190,6 +190,10 @@ class PositionSensorSDATMHS_M160:
             while True:
                 pos = self.read_position()
                 print(f"Position = {pos:.2f} mm")
+                if hasattr(self, "_logger_alias"):
+                    from logger import record_value
+
+                    record_value(self._logger_alias, f"{pos:.2f}")
                 if duration is not None and (time.time() - start) >= duration:
                     break
                 time.sleep(interval)
