@@ -484,13 +484,13 @@ class TestWizard(tk.Tk):
         # Main content split into left and right columns
         content = ttk.Frame(main)
         content.pack(fill="both", expand=True)
-        content.columnconfigure(0, weight=1)
-        content.columnconfigure(1, weight=1)
+        content.columnconfigure(0, weight=1, uniform="cols")
+        content.columnconfigure(1, weight=1, uniform="cols")
         content.rowconfigure(0, weight=1)
 
         # ----------------------- Left Column -----------------------
         left = ttk.Frame(content)
-        left.grid(row=0, column=0, sticky="nsew")
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
         left.columnconfigure(0, weight=1)
 
         name_frame = ttk.Frame(left)
@@ -584,7 +584,7 @@ class TestWizard(tk.Tk):
 
         # ----------------------- Right Column ----------------------
         right = ttk.Frame(content)
-        right.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        right.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
         right.columnconfigure(0, weight=1)
 
         inst_status = ttk.Frame(right)
