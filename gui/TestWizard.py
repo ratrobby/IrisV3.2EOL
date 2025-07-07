@@ -1142,7 +1142,11 @@ class TestWizard(tk.Tk):
         if row in self.loop_rows:
             self.loop_rows.remove(row)
         row.destroy()
-        self.update_loop_script()
+        # Defer script update slightly so the UI has time to remove the row
+        try:
+            self.after(10, self.update_loop_script)
+        except Exception:
+            self.update_loop_script()
 
     def _duplicate_loop_row(self, row):
         """Create a duplicate of ``row`` at the bottom of the test loop."""
