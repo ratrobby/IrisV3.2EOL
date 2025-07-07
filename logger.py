@@ -27,9 +27,10 @@ class CSVLogger:
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._fh = open(path, "w", newline="")
         self._writer = csv.writer(self._fh)
-        header = ["timestamp", "time_s"] + list(devices.keys()) + ["event"]
+        # Log a single timestamp with millisecond precision instead of
+        # a separate elapsed time column.
+        header = ["timestamp"] + list(devices.keys()) + ["event"]
         self._writer.writerow(header)
-        self._start_time = time.time()
 
     def start(self):
         self._thread.start()
@@ -57,9 +58,9 @@ class CSVLogger:
 
     def _run(self):
         while not self._stop.is_set():
-            ts = time.time() - self._start_time
-            timestamp = datetime.now().isoformat(sep=" ", timespec="seconds")
-            row = [timestamp, f"{ts:.2f}"]
+            # Timestamp includes milliseconds for higher resolution
+            timestamp = datetime.now().isoformat(sep=" ", timespec="milliseconds")
+            row = [timestamp]
             for obj in self.devices.values():
                 row.append(self._read_value(obj))
             with _event_lock:
