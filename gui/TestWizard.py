@@ -932,6 +932,50 @@ class TestWizard(tk.Tk):
                         values[alias] = val
         return values
 
+    def _serialize_loop_builder(self):
+        """Return a serializable representation of the loop builder."""
+        sections = []
+        for sec in getattr(self, "loop_sections", []):
+            steps = []
+            for row in sec.loop_rows:
+                params = {
+                    name: var.get().strip()
+                    for name, var, _ in getattr(row, "param_vars", [])
+                }
+                steps.append(
+                    {
+                        "device": row.device_var.get(),
+                        "command": row.command_var.get(),
+                        "params": params,
+                        "thread": bool(getattr(row, "thread_var", None) and row.thread_var.get()),
+                    }
+                )
+            sections.append({"name": sec.name_var.get().strip(), "steps": steps})
+        return {"step_mode": bool(self.step_mode_var.get()), "sections": sections}
+
+    def _load_loop_builder(self, builder):
+        """Rebuild loop sections and rows from serialized ``builder`` data."""
+        sections = builder.get("sections", []) if isinstance(builder, dict) else builder
+        for sec in sections:
+            section = self.add_section(add_row=False)
+            section.name_var.set(sec.get("name", ""))
+            for step in sec.get("steps", []):
+                self.add_loop_row(section)
+                row = section.loop_rows[-1]
+                row.device_var.set(step.get("device", "General"))
+                self._update_row_commands(row)
+                row.command_var.set(step.get("command", ""))
+                self._build_param_fields(row)
+                params = step.get("params", {})
+                for name, var, _ in getattr(row, "param_vars", []):
+                    if name in params:
+                        var.set(params.get(name, ""))
+                if step.get("thread") and getattr(row, "thread_var", None):
+                    row.thread_var.set(True)
+        if isinstance(builder, dict):
+            self.step_mode_var.set(bool(builder.get("step_mode")))
+        self.update_loop_script()
+
     def refresh_instance_table(self):
         """Update the Device Instances table with current names."""
         if not getattr(self, "map_frame", None):
@@ -1867,6 +1911,7 @@ class TestWizard(tk.Tk):
                 pass
 
     def save_test(self, show_message=True):
+        self.update_loop_script()
         name = self.test_name_var.get().strip()
         if not name:
             if show_message:
@@ -1887,6 +1932,7 @@ class TestWizard(tk.Tk):
             "device_names": self.instance_map,
             "script_file": os.path.basename(self.test_script_path),
             "setup_values": self.setup_values,
+            "builder": self._serialize_loop_builder(),
         }
         try:
             with open(path, "w") as fh:
@@ -1939,41 +1985,45 @@ class TestWizard(tk.Tk):
                 r.destroy()
             sec.destroy()
         self.loop_sections = []
-        current_section = None
-        for line in loop_code.splitlines():
-            line = line.rstrip()
-            if not line:
-                continue
-            if line.startswith("#"):
-                name = line.lstrip("#").strip()
-                current_section = self.add_section(add_row=False)
-                current_section.name_var.set(name)
-                continue
-            if current_section is None:
-                current_section = self.add_section(add_row=False)
-            self.add_loop_row(current_section)
-            row = current_section.loop_rows[-1]
-            cmd_part = line.split("(", 1)[0].strip()
-            if "." in cmd_part:
-                alias, cmd_name = cmd_part.split(".", 1)
-            else:
-                alias, cmd_name = "General", cmd_part
-            if alias in ["General"] + self._get_all_devices():
-                row.device_var.set(alias)
-            else:
-                row.device_var.set("General")
-            self._update_row_commands(row)
-            row.command_var.set(cmd_name)
-            self._build_param_fields(row)
-            args = line[line.find("(")+1 : line.rfind(")")]
-            arg_vals = [a.strip() for a in args.split(',')] if args.strip() else []
-            for i, (pname, var, default) in enumerate(row.param_vars):
-                if i < len(arg_vals):
-                    val = arg_vals[i]
-                    if '=' in val:
-                        val = val.split('=',1)[1].strip()
-                    var.set(val)
-        self.update_loop_script()
+        builder = data.get("builder")
+        if builder:
+            self._load_loop_builder(builder)
+        else:
+            current_section = None
+            for line in loop_code.splitlines():
+                line = line.rstrip()
+                if not line:
+                    continue
+                if line.startswith("#"):
+                    name = line.lstrip("#").strip()
+                    current_section = self.add_section(add_row=False)
+                    current_section.name_var.set(name)
+                    continue
+                if current_section is None:
+                    current_section = self.add_section(add_row=False)
+                self.add_loop_row(current_section)
+                row = current_section.loop_rows[-1]
+                cmd_part = line.split("(", 1)[0].strip()
+                if "." in cmd_part:
+                    alias, cmd_name = cmd_part.split(".", 1)
+                else:
+                    alias, cmd_name = "General", cmd_part
+                if alias in ["General"] + self._get_all_devices():
+                    row.device_var.set(alias)
+                else:
+                    row.device_var.set("General")
+                self._update_row_commands(row)
+                row.command_var.set(cmd_name)
+                self._build_param_fields(row)
+                args = line[line.find("(")+1 : line.rfind(")")]
+                arg_vals = [a.strip() for a in args.split(',')] if args.strip() else []
+                for i, (pname, var, default) in enumerate(row.param_vars):
+                    if i < len(arg_vals):
+                        val = arg_vals[i]
+                        if '=' in val:
+                            val = val.split('=',1)[1].strip()
+                        var.set(val)
+            self.update_loop_script()
         self.iterations_var.set(data.get("iterations", ""))
 
         self.setup_values = data.get("setup_values", {})
