@@ -622,9 +622,15 @@ class TestWizard(tk.Tk):
         # The lower test editor has been removed to avoid duplication. The
         # primary test loop editor remains in the left column above.
 
-        # Test control buttons under the command library
-        control_frame = ttk.LabelFrame(lib_frame, text="Test Control Panel")
-        control_frame.pack(fill="x", pady=(5, 5))
+        # Editor showing the generated test script will appear below the
+        # command library but above the test control buttons
+        self.script_text = ScrolledText(right, height=6)
+        self.script_text.pack(fill="both", expand=True, padx=5, pady=(0, 5))
+        self.script_text.insert("end", "# Test loop code\n")
+
+        # Test control buttons anchored at the bottom of the window
+        control_frame = ttk.LabelFrame(right, text="Test Control Panel")
+        control_frame.pack(fill="x", padx=5, pady=(5, 5))
 
         self.style.configure("Start.TButton", foreground="green", font=("Arial", 20))
         self.style.configure("Stop.TButton", foreground="red", font=("Arial", 20))
@@ -668,11 +674,6 @@ class TestWizard(tk.Tk):
         self.pause_btn.pack(side="left", padx=5)
         self.resume_btn.pack(side="left", padx=5)
         self.step_mode_check.pack(side="left", padx=5)
-
-        # Editor showing the generated test script
-        self.script_text = ScrolledText(right, height=6)
-        self.script_text.pack(fill="both", expand=True, padx=5, pady=(0, 5))
-        self.script_text.insert("end", "# Test loop code\n")
 
         # Buttons related to file handling
         btn_frame = ttk.Frame(main)
