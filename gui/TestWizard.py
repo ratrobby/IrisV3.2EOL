@@ -484,8 +484,8 @@ class TestWizard(tk.Tk):
         # Main content split into left and right columns
         content = ttk.Frame(main)
         content.pack(fill="both", expand=True)
-        content.columnconfigure(0, weight=3)
-        content.columnconfigure(1, weight=2)
+        content.columnconfigure(0, weight=1)
+        content.columnconfigure(1, weight=1)
         content.rowconfigure(0, weight=1)
 
         # ----------------------- Left Column -----------------------
