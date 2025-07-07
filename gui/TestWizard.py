@@ -24,6 +24,7 @@ from .calibration_wizard import CalibrationWizard
 from IO_master import IO_master
 from commands import Hold
 from thread_utils import start_thread
+from logger import CSVLogger, record_event
 
 # Allow running from repo root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -435,7 +436,7 @@ class TestWizard(tk.Tk):
         self.connection_lost = False
         self._last_connection_ok = True
         self.worker = None
-        self.log_file = None
+        self.csv_logger = None
         self.log_file_path = None
         self.test_file_path = None
         self.monitor = None
@@ -1461,7 +1462,13 @@ class TestWizard(tk.Tk):
         name = self.test_name_var.get() or "test"
         log_path = os.path.join(self.log_dir, f"{timestamp}_{name}.csv")
         self.log_file_path = log_path
-        self.log_file = open(log_path, "w")
+        # Build device map for logging (only log sensors/valves)
+        log_devices = {}
+        for alias, obj in self.device_objects.items():
+            if hasattr(obj, "_get_force_value") or hasattr(obj, "read_position") or hasattr(obj, "active_valves"):
+                log_devices[alias] = obj
+        self.csv_logger = CSVLogger(log_path, log_devices)
+        self.csv_logger.start()
         if not self.monitor or not self.monitor.winfo_exists():
             self.monitor = TestMonitor(self)
         else:
@@ -1503,16 +1510,17 @@ class TestWizard(tk.Tk):
                     base = self.base_map[section][port]
                     if alias != base and base in context:
                         context[alias] = context[base]
-            # Expose helpers for delays and threading
+            # Expose helpers for delays, threading and event logging
             context["Hold"] = Hold
             context["start_thread"] = start_thread
+            context["record_event"] = record_event
         except Exception as e:
             print(f"Failed to load device objects: {e}")
         setup_code = self.setup_code
         loop_code = self.script_text.get("1.0", "end-1c")
         queue_writer = _QueueWriter(self.monitor_queue)
         def worker():
-            with redirect_stdout(_Tee(self.log_file, queue_writer)):
+            with redirect_stdout(_Tee(queue_writer)):
                 try:
                     exec(setup_code, context)
                 except Exception as e:
@@ -1546,7 +1554,6 @@ class TestWizard(tk.Tk):
                             print(f"Loop error: {e}")
                             self.running = False
                             break
-            self.log_file.close()
             should_prompt = self.running
             self.running = False
             self.after(0, lambda p=should_prompt: self.stop_test(prompt=p))
@@ -1563,8 +1570,9 @@ class TestWizard(tk.Tk):
             self.worker.join(timeout=2)
             self.worker = None
 
-        if self.log_file and not self.log_file.closed:
-            self.log_file.close()
+        if getattr(self, "csv_logger", None):
+            self.csv_logger.stop()
+            self.csv_logger = None
 
         if "MRLF_CALIBRATION_FILE" in os.environ:
             del os.environ["MRLF_CALIBRATION_FILE"]
