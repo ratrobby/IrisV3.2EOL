@@ -848,6 +848,7 @@ class TestWizard(tk.Tk):
         for w in self.setup_frame.winfo_children():
             w.destroy()
         class_seen = set()
+        devices = []
         for section in ("al1342", "al2205"):
             for port in sorted(self.instance_map.get(section, {})):
                 alias = self.instance_map[section][port]
@@ -855,41 +856,54 @@ class TestWizard(tk.Tk):
                 obj = getattr(self, "device_objects", {}).get(base)
                 if not obj:
                     continue
+                devices.append((alias, obj))
 
-                cls = obj.__class__
-                if cls.__name__ == "LoadCellLCM300" and cls not in class_seen:
-                    ttk.Button(
+        def _sort_key(item):
+            alias, obj = item
+            cls_name = obj.__class__.__name__
+            if cls_name == "ValveBank":
+                return (0, 0)
+            if cls_name == "PressureRegulatorITV1050":
+                m = re.search(r"_(\d+)$", alias)
+                idx = int(m.group(1)) if m else 0
+                return (1, idx)
+            return (2, cls_name, alias)
+
+        for alias, obj in sorted(devices, key=_sort_key):
+            cls = obj.__class__
+            if cls.__name__ == "LoadCellLCM300" and cls not in class_seen:
+                ttk.Button(
+                    self.setup_frame,
+                    text="Calibrate Load Cells",
+                    command=self.open_loadcell_calibration,
+                ).pack(fill="x", padx=5, pady=2)
+                class_seen.add(cls)
+            elif cls.__name__ == "PositionSensorSDATMHS_M160" and cls not in class_seen:
+                ttk.Button(
+                    self.setup_frame,
+                    text="Calibrate Position Sensors",
+                    command=self.open_position_sensor_calibration,
+                ).pack(fill="x", padx=5, pady=2)
+                class_seen.add(cls)
+
+            saved = self.setup_values.get(alias)
+            if saved is not None and hasattr(obj, "load_setup_state"):
+                try:
+                    obj.load_setup_state(saved)
+                except Exception as e:
+                    print(f"Failed to apply setup state for {alias}: {e}")
+
+            if hasattr(obj, "setup_widget"):
+                try:
+                    widget = obj.setup_widget(
                         self.setup_frame,
-                        text="Calibrate Load Cells",
-                        command=self.open_loadcell_calibration,
-                    ).pack(fill="x", padx=5, pady=2)
-                    class_seen.add(cls)
-                elif cls.__name__ == "PositionSensorSDATMHS_M160" and cls not in class_seen:
-                    ttk.Button(
-                        self.setup_frame,
-                        text="Calibrate Position Sensors",
-                        command=self.open_position_sensor_calibration,
-                    ).pack(fill="x", padx=5, pady=2)
-                    class_seen.add(cls)
-
-                saved = self.setup_values.get(alias)
-                if saved is not None and hasattr(obj, "load_setup_state"):
-                    try:
-                        obj.load_setup_state(saved)
-                    except Exception as e:
-                        print(f"Failed to apply setup state for {alias}: {e}")
-
-                if hasattr(obj, "setup_widget"):
-                    try:
-                        widget = obj.setup_widget(
-                            self.setup_frame,
-                            name=alias,
-                            on_update=lambda v, a=alias: self._update_setup_value(a, v),
-                        )
-                        if widget:
-                            widget.pack(fill="x", padx=5, pady=2)
-                    except Exception as e:
-                        print(f"Failed to build setup widget for {alias}: {e}")
+                        name=alias,
+                        on_update=lambda v, a=alias: self._update_setup_value(a, v),
+                    )
+                    if widget:
+                        widget.pack(fill="x", padx=5, pady=2)
+                except Exception as e:
+                    print(f"Failed to build setup widget for {alias}: {e}")
 
     def _update_setup_value(self, alias, value):
         """Store the latest setup value for a device alias."""
