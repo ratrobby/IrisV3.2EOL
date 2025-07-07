@@ -26,6 +26,9 @@ implementing a `calibration_steps()` class method will show a **Calibrate…**
 button in the Test Wizard setup panel. Clicking the button launches a wizard
 that walks through the defined steps.
 
+Loop steps in the Test Wizard can be reordered by dragging rows in the loop
+editor.
+
 The standalone PySimpleGUI tool for calibrating all
 `PositionSensorSDATMHS_M160` devices is still available:
 
