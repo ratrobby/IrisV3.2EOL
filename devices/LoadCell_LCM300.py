@@ -130,7 +130,7 @@ class LoadCellLCM300:
         if voltage is None:
             return None
 
-        force_lbf = (5.0 - voltage) * 10.0
+        force_lbf = (5.0 - voltage) * 5
 
         unit = unit.lower()
         if unit == "lbf":

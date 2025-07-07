@@ -147,7 +147,7 @@ def main() -> None:
 
     # Configure regulators
     itv1.set_pressure(80)
-    itv2.set_pressure(64)
+    itv2.set_pressure(90)
     itv3.set_pressure(32)
 
     stop_event = threading.Event()
@@ -193,7 +193,10 @@ def main() -> None:
             valve_bank.valve_on("2.A")  # indefinite
             Hold(1)
 
-            valve_bank.valve_on("3.B", duration=2)
+            valve_bank.valve_on("3.B",1)
+            Hold(1)
+
+            valve_bank.valve_on("3.A", duration=2)
             record_event("Pull")
             Hold(2)
             record_event("Pull Stop")
