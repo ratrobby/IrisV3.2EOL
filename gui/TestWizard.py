@@ -1084,7 +1084,7 @@ class TestWizard(tk.Tk):
                 alias = self.instance_map[section][port]
                 if alias and alias != "Empty" and alias not in names:
                     names.append(alias)
-        return names
+        return sorted(names, key=str.lower)
 
     def _get_device_commands(self, alias):
         class_name = self.alias_class_map.get(alias)
@@ -1701,6 +1701,10 @@ class TestWizard(tk.Tk):
                 or hasattr(obj, "current_pressure")
             ):
                 log_devices[alias] = obj
+                try:
+                    setattr(obj, "_logger_alias", alias)
+                except Exception:
+                    pass
         self.csv_logger = CSVLogger(log_path, log_devices)
         self.csv_logger.start()
         if not self.monitor or not self.monitor.winfo_exists():
