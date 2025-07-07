@@ -610,6 +610,9 @@ class TestWizard(tk.Tk):
             right, "Command Library"
         )
         lib_container.pack(fill="both", expand=True, padx=5, pady=5)
+        # With the command library open by default, let it claim the
+        # available space rather than the test loop editor.
+        self.lib_container = lib_container
         lib_frame.columnconfigure(0, weight=1)
 
         test_label = ttk.Label(
@@ -627,6 +630,9 @@ class TestWizard(tk.Tk):
         self.script_text = ScrolledText(right, height=6)
         self.script_text.pack(fill="both", expand=True, padx=5, pady=(0, 5))
         self.script_text.insert("end", "# Test loop code\n")
+        # When the command library is visible, keep the script text from
+        # expanding so the library gets most of the vertical space.
+        self.script_text.pack_configure(expand=False)
 
         # Test control buttons anchored at the bottom of the window
         control_frame = ttk.LabelFrame(right, text="Test Control Panel")
@@ -786,9 +792,15 @@ class TestWizard(tk.Tk):
             if content.winfo_viewable():
                 content.forget()
                 arrow.configure(text="\u25B6")
+                container.pack_configure(expand=False)
+                if hasattr(self, "script_text"):
+                    self.script_text.pack_configure(expand=True)
             else:
                 content.pack(fill="both", expand=True)
                 arrow.configure(text="\u25BC")
+                container.pack_configure(expand=True)
+                if hasattr(self, "script_text"):
+                    self.script_text.pack_configure(expand=False)
 
         for w in (header, label, arrow):
             w.bind("<Button-1>", lambda e: toggle())
