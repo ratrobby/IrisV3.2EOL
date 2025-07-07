@@ -35,6 +35,7 @@ class CSVLogger:
         self.path = path
         self.devices = devices  # mapping alias -> object
         self.interval = interval
+        self._row_count = 0
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._fh = open(path, "w", newline="")
