@@ -507,8 +507,33 @@ class TestWizard(tk.Tk):
             side="left", padx=5, pady=2
         )
 
-        self.rows_container = ttk.Frame(self.loop_frame)
-        self.rows_container.pack(fill="both", expand=True)
+        # Scrollable container for loop rows
+        self.rows_canvas = tk.Canvas(self.loop_frame, highlightthickness=0)
+        self.rows_scroll = ttk.Scrollbar(
+            self.loop_frame, orient="vertical", command=self.rows_canvas.yview
+        )
+        self.rows_canvas.configure(yscrollcommand=self.rows_scroll.set)
+        self.rows_scroll.pack(side="right", fill="y")
+        self.rows_canvas.pack(side="left", fill="both", expand=True)
+
+        self.rows_container = ttk.Frame(self.rows_canvas)
+        self.rows_window = self.rows_canvas.create_window(
+            (0, 0), window=self.rows_container, anchor="nw"
+        )
+
+        def _on_frame_configure(event):
+            self.rows_canvas.configure(
+                scrollregion=self.rows_canvas.bbox("all")
+            )
+
+        def _on_canvas_configure(event):
+            self.rows_canvas.itemconfigure(
+                self.rows_window, width=event.width
+            )
+
+        self.rows_container.bind("<Configure>", _on_frame_configure)
+        self.rows_canvas.bind("<Configure>", _on_canvas_configure)
+
         self.loop_rows = []
 
         # Start with one empty row
