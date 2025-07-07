@@ -160,7 +160,12 @@ class PositionSensorSDATMHS_M160:
             raise ZeroDivisionError("Calibration min and max are equal.")
 
         position = ((raw - min_val) / span) * self.stroke_mm
-        return round(max(0.0, min(position, self.stroke_mm)), 2)
+        result = round(max(0.0, min(position, self.stroke_mm)), 2)
+        if hasattr(self, "_logger_alias"):
+            from logger import record_value
+
+            record_value(self._logger_alias, f"{result:.2f}")
+        return result
 
     def read_position_thread(self):
         """Run :meth:`read_position` in a background thread."""

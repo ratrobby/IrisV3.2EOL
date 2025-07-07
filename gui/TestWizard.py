@@ -1696,6 +1696,10 @@ class TestWizard(tk.Tk):
         for alias, obj in self.device_objects.items():
             if hasattr(obj, "_get_force_value") or hasattr(obj, "read_position") or hasattr(obj, "active_valves"):
                 log_devices[alias] = obj
+                try:
+                    setattr(obj, "_logger_alias", alias)
+                except Exception:
+                    pass
         self.csv_logger = CSVLogger(log_path, log_devices)
         self.csv_logger.start()
         if not self.monitor or not self.monitor.winfo_exists():

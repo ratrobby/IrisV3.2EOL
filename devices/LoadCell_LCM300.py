@@ -146,6 +146,10 @@ class LoadCellLCM300:
             return None
         unit_label = "lbf" if unit.lower() == "lbf" else "N"
         print(f"Force = {result:.2f}{unit_label}")
+        if hasattr(self, "_logger_alias"):
+            from logger import record_value
+
+            record_value(self._logger_alias, f"{result:.2f}")
         return result
 
     def monitor_force(self, unit="lbf", duration=None):
