@@ -1101,6 +1101,13 @@ class TestWizard(tk.Tk):
         row.param_frame = ttk.Frame(row)
         row.param_frame.pack(side="left", fill="x", expand=True)
 
+        dup_btn = ttk.Button(
+            row,
+            text="Duplicate",
+            command=lambda r=row: self._duplicate_loop_row(r),
+        )
+        dup_btn.pack(side="right", padx=5)
+
         del_btn = ttk.Button(
             row,
             text="Remove",
@@ -1125,6 +1132,24 @@ class TestWizard(tk.Tk):
         if row in self.loop_rows:
             self.loop_rows.remove(row)
         row.destroy()
+        self.update_loop_script()
+
+    def _duplicate_loop_row(self, row):
+        """Create a duplicate of ``row`` at the bottom of the test loop."""
+        device = row.device_var.get()
+        command = row.command_var.get()
+        values = [var.get() for _, var, _ in getattr(row, "param_vars", [])]
+
+        self.add_loop_row()
+        new_row = self.loop_rows[-1]
+        new_row.device_var.set(device)
+        self._update_row_commands(new_row)
+        new_row.command_var.set(command)
+        self._build_param_fields(new_row)
+
+        for val, (_, var, _) in zip(values, getattr(new_row, "param_vars", [])):
+            var.set(val)
+
         self.update_loop_script()
 
     def _bind_drag_events(self, widget, row):
