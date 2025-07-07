@@ -1084,7 +1084,7 @@ class TestWizard(tk.Tk):
                 alias = self.instance_map[section][port]
                 if alias and alias != "Empty" and alias not in names:
                     names.append(alias)
-        return names
+        return sorted(names, key=str.lower)
 
     def _get_device_commands(self, alias):
         class_name = self.alias_class_map.get(alias)
