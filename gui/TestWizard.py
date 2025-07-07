@@ -1663,10 +1663,25 @@ class TestWizard(tk.Tk):
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load test: {e}")
             return
+
         self.test_file_path = path
         self.tests_dir = os.path.dirname(path)
         self.log_dir = self.tests_dir
-        self.test_name_var.set(data.get("name", ""))
+
+        imported_cfg = data.get("config", {})
+        self.cfg = imported_cfg
+        self.ip_address = self.cfg.get("ip_address", "192.168.XXX.XXX")
+        self.library = gather_library(self.cfg)
+        self.base_map = build_instance_map(self.cfg)
+
+        saved_names = data.get("device_names")
+        if saved_names:
+            self.instance_map = saved_names
+        else:
+            self.reset_device_names()
+        self.alias_class_map = build_alias_class_map(self.cfg, self.instance_map)
+        self.populate_command_library()
+
         self.setup_code = data.get("setup", "")
         self.script_text.delete("1.0", "end")
         loop_code = data.get("loop", "")
@@ -1703,14 +1718,6 @@ class TestWizard(tk.Tk):
         self.update_loop_script()
         self.iterations_var.set(data.get("iterations", ""))
 
-        imported_cfg = data.get("config", {})
-        self.cfg = imported_cfg
-        self.ip_address = self.cfg.get("ip_address", "192.168.XXX.XXX")
-        self.library = gather_library(self.cfg)
-        self.base_map = build_instance_map(self.cfg)
-        self.populate_command_library()
-
-        saved_names = data.get("device_names")
         self.setup_values = data.get("setup_values", {})
         self.test_script_path = os.path.join(
             self.tests_dir, data.get("script_file", "")
@@ -1723,12 +1730,6 @@ class TestWizard(tk.Tk):
         self.device_objects = load_device_objects(
             self.cfg, self.base_map, self.ip_address
         )
-
-        if saved_names:
-            self.instance_map = saved_names
-        else:
-            self.reset_device_names()
-        self.alias_class_map = build_alias_class_map(self.cfg, self.instance_map)
         self.build_setup_widgets()
         self.refresh_instance_table()
 
