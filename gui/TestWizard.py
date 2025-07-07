@@ -1702,10 +1702,15 @@ class TestWizard(tk.Tk):
         name = self.test_name_var.get() or "test"
         log_path = os.path.join(self.log_dir, f"{timestamp}_{name}.csv")
         self.log_file_path = log_path
-        # Build device map for logging (only log sensors/valves)
+        # Build device map for logging (sensors, valves and pressure regulators)
         log_devices = {}
         for alias, obj in self.device_objects.items():
-            if hasattr(obj, "_get_force_value") or hasattr(obj, "read_position") or hasattr(obj, "active_valves"):
+            if (
+                hasattr(obj, "_get_force_value")
+                or hasattr(obj, "read_position")
+                or hasattr(obj, "active_valves")
+                or hasattr(obj, "current_pressure")
+            ):
                 log_devices[alias] = obj
                 try:
                     setattr(obj, "_logger_alias", alias)

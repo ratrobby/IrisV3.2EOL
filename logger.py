@@ -63,7 +63,9 @@ class CSVLogger:
             if hasattr(obj, "active_valves"):
                 return ",".join(sorted(obj.active_valves)) or "-"
             if hasattr(obj, "current_pressure"):
+
                 return f"{obj.current_pressure}" if obj.current_pressure is not None else "-"
+
         except Exception:
             return "err"
         return "-"
@@ -93,4 +95,5 @@ class CSVLogger:
             row.append(msg or "-")
             self._writer.writerow(row)
             self._fh.flush()
+            self._row_count += 1
             time.sleep(self.interval)
