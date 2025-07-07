@@ -74,7 +74,6 @@ def log_sensors(
     stop_event,
     writer,
     fh,
-    start_ts,
     lc1,
     lc2,
     lc3,
@@ -92,12 +91,10 @@ def log_sensors(
     interrupted.
     """
     while not stop_event.is_set():
-        elapsed = time.time() - start_ts
-        ts = datetime.now().isoformat(sep=" ", timespec="seconds")
+        ts = datetime.now().isoformat(sep=" ", timespec="milliseconds")
         try:
             row = [
                 ts,
-                f"{elapsed:.2f}",
                 f"{lc1._get_force_value('N'):.3f}",
                 f"{lc2._get_force_value('N'):.3f}",
                 f"{lc3._get_force_value('N'):.3f}",
@@ -107,7 +104,7 @@ def log_sensors(
                 ",".join(sorted(valve_bank.active_valves)) or "-",
             ]
         except Exception:
-            row = [ts, f"{elapsed:.2f}"] + ["err"] * 6 + ["-"]
+            row = [ts] + ["err"] * 6 + ["-"]
 
         with event_lock:
             global event_message
@@ -154,12 +151,10 @@ def main() -> None:
     itv3.set_pressure(32)
 
     stop_event = threading.Event()
-    start_time = time.time()
     with open(args.log, "w", newline="") as fh:
         writer = csv.writer(fh)
         writer.writerow([
             "timestamp",
-            "time_s",
             "load_cell_1_N",
             "load_cell_2_N",
             "load_cell_3_N",
@@ -175,7 +170,6 @@ def main() -> None:
             stop_event,
             writer,
             fh,
-            start_time,
             lc1,
             lc2,
             lc3,
