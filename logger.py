@@ -30,6 +30,7 @@ class CSVLogger:
         header = ["timestamp", "time_s"] + list(devices.keys()) + ["event"]
         self._writer.writerow(header)
         self._start_time = time.time()
+        self._row_count = 0
 
     def start(self):
         self._thread.start()
@@ -50,7 +51,9 @@ class CSVLogger:
             if hasattr(obj, "active_valves"):
                 return ",".join(sorted(obj.active_valves)) or "-"
             if hasattr(obj, "current_pressure"):
-                return f"{obj.current_pressure}"
+                if self._row_count == 0:
+                    return f"{obj.current_pressure}"
+                return "-"
         except Exception:
             return "err"
         return "-"
@@ -70,4 +73,5 @@ class CSVLogger:
             row.append(msg or "-")
             self._writer.writerow(row)
             self._fh.flush()
+            self._row_count += 1
             time.sleep(self.interval)
