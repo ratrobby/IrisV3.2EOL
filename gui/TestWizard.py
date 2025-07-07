@@ -1235,10 +1235,24 @@ class TestWizard(tk.Tk):
             for name, var, default in getattr(row, "param_vars", []):
                 val = var.get().strip()
                 if val:
+                    arg = val
+                    base_name = name.lstrip("*").lower()
+                    if base_name in {"unit", "valve", "valves"}:
+                        if base_name == "valves" and "," in arg:
+                            parts = [p.strip() for p in arg.split(',') if p.strip()]
+                            quoted = []
+                            for p in parts:
+                                if not (p.startswith('"') and p.endswith('"')):
+                                    p = f'"{p}"'
+                                quoted.append(p)
+                            arg = ", ".join(quoted)
+                        else:
+                            if not (arg.startswith('"') and arg.endswith('"')):
+                                arg = f'"{arg}"'
                     if default is not None:
-                        args.append(f"{name}={val}")
+                        args.append(f"{name}={arg}")
                     else:
-                        args.append(val)
+                        args.append(arg)
                 elif default is not None:
                     args.append(f"{name}={default}")
                 else:
