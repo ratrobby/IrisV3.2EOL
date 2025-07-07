@@ -543,6 +543,10 @@ class TestWizard(tk.Tk):
         self.rows_scroll.pack(side="right", fill="y")
         self.rows_canvas.pack(side="left", fill="both", expand=True)
 
+        # Allow scrolling the loop builder with the mouse wheel
+        self.rows_canvas.bind("<Enter>", self._bind_loop_scroll)
+        self.rows_canvas.bind("<Leave>", self._unbind_loop_scroll)
+
         self.rows_container = ttk.Frame(self.rows_canvas)
         self.rows_window = self.rows_canvas.create_window(
             (0, 0), window=self.rows_container, anchor="nw"
@@ -1208,6 +1212,32 @@ class TestWizard(tk.Tk):
         self._drag_index = None
         self.loop_rows.sort(key=lambda r: r.winfo_y())
         self.update_loop_script()
+
+    # ----------------------- Mouse Wheel Scrolling ----------------
+    def _bind_loop_scroll(self, event=None):
+        """Enable mouse wheel scrolling for the loop builder."""
+        if not getattr(self, "rows_canvas", None):
+            return
+        self.rows_canvas.bind_all("<MouseWheel>", self._on_loop_mousewheel)
+        self.rows_canvas.bind_all("<Button-4>", self._on_loop_mousewheel)
+        self.rows_canvas.bind_all("<Button-5>", self._on_loop_mousewheel)
+
+    def _unbind_loop_scroll(self, event=None):
+        """Disable mouse wheel scrolling for the loop builder."""
+        if not getattr(self, "rows_canvas", None):
+            return
+        self.rows_canvas.unbind_all("<MouseWheel>")
+        self.rows_canvas.unbind_all("<Button-4>")
+        self.rows_canvas.unbind_all("<Button-5>")
+
+    def _on_loop_mousewheel(self, event):
+        """Scroll the loop builder canvas when the mouse wheel is used."""
+        if event.delta:
+            self.rows_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        elif event.num == 4:
+            self.rows_canvas.yview_scroll(-1, "units")
+        elif event.num == 5:
+            self.rows_canvas.yview_scroll(1, "units")
 
     def _build_param_fields(self, row):
         for child in row.param_frame.winfo_children():
