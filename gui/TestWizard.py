@@ -1721,6 +1721,8 @@ class TestWizard(tk.Tk):
         self.tests_dir = os.path.dirname(path)
         self.log_dir = self.tests_dir
 
+        self.test_name_var.set(data.get("name", ""))
+
         imported_cfg = data.get("config", {})
         self.cfg = imported_cfg
         self.ip_address = self.cfg.get("ip_address", "192.168.XXX.XXX")
@@ -1795,26 +1797,11 @@ class TestWizard(tk.Tk):
         if current_filled:
             if messagebox.askyesno("Save Test", "Save current test before creating a new test?"):
                 self.save_test()
-        self.test_file_path = None
-        self.test_name_var.set("")
-        self.setup_code = ""
-        self.setup_values = {}
-        self.script_text.delete("1.0", "end")
-        self.script_text.insert("1.0", "# Test loop code\n")
-        self.iterations_var.set("")
-        for row in getattr(self, "loop_rows", []):
-            row.destroy()
-        self.loop_rows = []
-        self.add_loop_row()
-        # Reset any custom device naming back to defaults
-        self.reset_device_names()
-        self.test_script_path = None
-        os.environ.pop("MRLF_TEST_SCRIPT", None)
-        self.device_objects = load_device_objects(
-            self.cfg, self.base_map, self.ip_address
-        )
-        self.build_setup_widgets()
-        self.refresh_instance_table()
+        # Launch the Test Launcher for a new test rather than
+        # allowing creation directly within the wizard.
+        cmd = [sys.executable, "-m", "gui.TestLauncher"]
+        subprocess.Popen(cmd, cwd=REPO_ROOT)
+        self._on_close()
 
     def reconfigure_cell(self):
         current_filled = (
