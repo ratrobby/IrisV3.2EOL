@@ -531,11 +531,11 @@ class TestWizard(tk.Tk):
 
         btn_row = ttk.Frame(self.loop_frame)
         btn_row.pack(anchor="w")
-        ttk.Button(btn_row, text="Add Step", command=self.add_loop_row).pack(
+        ttk.Button(btn_row, text="Add Section", command=self.add_section).pack(
             side="left", padx=5, pady=2
         )
 
-        # Scrollable container for loop rows
+        # Scrollable container for loop sections
         self.rows_canvas = tk.Canvas(self.loop_frame, highlightthickness=0)
         self.rows_scroll = ttk.Scrollbar(
             self.loop_frame, orient="vertical", command=self.rows_canvas.yview
@@ -566,10 +566,10 @@ class TestWizard(tk.Tk):
         self.rows_container.bind("<Configure>", _on_frame_configure)
         self.rows_canvas.bind("<Configure>", _on_canvas_configure)
 
-        self.loop_rows = []
+        self.loop_sections = []
 
-        # Start with one empty row
-        self.after(10, self.add_loop_row)
+        # Start with one empty section
+        self.after(10, self.add_section)
 
 
         ttk.Label(left, text="Iterations:", style="TestName.TLabel").grid(
@@ -1066,9 +1066,75 @@ class TestWizard(tk.Tk):
             row.command_var.set(cmds[0] if cmds else "")
         self._build_param_fields(row)
 
-    def add_loop_row(self):
+    def add_section(self, add_row=True):
+        section = ttk.Frame(self.rows_container)
+        section.pack(fill="x", pady=5)
+
+        # Header with section name and controls
+        header = ttk.Frame(section)
+        header.pack(fill="x")
+
+        section.expanded = tk.BooleanVar(value=True)
+        section.name_var = tk.StringVar(value="Section")
+
+        def toggle():
+            if section.expanded.get():
+                section.rows_container.forget()
+                section.expanded.set(False)
+                expand_btn.configure(text="\u25BA")
+            else:
+                section.rows_container.pack(fill="x")
+                section.expanded.set(True)
+                expand_btn.configure(text="\u25BC")
+
+        expand_btn = ttk.Button(header, text="\u25BC", width=2, command=toggle)
+        expand_btn.pack(side="left")
+
+        name_entry = ttk.Entry(header, textvariable=section.name_var, width=20)
+        name_entry.pack(side="left", padx=5)
+        name_entry.bind("<KeyRelease>", lambda e: self.update_loop_script())
+
+        ttk.Button(
+            header,
+            text="Add Step",
+            command=lambda s=section: self.add_loop_row(s),
+        ).pack(side="left", padx=5)
+
+        ttk.Button(
+            header,
+            text="Duplicate",
+            command=lambda s=section: self._duplicate_section(s),
+        ).pack(side="right", padx=5)
+
+        ttk.Button(
+            header,
+            text="Remove",
+            command=lambda s=section: self._remove_section(s),
+        ).pack(side="right", padx=5)
+
+        # Bind drag events for reordering sections
+        header.bind("<ButtonPress-1>", lambda e, s=section: self._start_section_drag(e, s))
+        header.bind("<B1-Motion>", lambda e, s=section: self._on_section_drag(e, s))
+        header.bind("<ButtonRelease-1>", lambda e, s=section: self._end_section_drag(e, s))
+
+        section.rows_container = ttk.Frame(section)
+        section.rows_container.pack(fill="x")
+
+        section.loop_rows = []
+
+        self.loop_sections.append(section)
+        if add_row:
+            self.add_loop_row(section)
+        return section
+
+    def add_loop_row(self, section=None):
+        if section is None:
+            if not self.loop_sections:
+                section = self.add_section()
+            else:
+                section = self.loop_sections[-1]
         commands = list(self._get_device_commands("General").keys())
-        row = ttk.Frame(self.rows_container)
+        row = ttk.Frame(section.rows_container)
         row.pack(fill="x", pady=2)
 
         # Bind drag-and-drop events for reordering
@@ -1136,7 +1202,8 @@ class TestWizard(tk.Tk):
 
         cb.bind("<<ComboboxSelected>>", on_select)
         row.command_var.set(commands[0] if commands else "")
-        self.loop_rows.append(row)
+        section.loop_rows.append(row)
+        row.section = section
         self._update_row_commands(row)
         on_select()
 
@@ -1144,8 +1211,8 @@ class TestWizard(tk.Tk):
         self._bind_drag_events(row, row)
 
     def _remove_loop_row(self, row):
-        if row in self.loop_rows:
-            self.loop_rows.remove(row)
+        if hasattr(row, "section") and row in row.section.loop_rows:
+            row.section.loop_rows.remove(row)
         row.destroy()
         # Defer script update slightly so the UI has time to remove the row
         try:
@@ -1154,13 +1221,16 @@ class TestWizard(tk.Tk):
             self.update_loop_script()
 
     def _duplicate_loop_row(self, row):
-        """Create a duplicate of ``row`` at the bottom of the test loop."""
+        """Create a duplicate of ``row`` at the bottom of its section."""
+        section = getattr(row, "section", None)
+        if section is None:
+            return
         device = row.device_var.get()
         command = row.command_var.get()
         values = [var.get() for _, var, _ in getattr(row, "param_vars", [])]
 
-        self.add_loop_row()
-        new_row = self.loop_rows[-1]
+        self.add_loop_row(section)
+        new_row = section.loop_rows[-1]
         new_row.device_var.set(device)
         self._update_row_commands(new_row)
         new_row.command_var.set(command)
@@ -1182,16 +1252,16 @@ class TestWizard(tk.Tk):
     def _start_row_drag(self, event, row):
         """Begin dragging the given row."""
         self._drag_row = row
-        self._drag_index = self.loop_rows.index(row)
+        self._drag_index = row.section.loop_rows.index(row)
         row.configure(style="Drag.TFrame")
 
     def _on_row_drag(self, event, row):
         """Reorder rows as the mouse moves during a drag."""
         if getattr(self, "_drag_row", None) is not row:
             return
-        y = event.y_root - self.rows_container.winfo_rooty()
+        y = event.y_root - row.section.rows_container.winfo_rooty()
         target = None
-        for r in self.loop_rows:
+        for r in row.section.loop_rows:
             if r is row:
                 continue
             mid = r.winfo_y() + r.winfo_height() // 2
@@ -1202,7 +1272,7 @@ class TestWizard(tk.Tk):
         if target:
             row.pack(before=target, fill="x", pady=2)
         else:
-            row.pack(after=self.loop_rows[-1], fill="x", pady=2)
+            row.pack(after=row.section.loop_rows[-1], fill="x", pady=2)
 
     def _end_row_drag(self, event, row):
         """Finalize row drag and update internal ordering."""
@@ -1211,7 +1281,69 @@ class TestWizard(tk.Tk):
         row.configure(style="TFrame")
         self._drag_row = None
         self._drag_index = None
-        self.loop_rows.sort(key=lambda r: r.winfo_y())
+        row.section.loop_rows.sort(key=lambda r: r.winfo_y())
+        self.update_loop_script()
+
+    # ----------------------- Section Management -----------------
+    def _remove_section(self, section):
+        if section in self.loop_sections:
+            self.loop_sections.remove(section)
+        for r in section.loop_rows:
+            r.destroy()
+        section.destroy()
+        self.update_loop_script()
+
+    def _duplicate_section(self, section):
+        if section not in self.loop_sections:
+            return
+        idx = self.loop_sections.index(section)
+        new_sec = self.add_section(add_row=False)
+        new_sec.name_var.set(section.name_var.get())
+        for row in section.loop_rows:
+            self.add_loop_row(new_sec)
+            new_row = new_sec.loop_rows[-1]
+            new_row.device_var.set(row.device_var.get())
+            self._update_row_commands(new_row)
+            new_row.command_var.set(row.command_var.get())
+            self._build_param_fields(new_row)
+            for val, (_, var, _) in zip(
+                [v.get() for _, v, _ in row.param_vars], new_row.param_vars
+            ):
+                var.set(val)
+            if row.thread_var.get():
+                new_row.thread_var.set(True)
+        new_sec.pack(after=section, fill="x", pady=5)
+        self.loop_sections.insert(idx + 1, self.loop_sections.pop(-1))
+        self.update_loop_script()
+
+    def _start_section_drag(self, event, section):
+        self._drag_section = section
+        section.configure(style="Drag.TFrame")
+
+    def _on_section_drag(self, event, section):
+        if getattr(self, "_drag_section", None) is not section:
+            return
+        y = event.y_root - self.rows_container.winfo_rooty()
+        target = None
+        for s in self.loop_sections:
+            if s is section:
+                continue
+            mid = s.winfo_y() + s.winfo_height() // 2
+            if y < mid:
+                target = s
+                break
+        section.pack_forget()
+        if target:
+            section.pack(before=target, fill="x", pady=5)
+        else:
+            section.pack(after=self.loop_sections[-1], fill="x", pady=5)
+
+    def _end_section_drag(self, event, section):
+        if getattr(self, "_drag_section", None) is not section:
+            return
+        section.configure(style="TFrame")
+        self._drag_section = None
+        self.loop_sections.sort(key=lambda s: s.winfo_y())
         self.update_loop_script()
 
     # ----------------------- Mouse Wheel Scrolling ----------------
@@ -1260,42 +1392,46 @@ class TestWizard(tk.Tk):
 
     def update_loop_script(self):
         lines = []
-        for row in getattr(self, "loop_rows", []):
-            cmd = row.command_var.get()
-            args = []
-            for name, var, default in getattr(row, "param_vars", []):
-                val = var.get().strip()
-                if val:
-                    arg = val
-                    base_name = name.lstrip("*").lower()
-                    if base_name in {"unit", "valve", "valves"}:
-                        if base_name == "valves" and "," in arg:
-                            parts = [p.strip() for p in arg.split(',') if p.strip()]
-                            quoted = []
-                            for p in parts:
-                                if not (p.startswith('"') and p.endswith('"')):
-                                    p = f'"{p}"'
-                                quoted.append(p)
-                            arg = ", ".join(quoted)
+        for section in getattr(self, "loop_sections", []):
+            sec_name = section.name_var.get().strip()
+            if sec_name:
+                lines.append(f"# {sec_name}")
+            for row in section.loop_rows:
+                cmd = row.command_var.get()
+                args = []
+                for name, var, default in getattr(row, "param_vars", []):
+                    val = var.get().strip()
+                    if val:
+                        arg = val
+                        base_name = name.lstrip("*").lower()
+                        if base_name in {"unit", "valve", "valves"}:
+                            if base_name == "valves" and "," in arg:
+                                parts = [p.strip() for p in arg.split(',') if p.strip()]
+                                quoted = []
+                                for p in parts:
+                                    if not (p.startswith('"') and p.endswith('"')):
+                                        p = f'"{p}"'
+                                    quoted.append(p)
+                                arg = ", ".join(quoted)
+                            else:
+                                if not (arg.startswith('"') and arg.endswith('"')):
+                                    arg = f'"{arg}"'
+                        if default is not None:
+                            args.append(f"{name}={arg}")
                         else:
-                            if not (arg.startswith('"') and arg.endswith('"')):
-                                arg = f'"{arg}"'
-                    if default is not None:
-                        args.append(f"{name}={arg}")
+                            args.append(arg)
+                    elif default is not None:
+                        args.append(f"{name}={default}")
                     else:
-                        args.append(arg)
-                elif default is not None:
-                    args.append(f"{name}={default}")
-                else:
-                    args.append("None")
-            device = getattr(row, "device_var", None)
-            dev = device.get().strip() if device else ""
-            line = (
-                f"{dev}.{cmd}({', '.join(args)})" if dev and dev != "General" else f"{cmd}({', '.join(args)})"
-            )
-            if getattr(row, "thread_var", None) and row.thread_var.get():
-                line = f"start_thread(lambda: {line})"
-            lines.append(line)
+                        args.append("None")
+                device = getattr(row, "device_var", None)
+                dev = device.get().strip() if device else ""
+                line = (
+                    f"{dev}.{cmd}({', '.join(args)})" if dev and dev != "General" else f"{cmd}({', '.join(args)})"
+                )
+                if getattr(row, "thread_var", None) and row.thread_var.get():
+                    line = f"start_thread(lambda: {line})"
+                lines.append(line)
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n" + "\n".join(lines))
 
@@ -1362,12 +1498,13 @@ class TestWizard(tk.Tk):
             except Exception:
                 pass
         self.script_text.configure(state=state)
-        for row in getattr(self, "loop_rows", []):
-            for widget in row.winfo_children():
-                try:
-                    widget.configure(state=state)
-                except Exception:
-                    pass
+        for section in getattr(self, "loop_sections", []):
+            for row in section.loop_rows:
+                for widget in row.winfo_children():
+                    try:
+                        widget.configure(state=state)
+                    except Exception:
+                        pass
         self.iterations_entry.configure(state=state)
         self.save_btn.configure(state=state)
         self.new_btn.configure(state=state)
@@ -1797,20 +1934,30 @@ class TestWizard(tk.Tk):
         self.script_text.delete("1.0", "end")
         loop_code = data.get("loop", "")
         self.script_text.insert("1.0", loop_code)
-        for row in getattr(self, "loop_rows", []):
-            row.destroy()
-        self.loop_rows = []
+        for sec in getattr(self, "loop_sections", []):
+            for r in sec.loop_rows:
+                r.destroy()
+            sec.destroy()
+        self.loop_sections = []
+        current_section = None
         for line in loop_code.splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
+            line = line.rstrip()
+            if not line:
                 continue
+            if line.startswith("#"):
+                name = line.lstrip("#").strip()
+                current_section = self.add_section(add_row=False)
+                current_section.name_var.set(name)
+                continue
+            if current_section is None:
+                current_section = self.add_section(add_row=False)
+            self.add_loop_row(current_section)
+            row = current_section.loop_rows[-1]
             cmd_part = line.split("(", 1)[0].strip()
             if "." in cmd_part:
                 alias, cmd_name = cmd_part.split(".", 1)
             else:
                 alias, cmd_name = "General", cmd_part
-            self.add_loop_row()
-            row = self.loop_rows[-1]
             if alias in ["General"] + self._get_all_devices():
                 row.device_var.set(alias)
             else:

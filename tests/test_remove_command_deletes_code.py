@@ -36,7 +36,14 @@ def test_remove_command_updates_loop():
 
     row1 = DummyRow('1')
     row2 = DummyRow('2')
-    wiz.loop_rows = [row1, row2]
+    class DummySection:
+        def __init__(self, rows):
+            self.name_var = DummyVar('sec')
+            self.loop_rows = rows
+    section = DummySection([row1, row2])
+    row1.section = section
+    row2.section = section
+    wiz.loop_sections = [section]
 
     wiz.update_loop_script()
     assert 'Hold(1)' in wiz.script_text.contents
