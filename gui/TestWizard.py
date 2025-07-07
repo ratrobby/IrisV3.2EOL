@@ -1213,6 +1213,16 @@ class TestWizard(tk.Tk):
     # ----------------------- Test Execution ------------------------
     def run_script(self, step=False):
         """Execute the test loop once without logging results."""
+        # Ensure device objects are available by exporting the alias script if
+        # it does not already exist. This mirrors the behaviour of
+        # ``start_test`` which always saves the test before running.
+        if not self.test_script_path or not os.path.exists(self.test_script_path):
+            self.save_test(show_message=False)
+        if self.test_script_path and os.path.exists(self.test_script_path):
+            os.environ["MRLF_TEST_SCRIPT"] = self.test_script_path
+        else:
+            os.environ.pop("MRLF_TEST_SCRIPT", None)
+
         context = {"__name__": "__main__"}
         try:
             if self.test_script_path and os.path.exists(self.test_script_path):
