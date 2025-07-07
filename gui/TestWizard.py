@@ -943,7 +943,15 @@ class TestWizard(tk.Tk):
                         "device": row.device_var.get(),
                         "command": row.command_var.get(),
                         "params": params,
-                        "thread": bool(getattr(row, "thread_var", None) and row.thread_var.get()),
+                        "thread": bool(
+                            getattr(row, "thread_var", None)
+                            and row.thread_var.get()
+                        ),
+                        "hold": (
+                            getattr(row, "hold_var", None).get().strip()
+                            if getattr(row, "hold_var", None)
+                            else ""
+                        ),
                     }
                 )
             sections.append({"name": sec.name_var.get().strip(), "steps": steps})
@@ -968,6 +976,9 @@ class TestWizard(tk.Tk):
                         var.set(params.get(name, ""))
                 if step.get("thread") and getattr(row, "thread_var", None):
                     row.thread_var.set(True)
+                hold_val = step.get("hold")
+                if hold_val is not None and getattr(row, "hold_var", None):
+                    row.hold_var.set(str(hold_val))
         if isinstance(builder, dict):
             self.step_mode_var.set(bool(builder.get("step_mode")))
         self.update_loop_script()
