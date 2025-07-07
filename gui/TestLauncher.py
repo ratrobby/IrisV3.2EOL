@@ -335,6 +335,7 @@ class TestLauncher(tk.Tk):
             return
 
         self.launch_wizard(
+            test_name=data.get("name"),
             load_file=self.reconfigure_path,
             script_path=script_path,
         )
@@ -347,9 +348,11 @@ class TestLauncher(tk.Tk):
                 with open(path, "r") as fh:
                     data = json.load(fh)
                 script_path = os.path.join(os.path.dirname(path), data.get("script_file", ""))
+                test_name = data.get("name")
             except Exception:
                 script_path = None
-            self.launch_wizard(load_file=path, script_path=script_path)
+                test_name = None
+            self.launch_wizard(test_name=test_name, load_file=path, script_path=script_path)
 
     def close_wizards(self):
         for p in getattr(self, "wizard_procs", []):
