@@ -421,6 +421,8 @@ class TestWizard(tk.Tk):
             test_dir = os.path.dirname(load_path)
         self.tests_dir = test_dir or DEFAULT_TESTS_DIR
         self.log_dir = self.tests_dir
+        self._drag_row = None
+        self._drag_index = None
 
         self.create_widgets()
         # Scale window after widgets have been laid out
@@ -453,6 +455,7 @@ class TestWizard(tk.Tk):
         # Style for highlighted open command boxes
         self.style = ttk.Style(self)
         self.style.configure("Open.TFrame", background="#e8f0fe")
+        self.style.configure("Drag.TFrame", background="#ffeeba")
         self.style.configure("TestName.TLabel", font=("Segoe UI Variable Display Semib", 12,))
 
         # Main content split into left and right columns
@@ -960,6 +963,11 @@ class TestWizard(tk.Tk):
         row = ttk.Frame(self.rows_container)
         row.pack(fill="x", pady=2)
 
+        # Bind drag-and-drop events for reordering
+        row.bind("<ButtonPress-1>", lambda e, r=row: self._start_row_drag(e, r))
+        row.bind("<B1-Motion>", lambda e, r=row: self._on_row_drag(e, r))
+        row.bind("<ButtonRelease-1>", lambda e, r=row: self._end_row_drag(e, r))
+
         devices = ["General"] + self._get_all_devices()
 
         row.device_var = tk.StringVar()
@@ -1003,10 +1011,56 @@ class TestWizard(tk.Tk):
         self.loop_rows.append(row)
         on_select()
 
+        # Bind drag events to children so dragging works from widgets
+        self._bind_drag_events(row, row)
+
     def _remove_loop_row(self, row):
         if row in self.loop_rows:
             self.loop_rows.remove(row)
         row.destroy()
+        self.update_loop_script()
+
+    def _bind_drag_events(self, widget, row):
+        """Recursively bind drag events for the given row."""
+        widget.bind("<ButtonPress-1>", lambda e, r=row: self._start_row_drag(e, r), add="+")
+        widget.bind("<B1-Motion>", lambda e, r=row: self._on_row_drag(e, r), add="+")
+        widget.bind("<ButtonRelease-1>", lambda e, r=row: self._end_row_drag(e, r), add="+")
+        for child in widget.winfo_children():
+            self._bind_drag_events(child, row)
+
+    def _start_row_drag(self, event, row):
+        """Begin dragging the given row."""
+        self._drag_row = row
+        self._drag_index = self.loop_rows.index(row)
+        row.configure(style="Drag.TFrame")
+
+    def _on_row_drag(self, event, row):
+        """Reorder rows as the mouse moves during a drag."""
+        if getattr(self, "_drag_row", None) is not row:
+            return
+        y = event.y_root - self.rows_container.winfo_rooty()
+        target = None
+        for r in self.loop_rows:
+            if r is row:
+                continue
+            mid = r.winfo_y() + r.winfo_height() // 2
+            if y < mid:
+                target = r
+                break
+        row.pack_forget()
+        if target:
+            row.pack(before=target, fill="x", pady=2)
+        else:
+            row.pack(after=self.loop_rows[-1], fill="x", pady=2)
+
+    def _end_row_drag(self, event, row):
+        """Finalize row drag and update internal ordering."""
+        if getattr(self, "_drag_row", None) is not row:
+            return
+        row.configure(style="TFrame")
+        self._drag_row = None
+        self._drag_index = None
+        self.loop_rows.sort(key=lambda r: r.winfo_y())
         self.update_loop_script()
 
     def _build_param_fields(self, row):
