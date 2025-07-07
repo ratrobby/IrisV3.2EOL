@@ -1,6 +1,7 @@
 import csv
 import threading
 import time
+from datetime import datetime
 
 # Shared event message for logging one-off events from tests
 _event_lock = threading.Lock()
@@ -26,7 +27,7 @@ class CSVLogger:
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._fh = open(path, "w", newline="")
         self._writer = csv.writer(self._fh)
-        header = ["time_s"] + list(devices.keys()) + ["event"]
+        header = ["timestamp", "time_s"] + list(devices.keys()) + ["event"]
         self._writer.writerow(header)
         self._start_time = time.time()
 
@@ -57,7 +58,8 @@ class CSVLogger:
     def _run(self):
         while not self._stop.is_set():
             ts = time.time() - self._start_time
-            row = [f"{ts:.2f}"]
+            timestamp = datetime.now().isoformat(sep=" ", timespec="seconds")
+            row = [timestamp, f"{ts:.2f}"]
             for obj in self.devices.values():
                 row.append(self._read_value(obj))
             with _event_lock:

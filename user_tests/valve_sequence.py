@@ -10,6 +10,7 @@ import argparse
 import csv
 import threading
 import time
+from datetime import datetime
 import tkinter as tk
 from tkinter import ttk
 
@@ -91,10 +92,12 @@ def log_sensors(
     interrupted.
     """
     while not stop_event.is_set():
-        timestamp = time.time() - start_ts
+        elapsed = time.time() - start_ts
+        ts = datetime.now().isoformat(sep=" ", timespec="seconds")
         try:
             row = [
-                f"{timestamp:.2f}",
+                ts,
+                f"{elapsed:.2f}",
                 f"{lc1._get_force_value('N'):.3f}",
                 f"{lc2._get_force_value('N'):.3f}",
                 f"{lc3._get_force_value('N'):.3f}",
@@ -104,7 +107,7 @@ def log_sensors(
                 ",".join(sorted(valve_bank.active_valves)) or "-",
             ]
         except Exception:
-            row = [f"{timestamp:.2f}"] + ["err"] * 6 + ["-"]
+            row = [ts, f"{elapsed:.2f}"] + ["err"] * 6 + ["-"]
 
         with event_lock:
             global event_message
@@ -155,6 +158,7 @@ def main() -> None:
     with open(args.log, "w", newline="") as fh:
         writer = csv.writer(fh)
         writer.writerow([
+            "timestamp",
             "time_s",
             "load_cell_1_N",
             "load_cell_2_N",
