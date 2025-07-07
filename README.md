@@ -87,6 +87,11 @@ PS_1.monitor_position_thread(duration=2)
 
 Each helper returns the ``Thread`` object for optional joining or inspection.
 
+The Test Wizard loop builder also includes a **Thread** checkbox for each step.
+When checked, the generated script wraps that line with ``start_thread`` so the
+command runs in a background thread. This allows sensor monitoring or other
+device calls to execute concurrently with subsequent steps.
+
 ### Valve Bank Control
 
 When a `ValveBank_SY3000` device is mapped, the Test Wizard setup panel shows an

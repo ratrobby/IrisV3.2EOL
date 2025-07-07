@@ -23,6 +23,7 @@ from tkinter.scrolledtext import ScrolledText
 from .calibration_wizard import CalibrationWizard
 from IO_master import IO_master
 from commands import Hold
+from thread_utils import start_thread
 
 # Allow running from repo root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -1108,6 +1109,15 @@ class TestWizard(tk.Tk):
         )
         dup_btn.pack(side="right", padx=5)
 
+        row.thread_var = tk.BooleanVar()
+        thread_chk = ttk.Checkbutton(
+            row,
+            text="Thread",
+            variable=row.thread_var,
+            command=self.update_loop_script,
+        )
+        thread_chk.pack(side="right", padx=5)
+
         del_btn = ttk.Button(
             row,
             text="Remove",
@@ -1231,10 +1241,12 @@ class TestWizard(tk.Tk):
                     args.append("None")
             device = getattr(row, "device_var", None)
             dev = device.get().strip() if device else ""
-            if dev and dev != "General":
-                lines.append(f"{dev}.{cmd}({', '.join(args)})")
-            else:
-                lines.append(f"{cmd}({', '.join(args)})")
+            line = (
+                f"{dev}.{cmd}({', '.join(args)})" if dev and dev != "General" else f"{cmd}({', '.join(args)})"
+            )
+            if getattr(row, "thread_var", None) and row.thread_var.get():
+                line = f"start_thread(lambda: {line})"
+            lines.append(line)
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n" + "\n".join(lines))
 
@@ -1349,8 +1361,9 @@ class TestWizard(tk.Tk):
                 if alias != base and base in context:
                     context[alias] = context[base]
 
-        # Add Hold() utility for pausing between commands
+        # Add utilities for pausing and threading commands
         context["Hold"] = Hold
+        context["start_thread"] = start_thread
 
         setup_code = self.setup_code
         loop_code = self.script_text.get("1.0", "end-1c")
@@ -1472,8 +1485,9 @@ class TestWizard(tk.Tk):
                     base = self.base_map[section][port]
                     if alias != base and base in context:
                         context[alias] = context[base]
-            # Expose Hold() for timing delays
+            # Expose helpers for delays and threading
             context["Hold"] = Hold
+            context["start_thread"] = start_thread
         except Exception as e:
             print(f"Failed to load device objects: {e}")
         setup_code = self.setup_code
