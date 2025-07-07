@@ -29,7 +29,13 @@ def test_thread_checkbox_generates_start_thread():
         param_vars=[('seconds', DummyVar('1'), None)],
         thread_var=DummyVar(True),
     )
-    wiz.loop_rows = [row]
+    class DummySection:
+        def __init__(self, rows):
+            self.name_var = DummyVar('sec')
+            self.loop_rows = rows
+    section = DummySection([row])
+    row.section = section
+    wiz.loop_sections = [section]
     wiz.update_loop_script()
     assert 'start_thread' in wiz.script_text.contents
 
