@@ -175,12 +175,7 @@ def gather_library(cfg):
             pass
 
     # Add generic commands that are always available
-    library["test"]["General"] = [
-        {
-            "title": "Hold(seconds)",
-            "content": "Pause execution for the specified number of seconds",
-        }
-    ]
+    library["test"]["General"] = []
 
     return library
 
@@ -1137,6 +1132,9 @@ class TestWizard(tk.Tk):
         row = ttk.Frame(section.rows_container)
         row.pack(fill="x", pady=2)
 
+        row.top_frame = ttk.Frame(row)
+        row.top_frame.pack(fill="x")
+
         # Bind drag-and-drop events for reordering
         row.bind("<ButtonPress-1>", lambda e, r=row: self._start_row_drag(e, r))
         row.bind("<B1-Motion>", lambda e, r=row: self._on_row_drag(e, r))
@@ -1146,7 +1144,7 @@ class TestWizard(tk.Tk):
 
         row.device_var = tk.StringVar()
         dev_cb = ttk.Combobox(
-            row,
+            row.top_frame,
             textvariable=row.device_var,
             values=devices,
             state="readonly",
@@ -1161,7 +1159,7 @@ class TestWizard(tk.Tk):
 
         row.command_var = tk.StringVar()
         cb = ttk.Combobox(
-            row,
+            row.top_frame,
             textvariable=row.command_var,
             values=commands,
             state="readonly",
@@ -1170,11 +1168,11 @@ class TestWizard(tk.Tk):
         cb.pack(side="left", padx=5)
         row.command_cb = cb
 
-        row.param_frame = ttk.Frame(row)
+        row.param_frame = ttk.Frame(row.top_frame)
         row.param_frame.pack(side="left", fill="x", expand=True)
 
         dup_btn = ttk.Button(
-            row,
+            row.top_frame,
             text="Duplicate",
             command=lambda r=row: self._duplicate_loop_row(r),
         )
@@ -1182,7 +1180,7 @@ class TestWizard(tk.Tk):
 
         row.thread_var = tk.BooleanVar()
         thread_chk = ttk.Checkbutton(
-            row,
+            row.top_frame,
             text="Thread",
             variable=row.thread_var,
             command=self.update_loop_script,
@@ -1190,7 +1188,7 @@ class TestWizard(tk.Tk):
         thread_chk.pack(side="right", padx=5)
 
         del_btn = ttk.Button(
-            row,
+            row.top_frame,
             text="Remove",
             command=lambda r=row: self._remove_loop_row(r),
         )
@@ -1202,6 +1200,15 @@ class TestWizard(tk.Tk):
 
         cb.bind("<<ComboboxSelected>>", on_select)
         row.command_var.set(commands[0] if commands else "")
+
+        row.hold_var = tk.StringVar(value="0")
+        row.hold_frame = ttk.Frame(row)
+        row.hold_frame.pack(fill="x", padx=5, pady=(2, 0))
+        ttk.Label(row.hold_frame, text="Hold After (s):").pack(side="left")
+        hold_entry = ttk.Entry(row.hold_frame, textvariable=row.hold_var, width=10)
+        hold_entry.pack(side="left")
+        hold_entry.bind("<KeyRelease>", lambda e: self.update_loop_script())
+
         section.loop_rows.append(row)
         row.section = section
         self._update_row_commands(row)
@@ -1235,6 +1242,8 @@ class TestWizard(tk.Tk):
         self._update_row_commands(new_row)
         new_row.command_var.set(command)
         self._build_param_fields(new_row)
+
+        new_row.hold_var.set(row.hold_var.get())
 
         for val, (_, var, _) in zip(values, getattr(new_row, "param_vars", [])):
             var.set(val)
@@ -1432,6 +1441,11 @@ class TestWizard(tk.Tk):
                 if getattr(row, "thread_var", None) and row.thread_var.get():
                     line = f"start_thread(lambda: {line})"
                 lines.append(line)
+                hold_val = getattr(row, "hold_var", None)
+                if hold_val:
+                    hv = hold_val.get().strip()
+                    if hv and hv != "0":
+                        lines.append(f"Hold({hv})")
         self.script_text.delete("1.0", "end")
         self.script_text.insert("1.0", "# Test loop code\n" + "\n".join(lines))
 

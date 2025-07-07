@@ -17,6 +17,7 @@ class DummyRow:
         self.device_var = DummyVar('General')
         self.param_vars = [('seconds', DummyVar(seconds), None)]
         self.thread_var = DummyVar(False)
+        self.hold_var = DummyVar('0')
         self.destroyed = False
     def destroy(self):
         self.destroyed = True

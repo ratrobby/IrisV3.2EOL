@@ -63,7 +63,7 @@ from commands import Hold
 Hold(3)  # wait 3 seconds
 ```
 
-The `Hold` function is available automatically when running scripts in the Test Wizard.
+The `Hold` function is available automatically when running scripts in the Test Wizard. Each step in the Test Wizard also includes a **Hold After (s)** field so delays can be specified without adding a separate ``Hold`` command. Enter ``0`` to skip the hold.
 
 ### Running Sensor Calls in Parallel
 
