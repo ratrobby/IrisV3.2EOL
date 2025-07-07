@@ -49,7 +49,6 @@ class CSVLogger:
                 setattr(obj, "_logger_alias", alias)
             except Exception:
                 pass
-
     def start(self):
         self._thread.start()
 
@@ -74,6 +73,7 @@ class CSVLogger:
             # Timestamp includes milliseconds for higher resolution
             timestamp = datetime.now().isoformat(sep=" ", timespec="milliseconds")
             row = [timestamp]
+
             for alias, obj in self.devices.items():
                 if hasattr(obj, "active_valves") or hasattr(obj, "current_pressure"):
                     row.append(self._read_value(obj))
@@ -84,6 +84,7 @@ class CSVLogger:
                             row.append(str(value))
                         else:
                             row.append("-")
+
             with _event_lock:
                 global _event_message
                 msg = _event_message
