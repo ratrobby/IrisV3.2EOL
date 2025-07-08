@@ -106,6 +106,16 @@ class LoadCellLCM300:
         self.device = al2205_instance
         self.x1_index = x1_index
 
+    def log_value(self):
+        """Return the most recent logged force value if available."""
+        if hasattr(self, "_logger_alias"):
+            from logger import fetch_pending_value
+
+            val = fetch_pending_value(self._logger_alias)
+            if val is not None:
+                return val
+        return "-"
+
 
     def read_raw_data(self):
         """
@@ -149,7 +159,7 @@ class LoadCellLCM300:
         if hasattr(self, "_logger_alias"):
             from logger import record_value
 
-            record_value(self._logger_alias, f"{result:.2f}")
+            record_value(self._logger_alias, f"{result:.2f}{unit_label}")
         return result
 
     def monitor_force(self, unit="lbf", duration=None):
@@ -165,9 +175,9 @@ class LoadCellLCM300:
 
         Notes
         -----
-        The reading interval is fixed at ``0.25`` seconds.
+        The reading interval is fixed at ``0.5`` seconds.
         """
-        interval = 0.25
+        interval = 0.5
 
         start = time.time()
         try:
@@ -181,7 +191,7 @@ class LoadCellLCM300:
                     if hasattr(self, "_logger_alias"):
                         from logger import record_value
 
-                        record_value(self._logger_alias, f"{result:.2f}")
+                        record_value(self._logger_alias, f"{result:.2f}{unit_label}")
                 if duration is not None and (time.time() - start) >= duration:
                     break
                 time.sleep(interval)

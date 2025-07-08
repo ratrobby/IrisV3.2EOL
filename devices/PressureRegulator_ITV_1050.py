@@ -75,6 +75,10 @@ class PressureRegulatorITV1050:
         self.current_pressure = None
         self.setup_pressure = self.min_psi
 
+    def log_value(self):
+        """Return current pressure for logging."""
+        return str(self.current_pressure) if self.current_pressure is not None else "-"
+
     def _build_correction_curve(self):
         """Return interpolation from pressure to raw command value."""
         try:
