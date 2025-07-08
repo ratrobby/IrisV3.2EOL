@@ -111,6 +111,10 @@ class ValveBank:
         self._lock = threading.Lock()
         self._controller_win = None
 
+    def log_value(self):
+        """Return comma-separated list of active valves for logging."""
+        return ",".join(sorted(self.active_valves)) or "-"
+
     def valve_on(self, valve, duration=None):
         """
         Turn on a valve. If duration is specified, turn off automatically.

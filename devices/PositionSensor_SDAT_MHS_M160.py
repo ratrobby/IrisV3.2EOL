@@ -126,6 +126,16 @@ class PositionSensorSDATMHS_M160:
         if "stroke" in self.calibration_data:
             self.stroke_mm = self.calibration_data["stroke"]
 
+    def log_value(self):
+        """Return the most recent logged position if available."""
+        if hasattr(self, "_logger_alias"):
+            from logger import fetch_pending_value
+
+            val = fetch_pending_value(self._logger_alias)
+            if val is not None:
+                return val
+        return "-"
+
     def calibrate_min(self):
         """
         Save current raw value as the 0mm calibration point.
@@ -164,7 +174,7 @@ class PositionSensorSDATMHS_M160:
         if hasattr(self, "_logger_alias"):
             from logger import record_value
 
-            record_value(self._logger_alias, f"{result:.2f}")
+            record_value(self._logger_alias, f"{result:.2f}mm")
         return result
 
     def read_position_thread(self):
@@ -182,9 +192,9 @@ class PositionSensorSDATMHS_M160:
 
         Notes
         -----
-        The reading interval is fixed at ``0.25`` seconds.
+        The reading interval is fixed at ``0.5`` seconds.
         """
-        interval = 0.25
+        interval = 0.5
         start = time.time()
         try:
             while True:
@@ -193,7 +203,7 @@ class PositionSensorSDATMHS_M160:
                 if hasattr(self, "_logger_alias"):
                     from logger import record_value
 
-                    record_value(self._logger_alias, f"{pos:.2f}")
+                    record_value(self._logger_alias, f"{pos:.2f}mm")
                 if duration is not None and (time.time() - start) >= duration:
                     break
                 time.sleep(interval)

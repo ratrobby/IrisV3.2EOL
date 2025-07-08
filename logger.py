@@ -14,6 +14,12 @@ _value_lock = threading.Lock()
 _pending_values = {}
 
 
+def fetch_pending_value(alias: str):
+    """Retrieve and clear a logged value for ``alias`` if present."""
+    with _value_lock:
+        return _pending_values.pop(alias, None)
+
+
 def record_event(msg: str) -> None:
     """Print ``msg`` and store it for the logger thread."""
     global _event_message
@@ -31,7 +37,7 @@ def record_value(alias: str, value) -> None:
 class CSVLogger:
     """Background sensor logger writing rows to a CSV file."""
 
-    def __init__(self, path, devices, interval=0.1):
+    def __init__(self, path, devices, interval=0.5):
         self.path = path
         self.devices = devices  # mapping alias -> object
         self.interval = interval
@@ -40,8 +46,8 @@ class CSVLogger:
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._fh = open(path, "w", newline="")
         self._writer = csv.writer(self._fh)
-        # Log a single timestamp with millisecond precision
-        header = ["timestamp"] + list(devices.keys()) + ["event"]
+        # Header includes time column and one column per device alias
+        header = ["time"] + list(devices.keys()) + ["event"]
         self._writer.writerow(header)
 
         # Expose the alias on each device so methods can report values
@@ -58,14 +64,21 @@ class CSVLogger:
         self._thread.join(timeout=2)
         self._fh.close()
 
-    def _read_value(self, obj):
-        """Return the current value for always-logged devices."""
+    def _read_value(self, alias, obj):
+        """Return the value to log for ``obj``."""
         try:
+            if hasattr(obj, "log_value"):
+                val = obj.log_value()
+                return "-" if val is None else str(val)
+
             if hasattr(obj, "active_valves"):
                 return ",".join(sorted(obj.active_valves)) or "-"
             if hasattr(obj, "current_pressure"):
-
                 return f"{obj.current_pressure}" if obj.current_pressure is not None else "-"
+
+            with _value_lock:
+                if alias in _pending_values:
+                    return str(_pending_values.pop(alias))
 
         except Exception:
             return "err"
@@ -73,20 +86,11 @@ class CSVLogger:
 
     def _run(self):
         while not self._stop.is_set():
-            # Timestamp includes milliseconds for higher resolution
-            timestamp = datetime.now().isoformat(sep=" ", timespec="milliseconds")
+            timestamp = datetime.now().strftime("[%H:%M:%S]")
             row = [timestamp]
 
             for alias, obj in self.devices.items():
-                if hasattr(obj, "active_valves") or hasattr(obj, "current_pressure"):
-                    row.append(self._read_value(obj))
-                else:
-                    with _value_lock:
-                        if alias in _pending_values:
-                            value = _pending_values.pop(alias)
-                            row.append(str(value))
-                        else:
-                            row.append("-")
+                row.append(self._read_value(alias, obj))
 
             with _event_lock:
                 global _event_message
