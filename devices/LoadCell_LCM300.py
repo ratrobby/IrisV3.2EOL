@@ -111,7 +111,7 @@ class LoadCellLCM300:
         if hasattr(self, "_logger_alias"):
             from logger import fetch_pending_value
 
-            val = fetch_pending_value(self._logger_alias)
+            val = fetch_pending_value(self._logger_alias, only_new=True)
             if val is not None:
                 return val
         return "-"

@@ -15,19 +15,30 @@ _pending_values = {}
 _last_values = {}
 
 
-def fetch_pending_value(alias: str):
+def fetch_pending_value(alias: str, *, only_new: bool = False):
     """Retrieve and clear a logged value for ``alias`` if present.
 
-    If no new value has been recorded since the last fetch, the most
-    recently logged value is returned instead. This allows the logger to
-    keep reporting the latest reading even when the device isn't polled
-    every logging cycle.
+    Parameters
+    ----------
+    alias : str
+        Device alias associated with the value.
+    only_new : bool, optional
+        When ``True``, return ``None`` if no new value has been recorded
+        since the last fetch instead of returning the cached value.  This
+        lets callers detect whether a value was recently logged.
+
+    If ``only_new`` is ``False`` (default) and no new value has been
+    recorded, the most recently logged value is returned instead.  This
+    behaviour matches the previous implementation and is used by existing
+    tests.
     """
     with _value_lock:
         if alias in _pending_values:
             val = _pending_values.pop(alias)
             _last_values[alias] = val
             return val
+        if only_new:
+            return None
         return _last_values.get(alias)
 
 
