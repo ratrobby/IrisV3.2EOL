@@ -97,7 +97,37 @@ class CSVLogger:
         try:
             if hasattr(obj, "log_value"):
                 val = obj.log_value()
-                return "-" if val is None else str(val)
+                if val not in (None, "-"):
+                    return str(val)
+
+                if hasattr(obj, "_get_force_value"):
+                    force = obj._get_force_value("N")
+                    val = "N/A" if force is None else f"{force:.2f}N"
+                    with _value_lock:
+                        _last_values[alias] = val
+                    return val
+
+                if hasattr(obj, "al2205") and hasattr(obj, "x1_index"):
+                    raw = obj.al2205.read_index(obj.x1_index)
+                    min_val = getattr(obj, "calibration_data", {}).get("min")
+                    max_val = getattr(obj, "calibration_data", {}).get("max")
+                    if (
+                        raw is not None
+                        and min_val is not None
+                        and max_val is not None
+                        and max_val != min_val
+                    ):
+                        span = max_val - min_val
+                        pos = ((raw - min_val) / span) * obj.stroke_mm
+                        result = round(max(0.0, min(pos, obj.stroke_mm)), 2)
+                        val = f"{result:.2f}mm"
+                    else:
+                        val = "N/A"
+                    with _value_lock:
+                        _last_values[alias] = val
+                    return val
+
+                return "-"
 
             if hasattr(obj, "active_valves"):
                 val = ",".join(sorted(obj.active_valves)) or "-"
