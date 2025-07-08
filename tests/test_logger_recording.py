@@ -39,3 +39,22 @@ def test_monitor_functions_log_values(tmp_path):
     # Expect at least one row with numeric values
     assert any(row[lc_idx] not in {"-", "N/A"} for row in data)
     assert any(row[ps_idx] not in {"-", "N/A"} for row in data)
+
+
+def test_logger_polls_without_commands(tmp_path):
+    lc = LoadCellLCM300(DummyAL2205(), 0)
+    ps = PositionSensorSDATMHS_M160(DummyAL2205PS(), 0)
+    ps.calibration_data = {"min": 0, "max": 1000}
+    log_file = tmp_path / "poll.csv"
+    logger = CSVLogger(str(log_file), {"lc": lc, "ps": ps}, interval=0.05)
+    logger.start()
+    time.sleep(0.2)
+    logger.stop()
+    rows = log_file.read_text().splitlines()
+    assert len(rows) > 1
+    headers = rows[0].split(",")
+    lc_idx = headers.index("lc")
+    ps_idx = headers.index("ps")
+    data = [row.split(",") for row in rows[1:]]
+    assert any(row[lc_idx] not in {"-", "N/A"} for row in data)
+    assert any(row[ps_idx] not in {"-", "N/A"} for row in data)
