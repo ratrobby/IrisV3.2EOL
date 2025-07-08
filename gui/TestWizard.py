@@ -1654,6 +1654,8 @@ class TestWizard(tk.Tk):
                     return
                 try:
                     print("Iteration: 1")
+                    if self.csv_logger:
+                        self.csv_logger.insert_break("Iteration 1")
                     lines = [ln for ln in loop_code.splitlines() if ln.strip()]
                     for ln in lines:
                         if self.step_event:
@@ -1721,7 +1723,23 @@ class TestWizard(tk.Tk):
                     setattr(obj, "_logger_alias", alias)
                 except Exception:
                     pass
-        self.csv_logger = CSVLogger(log_path, log_devices)
+        # Friendly column names
+        base_counts = {}
+        for name in log_devices.keys():
+            base = name.split("_")[0]
+            base_counts[base] = base_counts.get(base, 0) + 1
+        alias_names = {}
+        counters = {}
+        for name in log_devices.keys():
+            base = name.split("_")[0]
+            if base_counts[base] > 1:
+                idx = counters.get(base, 0) + 1
+                counters[base] = idx
+                alias_names[name] = f"{base}{idx}"
+            else:
+                alias_names[name] = base
+
+        self.csv_logger = CSVLogger(log_path, log_devices, alias_names=alias_names)
         self.csv_logger.start()
         if not self.monitor or not self.monitor.winfo_exists():
             self.monitor = TestMonitor(self)
@@ -1783,6 +1801,8 @@ class TestWizard(tk.Tk):
                     return
                 for i in range(iterations):
                     print(f"Iteration: {i + 1}")
+                    if self.csv_logger:
+                        self.csv_logger.insert_break(f"Iteration {i + 1}")
                     self._rewrite_itv_pressures()
                     if not self.running:
                         break
