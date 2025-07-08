@@ -564,8 +564,8 @@ class TestWizard(tk.Tk):
 
         self.loop_sections = []
 
-        # Start with one empty section
-        self.after(10, self.add_section)
+        # Start with one empty section only if none exist
+        self.after(10, self._ensure_initial_section)
 
 
         ttk.Label(left, text="Iterations:", style="TestName.TLabel").grid(
@@ -1177,6 +1177,11 @@ class TestWizard(tk.Tk):
         if add_row:
             self.add_loop_row(section)
         return section
+
+    def _ensure_initial_section(self):
+        """Add a blank section if none exist."""
+        if not self.loop_sections:
+            self.add_section()
 
     def add_loop_row(self, section=None):
         if section is None:
@@ -2078,6 +2083,7 @@ class TestWizard(tk.Tk):
         )
         self.build_setup_widgets()
         self.refresh_instance_table()
+        self._ensure_initial_section()
 
     def new_test(self):
         current_filled = (
