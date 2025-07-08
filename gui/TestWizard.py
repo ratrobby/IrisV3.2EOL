@@ -1711,35 +1711,24 @@ class TestWizard(tk.Tk):
         self.log_file_path = log_path
         # Build device map for logging (sensors, valves and pressure regulators)
         log_devices = {}
-        for alias, obj in self.device_objects.items():
-            if (
-                hasattr(obj, "_get_force_value")
-                or hasattr(obj, "read_position")
-                or hasattr(obj, "active_valves")
-                or hasattr(obj, "current_pressure")
-            ):
-                log_devices[alias] = obj
-                try:
-                    setattr(obj, "_logger_alias", alias)
-                except Exception:
-                    pass
-        # Friendly column names
-        base_counts = {}
-        for name in log_devices.keys():
-            base = name.split("_")[0]
-            base_counts[base] = base_counts.get(base, 0) + 1
-        alias_names = {}
-        counters = {}
-        for name in log_devices.keys():
-            base = name.split("_")[0]
-            if base_counts[base] > 1:
-                idx = counters.get(base, 0) + 1
-                counters[base] = idx
-                alias_names[name] = f"{base}{idx}"
-            else:
-                alias_names[name] = base
+        for section in ("al1342", "al2205"):
+            for port in self.instance_map.get(section, {}):
+                alias = self.instance_map[section][port]
+                base = self.base_map[section][port]
+                obj = self.device_objects.get(base)
+                if obj and (
+                    hasattr(obj, "_get_force_value")
+                    or hasattr(obj, "read_position")
+                    or hasattr(obj, "active_valves")
+                    or hasattr(obj, "current_pressure")
+                ):
+                    log_devices[alias] = obj
+                    try:
+                        setattr(obj, "_logger_alias", alias)
+                    except Exception:
+                        pass
 
-        self.csv_logger = CSVLogger(log_path, log_devices, alias_names=alias_names)
+        self.csv_logger = CSVLogger(log_path, log_devices)
         self.csv_logger.start()
         if not self.monitor or not self.monitor.winfo_exists():
             self.monitor = TestMonitor(self)
