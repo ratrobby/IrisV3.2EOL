@@ -1709,13 +1709,32 @@ class TestWizard(tk.Tk):
         name = self.test_name_var.get() or "test"
         log_path = os.path.join(self.log_dir, f"{timestamp}_{name}.csv")
         self.log_file_path = log_path
+
+        # Load the device setup script so the logger can monitor the same
+        # objects the test will use.
+        context = {"__name__": "__main__"}
+        try:
+            if self.test_script_path and os.path.exists(self.test_script_path):
+                spec = importlib.util.spec_from_file_location(
+                    "user_devices", self.test_script_path
+                )
+                devices_mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(devices_mod)
+            else:
+                devices_mod = types.ModuleType("user_devices")
+            for name, obj in devices_mod.__dict__.items():
+                if not name.startswith("_"):
+                    context[name] = obj
+        except Exception as e:
+            print(f"Failed to load device objects: {e}")
+
         # Build device map for logging (sensors, valves and pressure regulators)
         log_devices = {}
         for section in ("al1342", "al2205"):
             for port in self.instance_map.get(section, {}):
                 alias = self.instance_map[section][port]
                 base = self.base_map[section][port]
-                obj = self.device_objects.get(base)
+                obj = context.get(alias) or context.get(base)
                 if obj and (
                     hasattr(obj, "_get_force_value")
                     or hasattr(obj, "read_position")
@@ -1751,32 +1770,17 @@ class TestWizard(tk.Tk):
         # Ensure any configured ITV pressures are written before executing
         # setup code or the first test iteration.
         self._rewrite_itv_pressures()
-        context = {"__name__": "__main__"}
-        try:
-            if self.test_script_path and os.path.exists(self.test_script_path):
-                spec = importlib.util.spec_from_file_location(
-                    "user_devices", self.test_script_path
-                )
-                devices_mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(devices_mod)
-            else:
-                devices_mod = types.ModuleType("user_devices")
-            for name, obj in devices_mod.__dict__.items():
-                if not name.startswith("_"):
-                    context[name] = obj
-            # Add any custom aliases for this test
-            for section in ("al1342", "al2205"):
-                for port in self.instance_map.get(section, {}):
-                    alias = self.instance_map[section][port]
-                    base = self.base_map[section][port]
-                    if alias != base and base in context:
-                        context[alias] = context[base]
-            # Expose helpers for delays, threading and event logging
-            context["Hold"] = Hold
-            context["start_thread"] = start_thread
-            context["record_event"] = record_event
-        except Exception as e:
-            print(f"Failed to load device objects: {e}")
+        # Add any custom aliases for this test
+        for section in ("al1342", "al2205"):
+            for port in self.instance_map.get(section, {}):
+                alias = self.instance_map[section][port]
+                base = self.base_map[section][port]
+                if alias != base and base in context:
+                    context[alias] = context[base]
+        # Expose helpers for delays, threading and event logging
+        context["Hold"] = Hold
+        context["start_thread"] = start_thread
+        context["record_event"] = record_event
         setup_code = self.setup_code
         loop_code = self.script_text.get("1.0", "end-1c")
         queue_writer = _QueueWriter(self.monitor_queue)
