@@ -12,12 +12,23 @@ _event_message = ""
 # sensors show ``-`` when not explicitly read.
 _value_lock = threading.Lock()
 _pending_values = {}
+_last_values = {}
 
 
 def fetch_pending_value(alias: str):
-    """Retrieve and clear a logged value for ``alias`` if present."""
+    """Retrieve and clear a logged value for ``alias`` if present.
+
+    If no new value has been recorded since the last fetch, the most
+    recently logged value is returned instead. This allows the logger to
+    keep reporting the latest reading even when the device isn't polled
+    every logging cycle.
+    """
     with _value_lock:
-        return _pending_values.pop(alias, None)
+        if alias in _pending_values:
+            val = _pending_values.pop(alias)
+            _last_values[alias] = val
+            return val
+        return _last_values.get(alias)
 
 
 def record_event(msg: str) -> None:
@@ -32,22 +43,28 @@ def record_value(alias: str, value) -> None:
     """Store a sensor reading for the logger thread."""
     with _value_lock:
         _pending_values[alias] = value
+        _last_values[alias] = value
 
 
 class CSVLogger:
     """Background sensor logger writing rows to a CSV file."""
 
-    def __init__(self, path, devices, interval=0.5):
+    def __init__(self, path, devices, interval=0.5, alias_names=None):
         self.path = path
         self.devices = devices  # mapping alias -> object
         self.interval = interval
+        self.alias_names = alias_names or {}
         self._row_count = 0
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
+        self._lock = threading.Lock()
         self._fh = open(path, "w", newline="")
         self._writer = csv.writer(self._fh)
         # Header includes time column and one column per device alias
-        header = ["time"] + list(devices.keys()) + ["event"]
+        header = ["time"]
+        for alias in devices.keys():
+            header.append(self.alias_names.get(alias, alias))
+        header.append("event")
         self._writer.writerow(header)
 
         # Expose the alias on each device so methods can report values
@@ -64,6 +81,17 @@ class CSVLogger:
         self._thread.join(timeout=2)
         self._fh.close()
 
+    def insert_break(self, label=""):
+        """Insert a labelled row marking a break in the log."""
+        timestamp = datetime.now().strftime("[%H:%M:%S]")
+        with self._lock:
+            row = [timestamp]
+            for alias in self.devices.keys():
+                row.append(_last_values.get(alias, "-"))
+            row.append(label or "-")
+            self._writer.writerow(row)
+            self._fh.flush()
+
     def _read_value(self, alias, obj):
         """Return the value to log for ``obj``."""
         try:
@@ -72,17 +100,26 @@ class CSVLogger:
                 return "-" if val is None else str(val)
 
             if hasattr(obj, "active_valves"):
-                return ",".join(sorted(obj.active_valves)) or "-"
+                val = ",".join(sorted(obj.active_valves)) or "-"
+                with _value_lock:
+                    _last_values[alias] = val
+                return val
             if hasattr(obj, "current_pressure"):
-                return f"{obj.current_pressure}" if obj.current_pressure is not None else "-"
+                val = f"{obj.current_pressure}" if obj.current_pressure is not None else "-"
+                with _value_lock:
+                    _last_values[alias] = val
+                return val
 
             with _value_lock:
                 if alias in _pending_values:
-                    return str(_pending_values.pop(alias))
+                    val = _pending_values.pop(alias)
+                    _last_values[alias] = val
+                    return str(val)
+                return _last_values.get(alias, "-")
 
         except Exception:
             return "err"
-        return "-"
+        return _last_values.get(alias, "-")
 
     def _run(self):
         while not self._stop.is_set():
@@ -98,7 +135,8 @@ class CSVLogger:
                 if _event_message:
                     _event_message = ""
             row.append(msg or "-")
-            self._writer.writerow(row)
-            self._fh.flush()
-            self._row_count += 1
+            with self._lock:
+                self._writer.writerow(row)
+                self._fh.flush()
+                self._row_count += 1
             time.sleep(self.interval)
