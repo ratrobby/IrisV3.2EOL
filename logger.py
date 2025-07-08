@@ -60,8 +60,8 @@ class CSVLogger:
         self._lock = threading.Lock()
         self._fh = open(path, "w", newline="")
         self._writer = csv.writer(self._fh)
-        # Header includes time column and one column per device alias
-        header = ["time"]
+        # Header includes timestamp column and one column per device alias
+        header = ["timestamp"]
         for alias in devices.keys():
             header.append(self.alias_names.get(alias, alias))
         header.append("event")
@@ -83,7 +83,7 @@ class CSVLogger:
 
     def insert_break(self, label=""):
         """Insert a labelled row marking a break in the log."""
-        timestamp = datetime.now().strftime("[%H:%M:%S]")
+        timestamp = datetime.now().isoformat(sep=" ", timespec="milliseconds")
         with self._lock:
             row = [timestamp]
             for alias in self.devices.keys():
@@ -153,7 +153,7 @@ class CSVLogger:
 
     def _run(self):
         while not self._stop.is_set():
-            timestamp = datetime.now().strftime("[%H:%M:%S]")
+            timestamp = datetime.now().isoformat(sep=" ", timespec="milliseconds")
             row = [timestamp]
 
             for alias, obj in self.devices.items():
