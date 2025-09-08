@@ -23,32 +23,19 @@ class LoadCellLCM300:
         raw = self.read_raw_data()
         return raw / 1000 if raw is not None else None
 
-    def read_force(self, unit="lbf"):
-        """Return the current force measurement.
-
-        Parameters
-        ----------
-        unit : {"lbf", "N"}
-            Desired force units (pounds-force or newtons).
-        """
+    def read_force(self):
+        """Return the current force measurement in newtons."""
         voltage = self.read_voltage()
         if voltage is None:
             return None
         force_lbf = (5.0 - voltage) * 5
-        unit = unit.lower()
-        if unit == "lbf":
-            return force_lbf
-        if unit == "n":
-            return force_lbf * 4.44822
-        raise ValueError("Invalid unit. Use 'lbf' or 'n'.")
+        return force_lbf * 4.44822
 
-    def monitor_force(self, unit="lbf", duration=None):
-        """Print force readings periodically.
+    def monitor_force(self, duration=None):
+        """Print force readings in newtons periodically.
 
         Parameters
         ----------
-        unit : {"lbf", "N"}
-            Units for display.
         duration : float or None
             Total time to run in seconds. ``None`` runs until interrupted.
         """
@@ -56,12 +43,11 @@ class LoadCellLCM300:
         start = time.time()
         try:
             while True:
-                result = self.read_force(unit)
+                result = self.read_force()
                 if result is None:
                     print("Force = N/A")
                 else:
-                    label = "N" if unit.lower() == "n" else "lbf"
-                    print(f"Force = {result:.2f}{label}")
+                    print(f"Force = {result:.2f}N")
                 if duration is not None and (time.time() - start) >= duration:
                     break
                 time.sleep(interval)
