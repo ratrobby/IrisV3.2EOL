@@ -9,6 +9,7 @@ cell through an AL2205 IO-Link hub connected to an AL1342 IO master.
 IO_master.py            # Modbus communication with the AL1342
 devices/AL2205_Hub.py   # Access analog values from the AL2205 hub
 devices/LoadCell_LCM300.py # Convert analog values to force readings
+calibrateLC.py          # GUI to monitor five load cells simultaneously
 ```
 
 ## Installation
@@ -34,6 +35,12 @@ hub = AL2205Hub(io, port_number=1)        # Hub connected to port 1
 cell = LoadCellLCM300(hub, x1_index=0)    # Load cell on channel X1.0
 
 print(cell.read_force("N"))              # Read force in newtons
+```
+
+To launch a window showing live readings from five load cells:
+
+```
+python calibrateLC.py 192.168.100.1
 ```
 
 ## License
