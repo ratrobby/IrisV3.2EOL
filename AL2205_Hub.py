@@ -29,8 +29,11 @@ class AL2205Hub:
         count : int, optional
             Number of consecutive registers to read starting at the index.
         """
+        # Per the AL2205 documentation, the first two words following the
+        # base register contain hub‑level diagnostics.  Actual channel data for
+        # X1.0 begins at offset 3 and subsequent channels increment by one.
         word_map = {
-            0: 1,
+            0: 3,
             1: 4,
             2: 5,
             3: 6,
