@@ -1,3 +1,5 @@
+import time
+
 try:
     from pyModbusTCP.client import ModbusClient
 except Exception:  # pragma: no cover - optional dependency may be missing
@@ -79,4 +81,15 @@ class IO_master:
         success = self.client.write_single_register(register, value)
         if not success:
             raise ConnectionError(f"Failed to write to register {register}")
+
+    def read_holding(self, register, count=1, retries=3, delay=0.15):
+        """Read holding registers with retry logic."""
+        for attempt in range(retries):
+            regs = self.client.read_holding_registers(register, count)
+            if regs:
+                return regs
+            time.sleep(delay)
+        raise ConnectionError(
+            f"Failed to read holding registers at {register} after {retries} attempts"
+        )
 
