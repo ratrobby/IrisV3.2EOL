@@ -1,73 +1,50 @@
-import os
-import sys
-
-# Allow importing project modules when executed directly
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from decorators import device_class, test_command, setup_command
-
-@device_class
 class AL2205Hub:
-    """Interface to an AL2205 IO-Link hub."""
-
-    @classmethod
-    def setup_instructions(cls):
-        return []
-
-    @classmethod
-    def test_instructions(cls):
-        return []
-
+    """Interface to an AL2205 IO-Link hub connected to an AL1342."""
 
     def __init__(self, io_master, port_number):
-        """
-        Initialize the AL2205 module interface.
+        """Initialize the interface.
 
-        Parameters:
-        - io_master: an instance of IO_master that handles Modbus communication
-        - port_number: the IO-Link port number (1–8) where this AL2205 is connected on the AL1342
+        Parameters
+        ----------
+        io_master : IO_master
+            Modbus communication handler for the AL1342.
+        port_number : int
+            IO-Link port on the AL1342 where the AL2205 is connected (1-8).
         """
         self.io_master = io_master
         self.port_number = port_number
 
-        # Get base register directly from IO_master's mapping
         if port_number not in self.io_master.read_register_map:
             raise ValueError(f"Invalid port number: {port_number}")
 
         self.base_register = self.io_master.id_read_register(port_number)
 
+    def read_index(self, x1_index):
+        """Return the raw 16-bit value from the specified X1 port.
 
-    @test_command
-    def read_index(self, X1_index):
-        """
-        Read the raw 16-bit unsigned analog signal value from a specific X1.x port.
-
-        Parameters:
-        - x1_index: index of the port on the AL2205 (0–7 for X1.0 to X1.7)
-
-        Returns:
-        - A raw unsigned integer between 0 and 65535
+        Parameters
+        ----------
+        x1_index : int
+            Channel index on the AL2205 (0–7 for X1.0–X1.7).
         """
         word_map = {
-            0: 1,  # X1.0 = Word 6
-            1: 4,  # X1.1 = Word 8
+            0: 1,
+            1: 4,
             2: 5,
             3: 6,
             4: 7,
             5: 8,
             6: 9,
-            7: 10
+            7: 10,
         }
-
-        word_offset = word_map.get(X1_index)
+        word_offset = word_map.get(x1_index)
         if word_offset is None:
-            raise ValueError("Invalid X1 index for analog read. Must be between 0 and 7.")
+            raise ValueError("Invalid X1 index. Must be between 0 and 7.")
 
         register = self.base_register + word_offset
         result = self.io_master.read_register(register)
-
-        if result is not None:
-            return result  # Already a raw 16-bit integer
-        else:
-            raise ConnectionError(f"Failed to read analog input register at {register}")
-
+        if result is None:
+            raise ConnectionError(
+                f"Failed to read analog input register at {register}"
+            )
+        return result

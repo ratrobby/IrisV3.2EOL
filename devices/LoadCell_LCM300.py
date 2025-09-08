@@ -1,147 +1,40 @@
-import os
-import sys
 import time
-from thread_utils import start_thread
 
-# Allow importing project modules when executed directly
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from decorators import device_class
-import importlib.util
-import tkinter as tk
-from tkinter import messagebox, ttk
-"""
-    =====================================
-    LoadCellLCM300 - Public Interface
-    =====================================
-
-    Purpose:
-    --------
-    Read data from a load cell connected to an AL2205 analog input.
-
-    Constructor:
-    ------------
-    LoadCellLCM300(al2205_instance, x1_index)
-
-    Public Methods:
-    ---------------
-    - read_force(unit="lbf"): Return a single force reading.
-    - monitor_force(unit="lbf", duration=None): Continuously print force readings
-      every 0.25 seconds.
-    - monitor_force_window(interval=0.2): Show live force in both lbf and N.
-
-    Notes:
-    ------
-    - X1 index maps to AL2205 analog input ports (X1.0 to X1.7).
-    - Uses example calibration: 5V = 0 lbf, 0V = 50 lbf (10 lbf/V).
-"""
-
-@device_class
 class LoadCellLCM300:
-
-    @classmethod
-    def test_instructions(cls):
-        return [
-            {
-                "title": "read_force(unit)",
-                "content": (
-                    "Use: Returns a single force reading in pounds-force or newtons\n"
-                    "Inputs:\n"
-                    "  - unit: Defines the unit of force the reading will be in\n"
-                    "          - lbf: pounds-force\n"
-                    "          - N: Newtons\n"
-                    "Example:\n"
-                    "  - read_force(\"N\") - Reads force in newtons\n"
-                    "  - read_force(\"lbf\") - Reads force in pounds-force"
-                ),
-            },
-            {
-                "title": "monitor_force(unit, duration=None)",
-                "content": (
-                    "Use: Continuously prints force readings until stopped\n"
-                    "Inputs:\n"
-                    "  - unit: Force units (lbf or N)\n"
-                    "  - duration: Total monitor time in seconds (None runs until interrupted)\n"
-                    "Example:\n"
-                    "  - monitor_force(\"lbf\", 3) - Print lbf every 0.25 s for 3 seconds"
-                ),
-            },
-        ]
-
-    @classmethod
-    def setup_instructions(cls):
-        return [
-            {
-                "title": "Calibrate_LoadCell_Zero()",
-                "content": (
-                    "Use: Opens a live monitor window to zero the load cell amplifier.\n"
-                    "The window shows force in both lbf and N."
-                ),
-            }
-        ]
-
-    @classmethod
-    def calibration_steps(cls):
-        return [
-            {
-                "prompt": (
-                    "Open a monitor window and adjust the amplifier's zero dial until the reading is 0.\n"
-                    "The window displays force in both lbf and N."
-                ),
-                "action": "monitor_force_window",
-                "button": "Open Monitor",
-            },
-            {
-                "prompt": "Close the monitor window and click Finish",
-                "button": "Finish",
-            },
-        ]
+    """Read force data from an LCM300 load cell via an AL2205 hub."""
 
     def __init__(self, al2205_instance, x1_index):
-        """
-        Parameters:
-        - al2205_instance: instance of AL2205
-        - x1_index: channel index on the AL2205 (0–7 for X1.0–X1.7)
+        """Parameters
+        ----------
+        al2205_instance : AL2205Hub
+            Instance of :class:`AL2205Hub` used for communication.
+        x1_index : int
+            Channel index on the AL2205 (0–7 for X1.0–X1.7).
         """
         self.device = al2205_instance
         self.x1_index = x1_index
 
-    def log_value(self):
-        """Return the most recent logged force value if available."""
-        if hasattr(self, "_logger_alias"):
-            from logger import fetch_pending_value
-
-            val = fetch_pending_value(self._logger_alias, only_new=True)
-            if val is not None:
-                return val
-        return "-"
-
-
     def read_raw_data(self):
-        """
-        Return raw 16-bit value from AL2205 (unsigned, 0–65535).
-        """
+        """Return the raw 16-bit value from the load cell."""
         return self.device.read_index(self.x1_index)
 
-
     def read_voltage(self):
-        """
-        Convert raw value to voltage (0–10 V).
-
-        Returns:
-        - Voltage as float (e.g., 0.0 to 10.0)
-        """
+        """Convert the raw value to a voltage between 0 and 10 V."""
         raw = self.read_raw_data()
         return raw / 1000 if raw is not None else None
 
-    def _get_force_value(self, unit="lbf"):
-        """Return the current force without printing."""
+    def read_force(self, unit="lbf"):
+        """Return the current force measurement.
+
+        Parameters
+        ----------
+        unit : {"lbf", "N"}
+            Desired force units (pounds-force or newtons).
+        """
         voltage = self.read_voltage()
         if voltage is None:
             return None
-
         force_lbf = (5.0 - voltage) * 5
-
         unit = unit.lower()
         if unit == "lbf":
             return force_lbf
@@ -149,171 +42,28 @@ class LoadCellLCM300:
             return force_lbf * 4.44822
         raise ValueError("Invalid unit. Use 'lbf' or 'n'.")
 
-    def read_force(self, unit="lbf"):
-        """Convert voltage to force and print the value."""
-        result = self._get_force_value(unit)
-        if result is None:
-            return None
-        unit_label = "lbf" if unit.lower() == "lbf" else "N"
-        print(f"Force = {result:.2f}{unit_label}")
-        if hasattr(self, "_logger_alias"):
-            from logger import record_value
-
-            record_value(self._logger_alias, f"{result:.2f}{unit_label}")
-        return result
-
     def monitor_force(self, unit="lbf", duration=None):
-        """Continuously print force readings.
+        """Print force readings periodically.
 
         Parameters
         ----------
-        unit : str, optional
-            Force units (``"lbf"`` or ``"N"``).
-        duration : float or None, optional
-            Total time in seconds to run the monitor. ``None`` runs until
-            interrupted.
-
-        Notes
-        -----
-        The reading interval is fixed at ``0.5`` seconds.
+        unit : {"lbf", "N"}
+            Units for display.
+        duration : float or None
+            Total time to run in seconds. ``None`` runs until interrupted.
         """
         interval = 0.5
-
         start = time.time()
         try:
             while True:
-                result = self._get_force_value(unit)
+                result = self.read_force(unit)
                 if result is None:
                     print("Force = N/A")
                 else:
-                    unit_label = "lbf" if unit.lower() == "lbf" else "N"
-                    print(f"Force = {result:.2f}{unit_label}")
-                    if hasattr(self, "_logger_alias"):
-                        from logger import record_value
-
-                        record_value(self._logger_alias, f"{result:.2f}{unit_label}")
+                    label = "N" if unit.lower() == "n" else "lbf"
+                    print(f"Force = {result:.2f}{label}")
                 if duration is not None and (time.time() - start) >= duration:
                     break
                 time.sleep(interval)
         except KeyboardInterrupt:
-            print("Stopped force monitoring")
-        finally:
-            if duration is not None:
-                print("Force monitoring complete")
-
-    # ------------------------------------------------------------------
-    def monitor_force_window(self, interval=0.2):
-        """Open a small window showing the live force reading in lbf and N."""
-        win = tk.Toplevel()
-        win.title("Load Cell Monitor")
-
-        label = ttk.Label(win, text="", font=("Arial", 12))
-        label.pack(padx=10, pady=10)
-
-        running = True
-
-        def update():
-            if not running:
-                return
-            lbf_val = self._get_force_value("lbf")
-            n_val = self._get_force_value("n")
-            if lbf_val is None or n_val is None:
-                label.config(text="N/A")
-            else:
-                label.config(text=f"{lbf_val:.2f} lbf / {n_val:.2f} N")
-            win.after(int(interval * 1000), update)
-
-        def close():
-            nonlocal running
-            running = False
-            win.destroy()
-
-        ttk.Button(win, text="Close", command=close).pack(pady=5)
-        win.protocol("WM_DELETE_WINDOW", close)
-
-        update()
-
-    # ------------------------------------------------------------------
-    def read_force_thread(self, unit="lbf"):
-        """Run :meth:`read_force` in a background thread."""
-        return start_thread(self.read_force, unit)
-
-    def monitor_force_thread(self, unit="lbf", duration=None):
-        """Run :meth:`monitor_force` in a background thread."""
-        return start_thread(
-            self.monitor_force, unit=unit, duration=duration
-        )
-
-
-# ==================== Calibration Helper ====================
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-def _load_load_cells():
-    script = os.environ.get("MRLF_TEST_SCRIPT")
-    if not script or not os.path.exists(script):
-        return []
-    spec = importlib.util.spec_from_file_location("user_devices", script)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-
-    cells = []
-    for name, obj in module.__dict__.items():
-        if isinstance(obj, LoadCellLCM300):
-            port = f"X1.{obj.x1_index}"
-            cells.append((obj, name, port))
-    return cells
-
-
-_monitor_win = None
-
-def Calibrate_LoadCell_Zero(interval=0.2):
-    """Launch a single monitor window for all mapped load cells."""
-    if "MRLF_TEST_SCRIPT" not in os.environ:
-        messagebox.showwarning(
-            "MRLF_TEST_SCRIPT Missing",
-            "MRLF_TEST_SCRIPT environment variable not set. Using default configuration."
-        )
-    cells = _load_load_cells()
-    if not cells:
-        messagebox.showinfo("No Load Cells", "No LoadCell_LCM300 devices mapped to this test.")
-        return
-
-    global _monitor_win
-    if _monitor_win and _monitor_win.winfo_exists():
-        _monitor_win.lift()
-        return
-
-    win = tk.Toplevel()
-    win.title("Load Cell Calibration")
-    _monitor_win = win
-
-    rows = []
-    for cell, name, port in cells:
-        frame = ttk.Frame(win)
-        frame.pack(padx=5, pady=2)
-        ttk.Label(frame, text=f"{name} ({port})").pack(side="left")
-        var = tk.StringVar(value="0")
-        ttk.Label(frame, textvariable=var).pack(side="left", padx=5)
-        rows.append((cell, var))
-
-    def update():
-        if not _monitor_win or not _monitor_win.winfo_exists():
-            return
-        for cell, var in rows:
-            lbf = cell._get_force_value("lbf")
-            n = cell._get_force_value("n")
-            if lbf is None or n is None:
-                var.set("N/A")
-            else:
-                var.set(f"{lbf:.2f} lbf / {n:.2f} N")
-        win.after(int(interval * 1000), update)
-
-    def close():
-        global _monitor_win
-        _monitor_win = None
-        win.destroy()
-
-    ttk.Button(win, text="Close", command=close).pack(pady=5)
-    win.protocol("WM_DELETE_WINDOW", close)
-    update()
+            pass
