@@ -59,14 +59,20 @@ class LoadCellLCM300:
         start = time.time()
         try:
             while True:
-                result = self.read_force()
-                if callback is None:
-                    if result is None:
-                        print("Force = N/A")
+                try:
+                    result = self.read_force()
+                    if callback is None:
+                        if result is None:
+                            print("Force = N/A")
+                        else:
+                            print(f"Force = {result:.2f}N")
                     else:
-                        print(f"Force = {result:.2f}N")
-                else:
-                    callback(result)
+                        callback(result)
+                except ConnectionError as exc:
+                    if callback is None:
+                        print(f"Error reading force: {exc}")
+                    else:
+                        callback(None)
                 if stop_event is not None and stop_event.is_set():
                     break
                 if duration is not None and (time.time() - start) >= duration:
