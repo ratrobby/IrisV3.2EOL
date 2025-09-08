@@ -42,7 +42,9 @@ class IO_master:
 
     def ensure_open(self, attempts=3, delay=0.2):
         for i in range(attempts):
-            if getattr(self.client, "is_open", lambda: False)() or self.client.open():
+            is_open_attr = getattr(self.client, "is_open", False)
+            is_open = is_open_attr() if callable(is_open_attr) else bool(is_open_attr)
+            if is_open or self.client.open():
                 return True
             time.sleep(delay * (i + 1))
         raise ConnectionError(
