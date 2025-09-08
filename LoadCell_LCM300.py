@@ -31,23 +31,33 @@ class LoadCellLCM300:
         force_lbf = (5.0 - voltage) * 5
         return force_lbf * 4.44822
 
-    def monitor_force(self, duration=None):
-        """Print force readings in newtons periodically.
+    def monitor_force(self, duration=None, callback=None, stop_event=None):
+        """Periodically report force readings in newtons.
 
         Parameters
         ----------
         duration : float or None
             Total time to run in seconds. ``None`` runs until interrupted.
+        callback : callable, optional
+            Function invoked with each force reading. If omitted, readings are
+            printed to stdout.
+        stop_event : threading.Event, optional
+            When set, monitoring stops regardless of ``duration``.
         """
         interval = 0.5
         start = time.time()
         try:
             while True:
                 result = self.read_force()
-                if result is None:
-                    print("Force = N/A")
+                if callback is None:
+                    if result is None:
+                        print("Force = N/A")
+                    else:
+                        print(f"Force = {result:.2f}N")
                 else:
-                    print(f"Force = {result:.2f}N")
+                    callback(result)
+                if stop_event is not None and stop_event.is_set():
+                    break
                 if duration is not None and (time.time() - start) >= duration:
                     break
                 time.sleep(interval)
