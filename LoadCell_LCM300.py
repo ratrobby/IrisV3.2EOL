@@ -26,12 +26,20 @@ class LoadCellLCM300:
         raw = self.read_raw_data()
         return raw / 1000 if raw is not None else None
 
-    def read_force(self):
-        """Return the current force measurement in newtons."""
+    def read_force(self, unit="N"):
+        """Return the current force measurement.
+
+        Parameters
+        ----------
+        unit : {"N", "lbf"}, optional
+            Unit for the returned force.  Defaults to newtons (``"N"``).
+        """
         voltage = self.read_voltage()
         if voltage is None:
             return None
         force_lbf = (5.0 - voltage) * 5
+        if unit.lower() == "lbf":
+            return force_lbf
         return force_lbf * 4.44822
 
     def monitor_force(self, duration=None, callback=None, stop_event=None):
