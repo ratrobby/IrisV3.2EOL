@@ -140,3 +140,14 @@ class IO_master:
             raise ConnectionError(f"Failed to write to register {register}")
         return success
 
+    def read_holding(self, register, count=1, retries=3, delay=0.15):
+        """Read holding registers with retry logic."""
+        for attempt in range(retries):
+            regs = self.client.read_holding_registers(register, count)
+            if regs:
+                return regs
+            time.sleep(delay)
+        raise ConnectionError(
+            f"Failed to read holding registers at {register} after {retries} attempts"
+        )
+

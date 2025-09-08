@@ -11,21 +11,23 @@ class AL2205Hub:
         port_number : int
             IO-Link port on the AL1342 where the AL2205 is connected (1-8).
         """
-        self.io_master = io_master
+        self.io = io_master
         self.port_number = port_number
 
-        if port_number not in self.io_master.read_register_map:
+        if port_number not in self.io.read_register_map:
             raise ValueError(f"Invalid port number: {port_number}")
 
-        self.base_register = self.io_master.id_read_register(port_number)
+        self.base_register = self.io.id_read_register(port_number)
 
-    def read_index(self, x1_index):
+    def read_index(self, x1_index, count=1):
         """Return the raw 16-bit value from the specified X1 port.
 
         Parameters
         ----------
         x1_index : int
             Channel index on the AL2205 (0–7 for X1.0–X1.7).
+        count : int, optional
+            Number of consecutive registers to read starting at the index.
         """
         word_map = {
             0: 1,
@@ -42,9 +44,5 @@ class AL2205Hub:
             raise ValueError("Invalid X1 index. Must be between 0 and 7.")
 
         register = self.base_register + word_offset
-        result = self.io_master.read_register(register)
-        if result is None:
-            raise ConnectionError(
-                f"Failed to read analog input register at {register}"
-            )
-        return result
+        regs = self.io.read_holding(register, count, retries=3, delay=0.15)
+        return regs[0] if count == 1 else regs
