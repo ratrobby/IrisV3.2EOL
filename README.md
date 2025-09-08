@@ -20,13 +20,16 @@ pip install pyModbusTCP
 ```
 
 ## Example
+By default, `IO_master` uses the AL1342's IP address `192.168.100.1`. The
+example below assumes the AL2205 hub is connected to port 1 and the load cell
+is on channel X1.0.
 
 ```python
 from IO_master import IO_master
 from devices.AL2205_Hub import AL2205Hub
 from devices.LoadCell_LCM300 import LoadCellLCM300
 
-io = IO_master("192.168.0.10")           # IP address of the AL1342
+io = IO_master()                          # Defaults to IP 192.168.100.1
 hub = AL2205Hub(io, port_number=1)        # Hub connected to port 1
 cell = LoadCellLCM300(hub, x1_index=0)    # Load cell on channel X1.0
 
