@@ -21,7 +21,7 @@ except Exception:  # pragma: no cover - optional dependency may be missing
 
 
 class IO_master:
-    def __init__(self, IP_ADDR, SERVER_PORT=502, timeout=1.0):
+    def __init__(self, IP_ADDR="192.168.100.1", SERVER_PORT=502, timeout=1.0):
         self._IP_ADDR = IP_ADDR
         self.SERVER_PORT = SERVER_PORT
         self.timeout = timeout
