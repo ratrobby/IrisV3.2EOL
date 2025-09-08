@@ -34,7 +34,8 @@ io = IO_master()                          # Defaults to IP 192.168.100.1
 hub = AL2205Hub(io, port_number=1)        # Hub connected to port 1
 cell = LoadCellLCM300(hub, x1_index=0)    # Load cell on channel X1.0
 
-print(cell.read_force("N"))              # Read force in newtons
+print(cell.read_force())                  # Read force in newtons (default)
+print(cell.read_force("lbf"))             # Read force in pounds-force
 ```
 
 To read up to five load cells from the command line:
