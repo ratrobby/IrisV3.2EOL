@@ -16,7 +16,10 @@ class LoadCellLCM300:
 
     def read_raw_data(self):
         """Return the raw 16-bit value from the load cell."""
-        return self.device.read_index(self.x1_index)
+        val = self.device.read_index(self.x1_index)
+        if isinstance(val, list):
+            return val[0]
+        return val
 
     def read_voltage(self):
         """Convert the raw value to a voltage between 0 and 10 V."""
