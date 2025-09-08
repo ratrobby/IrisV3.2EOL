@@ -1,7 +1,45 @@
+"""Utility script for reading load cell data.
+
+This module ties together the IO master, AL2205 hub and LCM300 load cell
+interfaces to provide a simple command line utility.  All low level load cell
+interaction is handled by :mod:`LoadCell_LCM300` so that this script simply
+coordinates the devices and prints results.
+"""
+
 import argparse
 from IO_master import IO_master
-from devices.AL2205_Hub import AL2205Hub
-from devices.LoadCell_LCM300 import LoadCellLCM300
+from AL2205_Hub import AL2205Hub
+from LoadCell_LCM300 import LoadCellLCM300
+
+
+def readLC(cells, unit, x=None):
+    """Print load cell forces in the requested unit.
+
+    Parameters
+    ----------
+    cells : list[LoadCellLCM300]
+        Sequence of load cell objects to read.
+    unit : {"lbf", "N"}
+        Desired output units.
+    x : int or None, optional
+        Load cell number to read (1 indexed).  Reads all cells when ``None``.
+    """
+    label = "N" if unit.lower() == "n" else "lbf"
+
+    def _print_cell(idx: int) -> None:
+        force = cells[idx].read_force(unit)
+        if force is None:
+            print(f"load cell {idx + 1}: N/A")
+        else:
+            print(f"load cell {idx + 1}: {force:.2f}{label}")
+
+    if x is None:
+        for i in range(len(cells)):
+            _print_cell(i)
+    else:
+        if not 1 <= x <= len(cells):
+            raise ValueError("Load cell number must be between 1 and 5")
+        _print_cell(x - 1)
 
 
 def main():
@@ -24,6 +62,12 @@ def main():
         default="N",
         help="Force units to display",
     )
+    parser.add_argument(
+        "--cell",
+        type=int,
+        default=None,
+        help="Load cell number to read (1-5). Reads all if omitted.",
+    )
     args = parser.parse_args()
 
     io = IO_master(args.ip)
@@ -31,13 +75,7 @@ def main():
 
     cells = [LoadCellLCM300(hub, x1_index=i) for i in range(5)]
 
-    label = "N" if args.unit.lower() == "n" else "lbf"
-    for i, cell in enumerate(cells, start=1):
-        force = cell.read_force(args.unit)
-        if force is None:
-            print(f"load cell {i}: N/A")
-        else:
-            print(f"load cell {i}: {force:.2f}{label}")
+    readLC(cells, args.unit, args.cell)
 
     io.close_client()
 
