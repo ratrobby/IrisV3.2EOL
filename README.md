@@ -10,6 +10,7 @@ IO_master.py               # Modbus communication with the AL1342
 AL2205_Hub.py              # Access analog values from the AL2205 hub
 LoadCell_LCM300.py         # Convert analog values to force readings
 test_read_five_load_cells.py # Command line utility to read up to five load cells
+eol_fixture_script.py      # Single-file script to read and monitor five load cells
 ```
 
 ## Installation
@@ -42,6 +43,23 @@ To read up to five load cells from the command line:
 
 ```
 python test_read_five_load_cells.py 192.168.100.1
+```
+
+### EOL Fixture Script
+
+For a single-file alternative that assumes an AL1342 at `192.168.1.1` with an
+AL2205 hub on port X01 and five load cells on ports X1.0–X1.4, use
+`eol_fixture_script.py`:
+
+```bash
+# Read all five load cells
+python eol_fixture_script.py --all
+
+# Read a specific load cell (e.g. cell 3)
+python eol_fixture_script.py --cell 3
+
+# Open a popup window that monitors all load cells
+python eol_fixture_script.py --monitor
 ```
 
 ## License
