@@ -1,6 +1,7 @@
 from IO_master import IO_master
 from AL2205_Hub import AL2205Hub
 from LoadCell_LCM300 import LoadCellLCM300
+from PressureSensor_PQ3834 import PressureSensorPQ3834
 import atexit
 import threading
 import tkinter as tk
@@ -15,6 +16,9 @@ hub = AL2205Hub(io, port_number=1)
 
 # Instantiate five load cells on ports X1.0 to X1.4
 cells = [LoadCellLCM300(hub, x1_index=i) for i in range(5)]
+
+# Instantiate pressure sensor on port X1.5
+pressure_sensor = PressureSensorPQ3834(hub, x1_index=5)
 
 # Ensure Modbus client is closed on exit
 atexit.register(io.close_client)
@@ -37,11 +41,20 @@ def readLC(n):
         print(f"LC{n}: {force:.2f} N")
 
 
+def readPS():
+    """Print the pressure reading from the PQ3834 sensor in PSI."""
+    pressure = pressure_sensor.read_pressure()
+    if pressure is None:
+        print("PS: N/A")
+    else:
+        print(f"PS: {pressure:.2f} PSI")
+
+
 def Open_Monitor():
-    """Open a window that continually displays force readings for all load cells."""
+    """Open a window that continually displays force and pressure readings."""
 
     window = tk.Tk()
-    window.title("Load Cell Monitor")
+    window.title("Sensor Monitor")
 
     labels = []
     stop_events = []
@@ -69,6 +82,27 @@ def Open_Monitor():
             daemon=True,
         )
         thread.start()
+
+    # Add pressure sensor label and thread
+    pressure_var = tk.StringVar(value="PS: --- PSI")
+    pressure_label = tk.Label(window, textvariable=pressure_var)
+    pressure_label.pack()
+
+    pressure_stop = threading.Event()
+    stop_events.append(pressure_stop)
+
+    def pressure_callback(value):
+        if value is None:
+            pressure_var.set("PS: N/A")
+        else:
+            pressure_var.set(f"PS: {value:.2f} PSI")
+
+    pressure_thread = threading.Thread(
+        target=pressure_sensor.monitor_pressure,
+        kwargs={"callback": pressure_callback, "stop_event": pressure_stop},
+        daemon=True,
+    )
+    pressure_thread.start()
 
     def on_close():
         for ev in stop_events:
