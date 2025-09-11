@@ -50,11 +50,23 @@ def readPS():
         print(f"PS: {pressure:.2f} PSI")
 
 
-def Open_Monitor():
-    """Open a window that continually displays force and pressure readings."""
+def open_monitor():
+    """Open a small window that continually displays force and pressure readings.
+
+    The window geometry is set to roughly one fifth of the user's screen size
+    so it can be left running unobtrusively while still showing live values for
+    all five load cells and the pressure sensor.
+    """
 
     window = tk.Tk()
     window.title("Sensor Monitor")
+
+    # Resize the window to approximately one fifth of the screen dimensions.
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+    width = max(200, screen_width // 5)
+    height = max(200, screen_height // 5)
+    window.geometry(f"{width}x{height}")
 
     labels = []
     stop_events = []
@@ -62,7 +74,7 @@ def Open_Monitor():
     for i in range(len(cells)):
         var = tk.StringVar(value=f"LC{i + 1}: --- N")
         label = tk.Label(window, textvariable=var)
-        label.pack()
+        label.pack(anchor="w")
         labels.append(var)
 
         stop_event = threading.Event()
@@ -86,7 +98,7 @@ def Open_Monitor():
     # Add pressure sensor label and thread
     pressure_var = tk.StringVar(value="PS: --- PSI")
     pressure_label = tk.Label(window, textvariable=pressure_var)
-    pressure_label.pack()
+    pressure_label.pack(anchor="w")
 
     pressure_stop = threading.Event()
     stop_events.append(pressure_stop)
@@ -111,3 +123,7 @@ def Open_Monitor():
 
     window.protocol("WM_DELETE_WINDOW", on_close)
     window.mainloop()
+
+
+# Backwards compatibility for previous name.
+Open_Monitor = open_monitor
