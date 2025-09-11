@@ -3,22 +3,22 @@ import time
 class PressureSensorPQ3834:
     """Interface for an IFM PQ3834 pressure sensor."""
 
-    def __init__(self, al2205_instance, x1_index, min_bar=-1.0, max_bar=10.5):
+    def __init__(self, al2205_instance, x1_index, min_psi=-15.0, max_psi=145.0):
         """Parameters
         ----------
         al2205_instance : AL2205Hub
             Instance of :class:`AL2205Hub` used for communication.
         x1_index : int
             Channel index on the AL2205 (0–7 for X1.0–X1.7).
-        min_bar : float, optional
-            Minimum measurable pressure in bar.  Defaults to -1.0.
-        max_bar : float, optional
-            Maximum measurable pressure in bar.  Defaults to 10.5.
+        min_psi : float, optional
+            Minimum measurable pressure in PSI. Defaults to -15.0.
+        max_psi : float, optional
+            Maximum measurable pressure in PSI. Defaults to 145.0.
         """
         self.device = al2205_instance
         self.x1_index = x1_index
-        self.min_bar = min_bar
-        self.max_bar = max_bar
+        self.min_psi = min_psi
+        self.max_psi = max_psi
 
     def read_raw_data(self):
         """Return the raw 16-bit value from the sensor."""
@@ -27,19 +27,19 @@ class PressureSensorPQ3834:
             return val[0]
         return val
 
-    def read_voltage(self):
-        """Convert the raw value to a voltage between 0 and 10 V."""
+    def read_current(self):
+        """Convert the raw value to a current between 4 and 20 mA."""
         raw = self.read_raw_data()
         return raw / 1000 if raw is not None else None
 
     def read_pressure(self):
         """Return the current pressure in PSI."""
-        voltage = self.read_voltage()
-        if voltage is None:
+        current = self.read_current()
+        if current is None:
             return None
-        span = self.max_bar - self.min_bar
-        bar = self.min_bar + (voltage / 10.0) * span
-        return bar * 14.5037738
+        span = self.max_psi - self.min_psi
+        psi = self.min_psi + ((current - 4.0) / 16.0) * span
+        return psi
 
     def monitor_pressure(self, duration=None, callback=None, stop_event=None):
         """Periodically report pressure readings in PSI."""
