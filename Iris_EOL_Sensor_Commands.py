@@ -53,13 +53,13 @@ def readLC(*nums):
             print(f"LC{n}: {force:.2f} N")
 
 
-def readPS():
+def readPP():
     """Print the pressure reading from the PQ3834 sensor in PSI."""
     pressure = pressure_sensor.read_pressure()
     if pressure is None:
-        print("PS: N/A")
+        print("PP: N/A")
     else:
-        print(f"PS: {pressure:.2f} PSI")
+        print(f"PP: {pressure:.2f} PSI")
 
 
 def readVF():
@@ -153,38 +153,9 @@ def open_monitor():
         )
         thread.start()
 
-    # Add pressure sensor row with a frame and thread
-    pressure_frame = tk.Frame(window, bd=1, relief="solid")
-    pressure_frame.grid(row=len(cells), column=0, sticky="nsew", padx=5, pady=5)
-    pressure_frame.columnconfigure(0, weight=2)
-    pressure_frame.columnconfigure(1, weight=1)
-
-    pressure_name = tk.Label(pressure_frame, text="PS", font=font, anchor="center")
-    pressure_name.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
-
-    pressure_var = tk.StringVar(value="--- PSI")
-    pressure_value = tk.Label(pressure_frame, textvariable=pressure_var, font=font, anchor="center")
-    pressure_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
-
-    pressure_stop = threading.Event()
-    stop_events.append(pressure_stop)
-
-    def pressure_callback(value):
-        if value is None:
-            pressure_var.set("N/A")
-        else:
-            pressure_var.set(f"{value:.2f} PSI")
-
-    pressure_thread = threading.Thread(
-        target=pressure_sensor.monitor_pressure,
-        kwargs={"callback": pressure_callback, "stop_event": pressure_stop},
-        daemon=True,
-    )
-    pressure_thread.start()
-
     # Add SD9500 flow and pressure rows with a single thread updating both
     flow_frame = tk.Frame(window, bd=1, relief="solid")
-    flow_frame.grid(row=len(cells) + 1, column=0, sticky="nsew", padx=5, pady=5)
+    flow_frame.grid(row=len(cells), column=0, sticky="nsew", padx=5, pady=5)
     flow_frame.columnconfigure(0, weight=2)
     flow_frame.columnconfigure(1, weight=1)
 
@@ -196,7 +167,7 @@ def open_monitor():
     flow_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
     sd_pressure_frame = tk.Frame(window, bd=1, relief="solid")
-    sd_pressure_frame.grid(row=len(cells) + 2, column=0, sticky="nsew", padx=5, pady=5)
+    sd_pressure_frame.grid(row=len(cells) + 1, column=0, sticky="nsew", padx=5, pady=5)
     sd_pressure_frame.columnconfigure(0, weight=2)
     sd_pressure_frame.columnconfigure(1, weight=1)
 
@@ -226,6 +197,35 @@ def open_monitor():
         daemon=True,
     )
     sd_thread.start()
+
+    # Add pressure sensor row with a frame and thread
+    pp_frame = tk.Frame(window, bd=1, relief="solid")
+    pp_frame.grid(row=len(cells) + 2, column=0, sticky="nsew", padx=5, pady=5)
+    pp_frame.columnconfigure(0, weight=2)
+    pp_frame.columnconfigure(1, weight=1)
+
+    pp_name = tk.Label(pp_frame, text="PP", font=font, anchor="center")
+    pp_name.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+
+    pp_var = tk.StringVar(value="--- PSI")
+    pp_value = tk.Label(pp_frame, textvariable=pp_var, font=font, anchor="center")
+    pp_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+
+    pp_stop = threading.Event()
+    stop_events.append(pp_stop)
+
+    def pp_callback(value):
+        if value is None:
+            pp_var.set("N/A")
+        else:
+            pp_var.set(f"{value:.2f} PSI")
+
+    pp_thread = threading.Thread(
+        target=pressure_sensor.monitor_pressure,
+        kwargs={"callback": pp_callback, "stop_event": pp_stop},
+        daemon=True,
+    )
+    pp_thread.start()
 
     # Add SD6020 flow row with its own thread
     pf_frame = tk.Frame(window, bd=1, relief="solid")
@@ -265,7 +265,7 @@ def open_monitor():
     window.mainloop()
 
     if __name__ == "__main__":
-        readPS()
+        readPP()
 
 
 # Backwards compatibility for previous name.
