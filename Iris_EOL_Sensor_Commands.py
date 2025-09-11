@@ -68,14 +68,28 @@ def open_monitor():
     height = max(200, screen_height // 5)
     window.geometry(f"{width}x{height}")
 
-    labels = []
+    # Configure grid so that the name column uses roughly two thirds of the
+    # window width while the value column uses the remaining third. Each row is
+    # given equal weight so that the six labels are distributed evenly across
+    # the window height.
+    window.columnconfigure(0, weight=2)
+    window.columnconfigure(1, weight=1)
+    for i in range(len(cells) + 1):
+        window.rowconfigure(i, weight=1)
+
+    font = ("TkDefaultFont", 16)
+
+    value_vars = []
     stop_events = []
 
     for i in range(len(cells)):
-        var = tk.StringVar(value=f"LC{i + 1}: --- N")
-        label = tk.Label(window, textvariable=var)
-        label.pack(anchor="w")
-        labels.append(var)
+        name_label = tk.Label(window, text=f"LC{i + 1}", font=font, anchor="w")
+        name_label.grid(row=i, column=0, sticky="nsew", padx=5, pady=5)
+
+        var = tk.StringVar(value="--- N")
+        value_label = tk.Label(window, textvariable=var, font=font, anchor="e")
+        value_label.grid(row=i, column=1, sticky="nsew", padx=5, pady=5)
+        value_vars.append(var)
 
         stop_event = threading.Event()
         stop_events.append(stop_event)
@@ -83,9 +97,9 @@ def open_monitor():
         def make_callback(idx):
             def _update(force):
                 if force is None:
-                    labels[idx].set(f"LC{idx + 1}: N/A")
+                    value_vars[idx].set("N/A")
                 else:
-                    labels[idx].set(f"LC{idx + 1}: {force:.2f} N")
+                    value_vars[idx].set(f"{force:.2f} N")
             return _update
 
         thread = threading.Thread(
@@ -96,18 +110,21 @@ def open_monitor():
         thread.start()
 
     # Add pressure sensor label and thread
-    pressure_var = tk.StringVar(value="PS: --- PSI")
-    pressure_label = tk.Label(window, textvariable=pressure_var)
-    pressure_label.pack(anchor="w")
+    pressure_name = tk.Label(window, text="PS", font=font, anchor="w")
+    pressure_name.grid(row=len(cells), column=0, sticky="nsew", padx=5, pady=5)
+
+    pressure_var = tk.StringVar(value="--- PSI")
+    pressure_value = tk.Label(window, textvariable=pressure_var, font=font, anchor="e")
+    pressure_value.grid(row=len(cells), column=1, sticky="nsew", padx=5, pady=5)
 
     pressure_stop = threading.Event()
     stop_events.append(pressure_stop)
 
     def pressure_callback(value):
         if value is None:
-            pressure_var.set("PS: N/A")
+            pressure_var.set("N/A")
         else:
-            pressure_var.set(f"PS: {value:.2f} PSI")
+            pressure_var.set(f"{value:.2f} PSI")
 
     pressure_thread = threading.Thread(
         target=pressure_sensor.monitor_pressure,
