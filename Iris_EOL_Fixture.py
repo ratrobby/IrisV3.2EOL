@@ -1,9 +1,9 @@
-from IO_master import IO_master
-from AL2205_Hub import AL2205Hub
-from LoadCell_LCM300 import LoadCellLCM300
-from PressureSensor_PQ3834 import PressureSensorPQ3834
-from FlowPressure_SD9500 import FlowPressureSensorSD9500
-from FlowSensor_SD6020 import FlowSensorSD6020
+from devices.IO_master import IO_master
+from devices.AL2205_Hub import AL2205Hub
+from devices.LoadCell_LCM300 import LoadCellLCM300
+from devices.PressureSensor_PQ3834 import PressureSensorPQ3834
+from devices.FlowPressure_SD9500 import FlowPressureSensorSD9500
+from devices.FlowSensor_SD6020 import FlowSensorSD6020
 import atexit
 import threading
 import tkinter as tk
