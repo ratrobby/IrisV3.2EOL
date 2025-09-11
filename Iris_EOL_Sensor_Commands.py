@@ -31,22 +31,26 @@ sd6020_sensor = FlowSensorSD6020(io, port_number=3)
 # Ensure Modbus client is closed on exit
 atexit.register(io.close_client)
 
-
-def readLC(n):
-    """Print the force from load cell ``n`` in newtons.
+def readLC(*nums):
+    """Print the force from one or more load cells in newtons.
 
     Parameters
     ----------
-    n : int
-        Load cell number (1-5).
+    *nums : int
+        One or more load cell numbers (1-5).  Reads all cells when omitted.
     """
-    if not 1 <= n <= len(cells):
-        raise ValueError("Load cell number must be between 1 and 5")
-    force = cells[n - 1].read_force()
-    if force is None:
-        print(f"LC{n}: N/A")
-    else:
-        print(f"LC{n}: {force:.2f} N")
+
+    if not nums:
+        nums = range(1, len(cells) + 1)
+
+    for n in nums:
+        if not 1 <= n <= len(cells):
+            raise ValueError("Load cell number must be between 1 and 5")
+        force = cells[n - 1].read_force()
+        if force is None:
+            print(f"LC{n}: N/A")
+        else:
+            print(f"LC{n}: {force:.2f} N")
 
 
 def readPS():
