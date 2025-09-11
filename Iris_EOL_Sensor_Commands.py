@@ -73,11 +73,12 @@ def readVP():
 
 
 def open_monitor():
-    """Open a small window that continually displays force and pressure readings.
+    """Open a small window that continually displays sensor readings.
 
     The window geometry is set to roughly one fifth of the user's screen size
     so it can be left running unobtrusively while still showing live values for
-    all five load cells and the pressure sensor.
+    all five load cells, the PQ3834 pressure sensor and the SD9500 flow/pressure
+    sensor.
     """
 
     window = tk.Tk()
@@ -94,7 +95,7 @@ def open_monitor():
     # manage the two column layout internally to maintain the 2:1 width ratio
     # between sensor names and values.
     window.columnconfigure(0, weight=1)
-    for i in range(len(cells) + 1):
+    for i in range(len(cells) + 3):
         window.rowconfigure(i, weight=1)
 
     font = ("TkDefaultFont", 16)
@@ -163,6 +164,51 @@ def open_monitor():
         daemon=True,
     )
     pressure_thread.start()
+
+    # Add SD9500 flow and pressure rows with a single thread updating both
+    flow_frame = tk.Frame(window, bd=1, relief="solid")
+    flow_frame.grid(row=len(cells) + 1, column=0, sticky="nsew", padx=5, pady=5)
+    flow_frame.columnconfigure(0, weight=2)
+    flow_frame.columnconfigure(1, weight=1)
+
+    flow_name = tk.Label(flow_frame, text="VF", font=font, anchor="center")
+    flow_name.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+
+    flow_var = tk.StringVar(value="--- CFM")
+    flow_value = tk.Label(flow_frame, textvariable=flow_var, font=font, anchor="center")
+    flow_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+
+    sd_pressure_frame = tk.Frame(window, bd=1, relief="solid")
+    sd_pressure_frame.grid(row=len(cells) + 2, column=0, sticky="nsew", padx=5, pady=5)
+    sd_pressure_frame.columnconfigure(0, weight=2)
+    sd_pressure_frame.columnconfigure(1, weight=1)
+
+    sd_pressure_name = tk.Label(sd_pressure_frame, text="VP", font=font, anchor="center")
+    sd_pressure_name.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+
+    sd_pressure_var = tk.StringVar(value="--- PSI")
+    sd_pressure_value = tk.Label(sd_pressure_frame, textvariable=sd_pressure_var, font=font, anchor="center")
+    sd_pressure_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+
+    sd_stop = threading.Event()
+    stop_events.append(sd_stop)
+
+    def sd_callback(flow, pressure):
+        if flow is None:
+            flow_var.set("N/A")
+        else:
+            flow_var.set(f"{flow:.2f} CFM")
+        if pressure is None:
+            sd_pressure_var.set("N/A")
+        else:
+            sd_pressure_var.set(f"{pressure:.2f} PSI")
+
+    sd_thread = threading.Thread(
+        target=sd9500_sensor.monitor,
+        kwargs={"callback": sd_callback, "stop_event": sd_stop},
+        daemon=True,
+    )
+    sd_thread.start()
 
     def on_close():
         for ev in stop_events:
