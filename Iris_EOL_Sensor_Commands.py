@@ -3,6 +3,7 @@ from AL2205_Hub import AL2205Hub
 from LoadCell_LCM300 import LoadCellLCM300
 from PressureSensor_PQ3834 import PressureSensorPQ3834
 from FlowPressure_SD9500 import FlowPressureSensorSD9500
+from FlowSensor_SD6020 import FlowSensorSD6020
 import atexit
 import threading
 import tkinter as tk
@@ -23,6 +24,9 @@ pressure_sensor = PressureSensorPQ3834(hub, x1_index=5)
 
 # Instantiate SD9500 flow/pressure sensor on port X02
 sd9500_sensor = FlowPressureSensorSD9500(io, port_number=2)
+
+# Instantiate SD6020 flow sensor on port X03
+sd6020_sensor = FlowSensorSD6020(io, port_number=3)
 
 # Ensure Modbus client is closed on exit
 atexit.register(io.close_client)
@@ -72,13 +76,22 @@ def readVP():
         print(f"VP: {pressure:.2f} PSI")
 
 
+def readPF():
+    """Print the flow reading from the SD6020 sensor in CFM."""
+    flow = sd6020_sensor.readPF()
+    if flow is None:
+        print("PF: N/A")
+    else:
+        print(f"PF: {flow:.2f} CFM")
+
+
 def open_monitor():
     """Open a small window that continually displays sensor readings.
 
     The window geometry is set to roughly one fifth of the user's screen size
     so it can be left running unobtrusively while still showing live values for
-    all five load cells, the PQ3834 pressure sensor and the SD9500 flow/pressure
-    sensor.
+    all five load cells, the PQ3834 pressure sensor, the SD9500 flow/pressure
+    sensor, and the SD6020 flow sensor.
     """
 
     window = tk.Tk()
@@ -95,7 +108,7 @@ def open_monitor():
     # manage the two column layout internally to maintain the 2:1 width ratio
     # between sensor names and values.
     window.columnconfigure(0, weight=1)
-    for i in range(len(cells) + 3):
+    for i in range(len(cells) + 4):
         window.rowconfigure(i, weight=1)
 
     font = ("TkDefaultFont", 16)
@@ -209,6 +222,35 @@ def open_monitor():
         daemon=True,
     )
     sd_thread.start()
+
+    # Add SD6020 flow row with its own thread
+    pf_frame = tk.Frame(window, bd=1, relief="solid")
+    pf_frame.grid(row=len(cells) + 3, column=0, sticky="nsew", padx=5, pady=5)
+    pf_frame.columnconfigure(0, weight=2)
+    pf_frame.columnconfigure(1, weight=1)
+
+    pf_name = tk.Label(pf_frame, text="PF", font=font, anchor="center")
+    pf_name.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+
+    pf_var = tk.StringVar(value="--- CFM")
+    pf_value = tk.Label(pf_frame, textvariable=pf_var, font=font, anchor="center")
+    pf_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+
+    pf_stop = threading.Event()
+    stop_events.append(pf_stop)
+
+    def pf_callback(flow):
+        if flow is None:
+            pf_var.set("N/A")
+        else:
+            pf_var.set(f"{flow:.2f} CFM")
+
+    pf_thread = threading.Thread(
+        target=sd6020_sensor.monitor,
+        kwargs={"callback": pf_callback, "stop_event": pf_stop},
+        daemon=True,
+    )
+    pf_thread.start()
 
     def on_close():
         for ev in stop_events:
