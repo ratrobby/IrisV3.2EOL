@@ -68,12 +68,10 @@ def open_monitor():
     height = max(200, screen_height // 5)
     window.geometry(f"{width}x{height}")
 
-    # Configure grid so that the name column uses roughly two thirds of the
-    # window width while the value column uses the remaining third. Each row is
-    # given equal weight so that the six labels are distributed evenly across
-    # the window height.
-    window.columnconfigure(0, weight=2)
-    window.columnconfigure(1, weight=1)
+    # Configure grid so that each row uses equal height. Individual frames will
+    # manage the two column layout internally to maintain the 2:1 width ratio
+    # between sensor names and values.
+    window.columnconfigure(0, weight=1)
     for i in range(len(cells) + 1):
         window.rowconfigure(i, weight=1)
 
@@ -83,12 +81,18 @@ def open_monitor():
     stop_events = []
 
     for i in range(len(cells)):
-        name_label = tk.Label(window, text=f"LC{i + 1}", font=font, anchor="center")
-        name_label.grid(row=i, column=0, sticky="nsew", padx=5, pady=5)
+        # Create a frame for each load cell row to draw a visible border
+        row_frame = tk.Frame(window, bd=1, relief="solid")
+        row_frame.grid(row=i, column=0, sticky="nsew", padx=5, pady=5)
+        row_frame.columnconfigure(0, weight=2)
+        row_frame.columnconfigure(1, weight=1)
+
+        name_label = tk.Label(row_frame, text=f"LC{i + 1}", font=font, anchor="center")
+        name_label.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
         var = tk.StringVar(value="--- N")
-        value_label = tk.Label(window, textvariable=var, font=font, anchor="center")
-        value_label.grid(row=i, column=1, sticky="nsew", padx=5, pady=5)
+        value_label = tk.Label(row_frame, textvariable=var, font=font, anchor="center")
+        value_label.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
         value_vars.append(var)
 
         stop_event = threading.Event()
@@ -109,13 +113,18 @@ def open_monitor():
         )
         thread.start()
 
-    # Add pressure sensor label and thread
-    pressure_name = tk.Label(window, text="PS", font=font, anchor="center")
-    pressure_name.grid(row=len(cells), column=0, sticky="nsew", padx=5, pady=5)
+    # Add pressure sensor row with a frame and thread
+    pressure_frame = tk.Frame(window, bd=1, relief="solid")
+    pressure_frame.grid(row=len(cells), column=0, sticky="nsew", padx=5, pady=5)
+    pressure_frame.columnconfigure(0, weight=2)
+    pressure_frame.columnconfigure(1, weight=1)
+
+    pressure_name = tk.Label(pressure_frame, text="PS", font=font, anchor="center")
+    pressure_name.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
     pressure_var = tk.StringVar(value="--- PSI")
-    pressure_value = tk.Label(window, textvariable=pressure_var, font=font, anchor="center")
-    pressure_value.grid(row=len(cells), column=1, sticky="nsew", padx=5, pady=5)
+    pressure_value = tk.Label(pressure_frame, textvariable=pressure_var, font=font, anchor="center")
+    pressure_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
     pressure_stop = threading.Event()
     stop_events.append(pressure_stop)
