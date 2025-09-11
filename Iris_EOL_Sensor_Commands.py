@@ -92,20 +92,23 @@ def readPF():
 def open_monitor():
     """Open a small window that continually displays sensor readings.
 
-    The window geometry is set to roughly one fifth of the user's screen size
-    so it can be left running unobtrusively while still showing live values for
-    all five load cells, the PQ3834 pressure sensor, the SD9500 flow/pressure
-    sensor, and the SD6020 flow sensor.
+    The window geometry scales to ensure all sensor values remain visible at a
+    glance.  It now occupies roughly one third of the available screen width
+    and at least half of the screen height.
     """
 
     window = tk.Tk()
     window.title("Sensor Monitor")
 
-    # Resize the window to approximately one fifth of the screen dimensions.
+    # Resize the window to comfortably display every sensor row. The width is
+    # roughly one third of the screen and the height is at least half of the
+    # screen or large enough to give each row ~50px.
     screen_width = window.winfo_screenwidth()
     screen_height = window.winfo_screenheight()
-    width = max(200, screen_width // 5)
-    height = max(200, screen_height // 5)
+    rows = len(cells) + 4
+    min_height = rows * 50
+    width = max(300, screen_width // 3)
+    height = max(min_height, screen_height // 2)
     window.geometry(f"{width}x{height}")
 
     # Configure grid so that each row uses equal height. Individual frames will
