@@ -218,6 +218,9 @@ def open_monitor():
     window.protocol("WM_DELETE_WINDOW", on_close)
     window.mainloop()
 
+    if __name__ == "__main__":
+        readPS()
+
 
 # Backwards compatibility for previous name.
 Open_Monitor = open_monitor
