@@ -83,11 +83,11 @@ def open_monitor():
     stop_events = []
 
     for i in range(len(cells)):
-        name_label = tk.Label(window, text=f"LC{i + 1}", font=font, anchor="w")
+        name_label = tk.Label(window, text=f"LC{i + 1}", font=font, anchor="center")
         name_label.grid(row=i, column=0, sticky="nsew", padx=5, pady=5)
 
         var = tk.StringVar(value="--- N")
-        value_label = tk.Label(window, textvariable=var, font=font, anchor="e")
+        value_label = tk.Label(window, textvariable=var, font=font, anchor="center")
         value_label.grid(row=i, column=1, sticky="nsew", padx=5, pady=5)
         value_vars.append(var)
 
@@ -110,11 +110,11 @@ def open_monitor():
         thread.start()
 
     # Add pressure sensor label and thread
-    pressure_name = tk.Label(window, text="PS", font=font, anchor="w")
+    pressure_name = tk.Label(window, text="PS", font=font, anchor="center")
     pressure_name.grid(row=len(cells), column=0, sticky="nsew", padx=5, pady=5)
 
     pressure_var = tk.StringVar(value="--- PSI")
-    pressure_value = tk.Label(window, textvariable=pressure_var, font=font, anchor="e")
+    pressure_value = tk.Label(window, textvariable=pressure_var, font=font, anchor="center")
     pressure_value.grid(row=len(cells), column=1, sticky="nsew", padx=5, pady=5)
 
     pressure_stop = threading.Event()
