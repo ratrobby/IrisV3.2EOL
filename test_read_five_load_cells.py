@@ -6,7 +6,7 @@ interaction is handled by :mod:`LoadCell_LCM300` so that this script simply
 coordinates the devices and prints results.
 """
 
-import argparse
+
 from IO_master import IO_master
 from AL2205_Hub import AL2205Hub
 from LoadCell_LCM300 import LoadCellLCM300

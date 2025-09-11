@@ -7,7 +7,7 @@ import threading
 import tkinter as tk
 
 # Configure IO master and AL2205 hub
-io = IO_master("192.168.1.1")
+io = IO_master("192.168.1.250")
 try:
     io.prime(addr=1008, count=1)
 except Exception:
