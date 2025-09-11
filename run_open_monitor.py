@@ -1,3 +1,4 @@
-from Iris_EOL_Sensor_Commands import readVP
+
+import Iris_EOL_Sensor_Commands
 if __name__ == "__main__":
-    readVP()
+    Iris_EOL_Sensor_Commands.open_monitor()

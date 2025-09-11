@@ -31,35 +31,31 @@ sd6020_sensor = FlowSensorSD6020(io, port_number=3)
 # Ensure Modbus client is closed on exit
 atexit.register(io.close_client)
 
-def readLC(*nums):
-    """Print the force from one or more load cells in newtons.
+
+def readLC(n):
+    """Print the force from load cell ``n`` in newtons.
 
     Parameters
     ----------
-    *nums : int
-        One or more load cell numbers (1-5).  Reads all cells when omitted.
+    n : int
+        Load cell number (1-5).
     """
-
-    if not nums:
-        nums = range(1, len(cells) + 1)
-
-    for n in nums:
-        if not 1 <= n <= len(cells):
-            raise ValueError("Load cell number must be between 1 and 5")
-        force = cells[n - 1].read_force()
-        if force is None:
-            print(f"LC{n}: N/A")
-        else:
-            print(f"LC{n}: {force:.2f} N")
+    if not 1 <= n <= len(cells):
+        raise ValueError("Load cell number must be between 1 and 5")
+    force = cells[n - 1].read_force()
+    if force is None:
+        print(f"LC{n}: N/A")
+    else:
+        print(f"LC{n}: {force:.2f} N")
 
 
-def readPP():
+def readPS():
     """Print the pressure reading from the PQ3834 sensor in PSI."""
     pressure = pressure_sensor.read_pressure()
     if pressure is None:
-        print("PP: N/A")
+        print("PS: N/A")
     else:
-        print(f"PP: {pressure:.2f} PSI")
+        print(f"PS: {pressure:.2f} PSI")
 
 
 def readVF():
@@ -92,23 +88,20 @@ def readPF():
 def open_monitor():
     """Open a small window that continually displays sensor readings.
 
-    The window geometry scales to ensure all sensor values remain visible at a
-    glance.  It now occupies roughly one third of the available screen width
-    and at least half of the screen height.
+    The window geometry is set to roughly one fifth of the user's screen size
+    so it can be left running unobtrusively while still showing live values for
+    all five load cells, the PQ3834 pressure sensor, the SD9500 flow/pressure
+    sensor, and the SD6020 flow sensor.
     """
 
     window = tk.Tk()
     window.title("Sensor Monitor")
 
-    # Resize the window to comfortably display every sensor row. The width is
-    # roughly one third of the screen and the height is at least half of the
-    # screen or large enough to give each row ~50px.
+    # Resize the window to approximately one fifth of the screen dimensions.
     screen_width = window.winfo_screenwidth()
     screen_height = window.winfo_screenheight()
-    rows = len(cells) + 4
-    min_height = rows * 50
-    width = max(300, screen_width // 3)
-    height = max(min_height, screen_height // 2)
+    width = max(200, screen_width // 5)
+    height = max(200, screen_height // 5)
     window.geometry(f"{width}x{height}")
 
     # Configure grid so that each row uses equal height. Individual frames will
@@ -156,9 +149,38 @@ def open_monitor():
         )
         thread.start()
 
+    # Add pressure sensor row with a frame and thread
+    pressure_frame = tk.Frame(window, bd=1, relief="solid")
+    pressure_frame.grid(row=len(cells), column=0, sticky="nsew", padx=5, pady=5)
+    pressure_frame.columnconfigure(0, weight=2)
+    pressure_frame.columnconfigure(1, weight=1)
+
+    pressure_name = tk.Label(pressure_frame, text="PS", font=font, anchor="center")
+    pressure_name.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+
+    pressure_var = tk.StringVar(value="--- PSI")
+    pressure_value = tk.Label(pressure_frame, textvariable=pressure_var, font=font, anchor="center")
+    pressure_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+
+    pressure_stop = threading.Event()
+    stop_events.append(pressure_stop)
+
+    def pressure_callback(value):
+        if value is None:
+            pressure_var.set("N/A")
+        else:
+            pressure_var.set(f"{value:.2f} PSI")
+
+    pressure_thread = threading.Thread(
+        target=pressure_sensor.monitor_pressure,
+        kwargs={"callback": pressure_callback, "stop_event": pressure_stop},
+        daemon=True,
+    )
+    pressure_thread.start()
+
     # Add SD9500 flow and pressure rows with a single thread updating both
     flow_frame = tk.Frame(window, bd=1, relief="solid")
-    flow_frame.grid(row=len(cells), column=0, sticky="nsew", padx=5, pady=5)
+    flow_frame.grid(row=len(cells) + 1, column=0, sticky="nsew", padx=5, pady=5)
     flow_frame.columnconfigure(0, weight=2)
     flow_frame.columnconfigure(1, weight=1)
 
@@ -170,7 +192,7 @@ def open_monitor():
     flow_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
     sd_pressure_frame = tk.Frame(window, bd=1, relief="solid")
-    sd_pressure_frame.grid(row=len(cells) + 1, column=0, sticky="nsew", padx=5, pady=5)
+    sd_pressure_frame.grid(row=len(cells) + 2, column=0, sticky="nsew", padx=5, pady=5)
     sd_pressure_frame.columnconfigure(0, weight=2)
     sd_pressure_frame.columnconfigure(1, weight=1)
 
@@ -200,35 +222,6 @@ def open_monitor():
         daemon=True,
     )
     sd_thread.start()
-
-    # Add pressure sensor row with a frame and thread
-    pp_frame = tk.Frame(window, bd=1, relief="solid")
-    pp_frame.grid(row=len(cells) + 2, column=0, sticky="nsew", padx=5, pady=5)
-    pp_frame.columnconfigure(0, weight=2)
-    pp_frame.columnconfigure(1, weight=1)
-
-    pp_name = tk.Label(pp_frame, text="PP", font=font, anchor="center")
-    pp_name.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
-
-    pp_var = tk.StringVar(value="--- PSI")
-    pp_value = tk.Label(pp_frame, textvariable=pp_var, font=font, anchor="center")
-    pp_value.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
-
-    pp_stop = threading.Event()
-    stop_events.append(pp_stop)
-
-    def pp_callback(value):
-        if value is None:
-            pp_var.set("N/A")
-        else:
-            pp_var.set(f"{value:.2f} PSI")
-
-    pp_thread = threading.Thread(
-        target=pressure_sensor.monitor_pressure,
-        kwargs={"callback": pp_callback, "stop_event": pp_stop},
-        daemon=True,
-    )
-    pp_thread.start()
 
     # Add SD6020 flow row with its own thread
     pf_frame = tk.Frame(window, bd=1, relief="solid")
@@ -268,7 +261,7 @@ def open_monitor():
     window.mainloop()
 
     if __name__ == "__main__":
-        readPP()
+        readPS()
 
 
 # Backwards compatibility for previous name.
