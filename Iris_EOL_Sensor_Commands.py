@@ -2,6 +2,7 @@ from IO_master import IO_master
 from AL2205_Hub import AL2205Hub
 from LoadCell_LCM300 import LoadCellLCM300
 from PressureSensor_PQ3834 import PressureSensorPQ3834
+from FlowPressure_SD9500 import FlowPressureSensorSD9500
 import atexit
 import threading
 import tkinter as tk
@@ -19,6 +20,9 @@ cells = [LoadCellLCM300(hub, x1_index=i) for i in range(5)]
 
 # Instantiate pressure sensor on port X1.5
 pressure_sensor = PressureSensorPQ3834(hub, x1_index=5)
+
+# Instantiate SD9500 flow/pressure sensor on port X02
+sd9500_sensor = FlowPressureSensorSD9500(io, port_number=2)
 
 # Ensure Modbus client is closed on exit
 atexit.register(io.close_client)
@@ -48,6 +52,24 @@ def readPS():
         print("PS: N/A")
     else:
         print(f"PS: {pressure:.2f} PSI")
+
+
+def readVF():
+    """Print the flow reading from the SD9500 sensor in CFM."""
+    flow = sd9500_sensor.readVF()
+    if flow is None:
+        print("VF: N/A")
+    else:
+        print(f"VF: {flow:.2f} CFM")
+
+
+def readVP():
+    """Print the pressure reading from the SD9500 sensor in PSI."""
+    pressure = sd9500_sensor.readVP()
+    if pressure is None:
+        print("VP: N/A")
+    else:
+        print(f"VP: {pressure:.2f} PSI")
 
 
 def open_monitor():
